@@ -121,21 +121,25 @@ internal static class CoopMenu
 /// </summary>
 internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
 {
-    private const float PanelWidth = 1000f;
+    private const float PanelWidth = 1200f;
 
-    private const float Padding = 36f;
+    private const float Padding = 44f;
 
     private const float TitleHeight = 96f;
 
     private const float FooterHeight = 104f;
 
-    private const float RowHeight = 60f;
+    private const float RowHeight = 76f;
 
-    private const float DescribedRowHeight = 84f;
+    /// <summary>The least a row with an explanation takes; a long explanation wraps and the row grows.</summary>
+    private const float DescribedRowHeight = 96f;
 
-    private const float HeaderHeight = 72f;
+    private const float HeaderHeight = 84f;
 
-    private const float RightColumn = 240f;
+    private const float RightColumn = 300f;
+
+    /// <summary>As tall as the game's menu buttons leave room for in a row.</summary>
+    private const float ButtonHeight = 60f;
 
     /// <summary>Room between a perforation and the list, so rows never touch it.</summary>
     private const float ListGap = 10f;
@@ -260,15 +264,15 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         Image line = rule.gameObject.AddComponent<Image>();
         line.color = new Color(PaperView.Blue.r, PaperView.Blue.g, PaperView.Blue.b, 0.45f);
         line.raycastTarget = false;
-        Add(new MenuRow(root, text, null, null, null, visible, null, header: true, textTemplate));
+        Add(new MenuRow(root, text, null, null, null, visible, null, header: true));
     }
 
     /// <summary>A label, with a value on the right and a line of explanation under it when given.</summary>
     internal void AddInfo(Func<string> label, Func<string>? value = null, Func<bool>? visible = null, Func<string>? about = null)
     {
         GameObject root = NewRow(about == null ? RowHeight : DescribedRowHeight, TextAnchor.MiddleLeft, about != null);
-        TMP_Text? valueText = value == null ? null : NewText(root.transform, "Value", TextAlignmentOptions.Right, RightColumn, 0.7f);
-        Add(new MenuRow(root, label, about, value, null, visible, null, header: false, textTemplate, valueText));
+        TMP_Text? valueText = value == null ? null : NewText(root.transform, "Value", TextAlignmentOptions.Right, RightColumn, MenuText.Value);
+        Add(new MenuRow(root, label, about, value, null, visible, null, header: false, valueText));
     }
 
     /// <summary>
@@ -290,11 +294,11 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         size.ignoreLayout = false;
         size.minWidth = RightColumn;
         size.preferredWidth = RightColumn;
-        size.minHeight = RowHeight - 8f;
-        size.preferredHeight = RowHeight - 8f;
+        size.minHeight = ButtonHeight;
+        size.preferredHeight = ButtonHeight;
         size.flexibleWidth = 0f;
         size.flexibleHeight = 0f;
-        Add(new MenuRow(root, label, about, button, clone, visible, available, header: false, textTemplate));
+        Add(new MenuRow(root, label, about, button, clone, visible, available, header: false));
     }
 
     private static RectTransform NewRect(string name, Transform parent)
@@ -461,7 +465,7 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         titleRect.pivot = new Vector2(0.5f, 1f);
         titleRect.sizeDelta = new Vector2(0f, TitleHeight);
         titleRect.anchoredPosition = Vector2.zero;
-        TMP_Text title = Text(titleRect.gameObject, textTemplate.fontSize * 1.1f, TextAlignmentOptions.Center);
+        TMP_Text title = Text(titleRect.gameObject, MenuText.Title, TextAlignmentOptions.Center);
         title.fontStyle = FontStyles.Bold;
         title.color = PaperView.Blue;
         title.text = Strings.CoopMenu;
@@ -573,10 +577,9 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         layout.childForceExpandWidth = false;
         layout.childForceExpandHeight = false;
         layout.spacing = 24f;
-        layout.padding = new RectOffset(12, 12, 4, 4);
-        LayoutElement size = root.gameObject.AddComponent<LayoutElement>();
-        size.minHeight = height;
-        size.preferredHeight = height;
+        layout.padding = new RectOffset(12, 12, 8, 8);
+        // At least this tall; taller when an explanation wraps.
+        root.gameObject.AddComponent<LayoutElement>().minHeight = height;
 
         RectTransform left = NewRect("Left", root);
         VerticalLayoutGroup stack = left.gameObject.AddComponent<VerticalLayoutGroup>();
@@ -585,23 +588,25 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         stack.childForceExpandWidth = true;
         stack.childForceExpandHeight = false;
         stack.childAlignment = TextAnchor.MiddleLeft;
-        stack.spacing = 2f;
+        stack.spacing = 4f;
         left.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
-        NewText(left, "Label", TextAlignmentOptions.Left, -1f, 0.7f);
+        NewText(left, "Label", TextAlignmentOptions.Left, -1f, MenuText.Label);
         if (described)
         {
-            TMP_Text about = NewText(left, "About", TextAlignmentOptions.Left, -1f, 0.5f);
-            about.color = new Color(about.color.r, about.color.g, about.color.b, about.color.a * 0.65f);
+            TMP_Text about = NewText(left, "About", TextAlignmentOptions.Left, -1f, MenuText.Note);
+            about.color = new Color(about.color.r, about.color.g, about.color.b, about.color.a * 0.7f);
+            about.textWrappingMode = TextWrappingModes.Normal;
+            about.overflowMode = TextOverflowModes.Overflow;
         }
 
         return root.gameObject;
     }
 
     /// <summary>A line of text; a fixed width when <paramref name="width"/> is positive, else as wide as its column.</summary>
-    private TMP_Text NewText(Transform parent, string name, TextAlignmentOptions alignment, float width, float scale)
+    private TMP_Text NewText(Transform parent, string name, TextAlignmentOptions alignment, float width, float fontSize)
     {
         RectTransform rect = NewRect(name, parent);
-        TMP_Text text = Text(rect.gameObject, textTemplate.fontSize * scale, alignment);
+        TMP_Text text = Text(rect.gameObject, fontSize, alignment);
         LayoutElement size = rect.gameObject.AddComponent<LayoutElement>();
         if (width > 0f)
         {
@@ -631,6 +636,23 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         text.raycastTarget = false;
         return text;
     }
+}
+
+/// <summary>
+/// Text sizes on the Coop Menu, the same as the game's own settings page
+/// gives its title, section headings, setting names, buttons, and notes.
+/// </summary>
+internal static class MenuText
+{
+    public const float Title = 48f;
+
+    public const float Heading = 32f;
+
+    public const float Label = 28f;
+
+    public const float Value = 24f;
+
+    public const float Note = 20f;
 }
 
 /// <summary>One row of the Coop Menu: a label and its explanation, and a value or a button.</summary>
@@ -665,7 +687,6 @@ internal sealed class MenuRow
         Func<bool>? visible,
         Func<bool>? available,
         bool header,
-        TMP_Text template,
         TMP_Text? valueText = null)
     {
         Root = root;
@@ -681,7 +702,7 @@ internal sealed class MenuRow
         if (header)
         {
             labelText.fontStyle = FontStyles.Bold;
-            labelText.fontSize = template.fontSize * 0.8f;
+            labelText.fontSize = MenuText.Heading;
         }
 
         rightText = button != null ? button.GetComponentInChildren<TMP_Text>(true) : valueText;
