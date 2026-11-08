@@ -116,6 +116,74 @@ internal static class Strings
 
     public static string RuleAllowOddPlayerCount => Korean ? "홀수 인원 출발 허용" : "Allow Odd Player Count";
 
+    public static string AboutRolePreference => Korean
+        ? "짝을 정할 때 원하는 역할입니다. 다음 짝짓기부터 적용됩니다."
+        : "The role you would like when Pairs form; applies from the next pairing.";
+
+    public static string AboutSwapPlaces => Korean
+        ? "둘 다 요청하면 업는 사람과 업힌 사람이 바뀝니다."
+        : "When both of you ask, you trade Carrier and Rider.";
+
+    public static string AboutNoPartner => Korean
+        ? "짝 없는 사람이 생기거나 짝을 섞으면 짝이 생깁니다."
+        : "You get a partner when another player is free or the Pairs shuffle.";
+
+    public static string AboutNextShuffle => Korean
+        ? "시간마다 짝 섞기까지 남은 시간입니다."
+        : "Time left until the next Timed Shuffle.";
+
+    public static string AboutShuffleNow => Korean
+        ? "모든 짝을 지금 새로 정합니다."
+        : "Forms every Pair anew now.";
+
+    public static string AboutRecover => Korean
+        ? "업기가 풀렸을 때 모든 짝을 다시 업히고 업힌 사람을 깨웁니다."
+        : "Re-attaches every Pair's carry and wakes every Rider.";
+
+    public static string AboutAssignCarrier => Korean
+        ? "짝으로 묶을 사람 중 업을 사람을 고릅니다."
+        : "Picks who carries in the Pair you assign.";
+
+    public static string AboutAssignRider => Korean
+        ? "짝으로 묶을 사람 중 업힐 사람을 고릅니다."
+        : "Picks who rides in the Pair you assign.";
+
+    public static string AboutAssign => Korean
+        ? "고른 두 사람을 짝으로 묶습니다. 원래 짝은 남은 사람끼리 다시 묶입니다."
+        : "Pairs the two you picked; their former partners pair up with each other.";
+
+    public static string AboutCampfireShuffle => Korean
+        ? "모닥불을 피워 다음 구간으로 갈 때 짝을 새로 정합니다."
+        : "Forms the Pairs anew when a campfire is lit.";
+
+    public static string AboutTimedShuffle => Korean
+        ? "정해진 간격마다 짝을 새로 정합니다."
+        : "Forms the Pairs anew at a fixed interval.";
+
+    public static string AboutTimedShuffleInterval => Korean
+        ? "시간마다 짝 섞기의 간격입니다."
+        : "How often a Timed Shuffle comes.";
+
+    public static string AboutHandOverPlace => Korean
+        ? "짝이 바뀌면 새 업는 사람이 넘겨받는 몸의 자리로 갑니다."
+        : "A new Carrier moves to where the body they take over stood.";
+
+    public static string AboutHandOverItems => Korean
+        ? "짝이 바뀌면 새 업는 사람이 넘겨받는 몸의 아이템을 가집니다."
+        : "A new Carrier takes the items of the body they take over.";
+
+    public static string AboutCarryWeight => Korean
+        ? "업는 사람에게 사람을 업은 무게를 적용합니다."
+        : "Carriers feel the weight of the person they carry.";
+
+    public static string AboutRiderPicksFromBackpack => Korean
+        ? "가방 휠에서 업힌 사람이 아이템을 고릅니다. 끄면 업는 사람이 고릅니다."
+        : "The Rider picks from the backpack wheel; off, the Carrier does.";
+
+    public static string AboutAllowOddPlayerCount => Korean
+        ? "인원이 홀수여도 출발합니다. 남는 사람은 짝 없이 올라갑니다."
+        : "Lets a Run depart with an odd count; one player climbs without a Pair.";
+
     public static string MenuUnpaired => Korean ? "짝 없는 사람" : "Unpaired";
 
     public static string AssignmentCountdown(int seconds) => Korean

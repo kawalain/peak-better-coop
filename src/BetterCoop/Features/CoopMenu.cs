@@ -16,9 +16,8 @@ using Object = UnityEngine.Object;
 namespace BetterCoop.Features;
 
 /// <summary>
-/// The Coop Menu: one "Coop" button in the pause menu opening a page built
-/// from the game's own Controls page and menu buttons, so it looks and
-/// navigates like the game's menus.
+/// The Coop Menu: one "Coop" button in the pause menu opening a page that
+/// keeps the game's own Back button and menu button style.
 /// </summary>
 [HarmonyPatch]
 [HarmonyWrapSafe]
@@ -114,16 +113,38 @@ internal static class CoopMenu
 }
 
 /// <summary>
-/// The Coop Menu page. Its rows are rebuilt when the room's Pairs or the
-/// Troop Leader change, and their texts refresh every frame while it is open.
+/// The Coop Menu page: a panel in the middle of the screen with the title,
+/// a scrolling list of rows, and Back. The rows are rebuilt when the room's
+/// Pairs or the Troop Leader change, and their texts refresh every frame
+/// while it is open.
 /// </summary>
 internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
 {
+    private const float PanelWidth = 1000f;
+
+    private const float Padding = 36f;
+
+    private const float TitleHeight = 96f;
+
+    private const float FooterHeight = 104f;
+
+    private const float RowHeight = 60f;
+
+    private const float DescribedRowHeight = 84f;
+
+    private const float HeaderHeight = 72f;
+
+    private const float RightColumn = 240f;
+
     private readonly List<MenuRow> rows = new();
+
+    private readonly Vector3[] corners = new Vector3[4];
 
     private UIPageHandler handler = null!;
 
-    private Transform list = null!;
+    private RectTransform viewport = null!;
+
+    private RectTransform content = null!;
 
     private Button back = null!;
 
@@ -133,10 +154,14 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
 
     private string shape = string.Empty;
 
+    private GameObject? lastSelected;
+
     /// <summary>
     /// Copies the Controls page while it cannot wake: under an inactive
     /// holder, so the copy's Controls page never runs or registers, and is
-    /// removed before it could.
+    /// removed before it could. Only its Back button is kept; the page lays
+    /// out its own panel, so the Controls page's layout cannot stretch or
+    /// push the rows off the screen.
     /// </summary>
     internal static CoopMenuPage Build(UIPageHandler handler, PauseMenuControlsPage original, Button buttonTemplate)
     {
@@ -146,77 +171,26 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         clone.name = "BetterCoop.CoopMenu";
 
         PauseMenuControlsPage copy = clone.GetComponent<PauseMenuControlsPage>();
-        Transform list = copy.controlsMenuButtonsParent;
         Button back = copy.backButton;
-        GameObject? reset = copy.restoreAllButton != null ? copy.restoreAllButton.gameObject : null;
-        GameObject[] schemeOnly = (copy.keyboardOnlyObjects ?? []).Concat(copy.controllerOnlyObjects ?? []).ToArray();
         Object.DestroyImmediate(copy);
-
         foreach (PauseMenuRebindButton rebind in clone.GetComponentsInChildren<PauseMenuRebindButton>(true))
         {
             Object.DestroyImmediate(rebind.gameObject);
         }
 
-        foreach (Transform child in list.Cast<Transform>().ToList())
-        {
-            Object.DestroyImmediate(child.gameObject);
-        }
-
-        if (reset != null)
-        {
-            reset.SetActive(false);
-        }
-
-        // Key and gamepad hints belong to the Controls page; keep anything holding the list or Back.
-        foreach (GameObject hint in schemeOnly)
-        {
-            if (hint != null && !list.IsChildOf(hint.transform) && !back.transform.IsChildOf(hint.transform))
-            {
-                hint.SetActive(false);
-            }
-        }
-
-        if (list.GetComponent<LayoutGroup>() == null)
-        {
-            VerticalLayoutGroup layout = list.gameObject.AddComponent<VerticalLayoutGroup>();
-            layout.childControlHeight = true;
-            layout.childControlWidth = true;
-            layout.childForceExpandHeight = false;
-            layout.childForceExpandWidth = true;
-            layout.spacing = 8f;
-        }
-
-        TMP_Text? title = clone.GetComponentsInChildren<TMP_Text>(true)
-            .Where(t => !t.transform.IsChildOf(list) && !t.transform.IsChildOf(back.transform))
-            .OrderByDescending(t => t.fontSize)
-            .FirstOrDefault();
-        if (title != null)
-        {
-            foreach (LocalizedText text in title.GetComponents<LocalizedText>())
-            {
-                text.autoSet = false;
-                text.enabled = false;
-            }
-
-            title.text = Strings.CoopMenu;
-        }
+        CoopMenuPage page = clone.AddComponent<CoopMenuPage>();
+        page.handler = handler;
+        page.buttonTemplate = buttonTemplate;
+        page.textTemplate = buttonTemplate.GetComponentInChildren<TMP_Text>(true);
+        page.back = back;
+        page.LayOut((RectTransform)clone.transform);
+        back.onClick = new Button.ButtonClickedEvent();
+        back.onClick.AddListener(page.GoBack);
 
         clone.transform.SetParent(original.transform.parent, false);
         clone.SetActive(false);
         clone.transform.SetSiblingIndex(original.transform.GetSiblingIndex() + 1);
         Object.Destroy(holder);
-
-        CoopMenuPage page = clone.AddComponent<CoopMenuPage>();
-        page.handler = handler;
-        page.list = list;
-        page.back = back;
-        page.buttonTemplate = buttonTemplate;
-        page.textTemplate = buttonTemplate.GetComponentInChildren<TMP_Text>(true);
-        back.onClick = new Button.ButtonClickedEvent();
-        back.onClick.AddListener(page.GoBack);
-        Plugin.Verbose(
-            "Built the Coop Menu: other texts "
-            + string.Join(", ", clone.GetComponentsInChildren<TMP_Text>(true).Where(t => t != title).Select(t => t.name)));
         return page;
     }
 
@@ -226,6 +200,64 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
     public GameObject GetFirstSelectedGameObject() =>
         rows.Select(r => r.Button).FirstOrDefault(b => b != null && b.gameObject.activeInHierarchy)?.gameObject
         ?? back.gameObject;
+
+    /// <summary>A heading over the rows below it, with a rule under it.</summary>
+    internal void AddHeader(Func<string> text, Func<bool>? visible = null)
+    {
+        GameObject root = NewRow(HeaderHeight, TextAnchor.LowerLeft, described: false);
+        RectTransform rule = NewRect("Rule", root.transform);
+        rule.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+        rule.anchorMin = Vector2.zero;
+        rule.anchorMax = new Vector2(1f, 0f);
+        rule.pivot = new Vector2(0.5f, 0f);
+        rule.sizeDelta = new Vector2(0f, 2f);
+        rule.anchoredPosition = Vector2.zero;
+        Image line = rule.gameObject.AddComponent<Image>();
+        line.color = new Color(1f, 1f, 1f, 0.25f);
+        line.raycastTarget = false;
+        Add(new MenuRow(root, text, null, null, null, visible, null, header: true, textTemplate));
+    }
+
+    /// <summary>A label, with a value on the right and a line of explanation under it when given.</summary>
+    internal void AddInfo(Func<string> label, Func<string>? value = null, Func<bool>? visible = null, Func<string>? about = null)
+    {
+        GameObject root = NewRow(about == null ? RowHeight : DescribedRowHeight, TextAnchor.MiddleLeft, about != null);
+        TMP_Text? valueText = value == null ? null : NewText(root.transform, "Value", TextAlignmentOptions.Right, RightColumn, 0.7f);
+        Add(new MenuRow(root, label, about, value, null, visible, null, header: false, textTemplate, valueText));
+    }
+
+    /// <summary>
+    /// A label and its explanation with a button on the right. A button not
+    /// available dims but still answers, to say why.
+    /// </summary>
+    internal void AddAction(
+        Func<string> label,
+        Func<string> button,
+        Action onClick,
+        Func<bool>? visible = null,
+        Func<bool>? available = null,
+        Func<string>? about = null)
+    {
+        GameObject root = NewRow(about == null ? RowHeight : DescribedRowHeight, TextAnchor.MiddleLeft, about != null);
+        Button clone = CoopMenu.CloneButton(buttonTemplate, root.transform, "Action", onClick);
+        LayoutElement? existing = clone.GetComponent<LayoutElement>();
+        LayoutElement size = existing != null ? existing : clone.gameObject.AddComponent<LayoutElement>();
+        size.ignoreLayout = false;
+        size.minWidth = RightColumn;
+        size.preferredWidth = RightColumn;
+        size.minHeight = RowHeight - 8f;
+        size.preferredHeight = RowHeight - 8f;
+        size.flexibleWidth = 0f;
+        size.flexibleHeight = 0f;
+        Add(new MenuRow(root, label, about, button, clone, visible, available, header: false, textTemplate));
+    }
+
+    private static RectTransform NewRect(string name, Transform parent)
+    {
+        var holder = new GameObject(name, typeof(RectTransform));
+        holder.transform.SetParent(parent, false);
+        return (RectTransform)holder.transform;
+    }
 
     private void GoBack()
     {
@@ -254,10 +286,114 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
             {
                 row.Refresh();
             }
+
+            KeepSelectionInView();
         }
         catch (Exception exception)
         {
             Guard.Report("CoopMenuPage.LateUpdate", exception);
+        }
+    }
+
+    /// <summary>A dark panel in the middle of the screen: the title, a scrolling list of rows, and Back.</summary>
+    private void LayOut(RectTransform root)
+    {
+        var backRect = (RectTransform)back.transform;
+        Vector2 backSize = backRect.rect.size;
+
+        RectTransform panel = NewRect("BetterCoop.Panel", root);
+        // The Controls page may lay out its children; the panel keeps its own anchors.
+        panel.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+        panel.anchorMin = new Vector2(0.5f, 0.06f);
+        panel.anchorMax = new Vector2(0.5f, 0.94f);
+        panel.pivot = new Vector2(0.5f, 0.5f);
+        panel.sizeDelta = new Vector2(PanelWidth, 0f);
+        panel.anchoredPosition = Vector2.zero;
+        panel.gameObject.AddComponent<Image>().color = new Color(0.04f, 0.06f, 0.09f, 0.9f);
+
+        RectTransform titleRect = NewRect("Title", panel);
+        titleRect.anchorMin = new Vector2(0f, 1f);
+        titleRect.anchorMax = new Vector2(1f, 1f);
+        titleRect.pivot = new Vector2(0.5f, 1f);
+        titleRect.sizeDelta = new Vector2(0f, TitleHeight);
+        titleRect.anchoredPosition = Vector2.zero;
+        TMP_Text title = Text(titleRect.gameObject, textTemplate.fontSize * 1.1f, TextAlignmentOptions.Center);
+        title.fontStyle = FontStyles.Bold;
+        title.text = Strings.CoopMenu;
+
+        viewport = NewRect("Viewport", panel);
+        viewport.anchorMin = Vector2.zero;
+        viewport.anchorMax = Vector2.one;
+        viewport.offsetMin = new Vector2(Padding, FooterHeight);
+        viewport.offsetMax = new Vector2(-Padding, -TitleHeight);
+        // Catches the mouse wheel over the gaps between rows.
+        viewport.gameObject.AddComponent<Image>().color = Color.clear;
+        viewport.gameObject.AddComponent<RectMask2D>();
+
+        content = NewRect("Content", viewport);
+        content.anchorMin = new Vector2(0f, 1f);
+        content.anchorMax = new Vector2(1f, 1f);
+        content.pivot = new Vector2(0.5f, 1f);
+        content.sizeDelta = Vector2.zero;
+        content.anchoredPosition = Vector2.zero;
+        VerticalLayoutGroup layout = content.gameObject.AddComponent<VerticalLayoutGroup>();
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+        layout.spacing = 6f;
+        layout.padding = new RectOffset(0, 0, 0, 16);
+        content.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        ScrollRect scroll = viewport.gameObject.AddComponent<ScrollRect>();
+        scroll.viewport = viewport;
+        scroll.content = content;
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.inertia = false;
+        scroll.scrollSensitivity = 40f;
+
+        backRect.SetParent(panel, false);
+        backRect.anchorMin = new Vector2(0.5f, 0f);
+        backRect.anchorMax = new Vector2(0.5f, 0f);
+        backRect.pivot = new Vector2(0.5f, 0f);
+        backRect.sizeDelta = backSize;
+        backRect.anchoredPosition = new Vector2(0f, (FooterHeight - backSize.y) / 2f);
+
+        // Everything else of the Controls page stays hidden.
+        foreach (Transform child in root.Cast<Transform>().ToList())
+        {
+            if (child != panel)
+            {
+                child.gameObject.SetActive(false);
+            }
+        }
+    }
+
+    /// <summary>Scrolls a row a gamepad moves to into view.</summary>
+    private void KeepSelectionInView()
+    {
+        GameObject? selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        if (selected == lastSelected)
+        {
+            return;
+        }
+
+        lastSelected = selected;
+        if (selected == null || !selected.transform.IsChildOf(content))
+        {
+            return;
+        }
+
+        ((RectTransform)selected.transform).GetWorldCorners(corners);
+        float bottom = viewport.InverseTransformPoint(corners[0]).y;
+        float top = viewport.InverseTransformPoint(corners[1]).y;
+        Rect view = viewport.rect;
+        float shift = top > view.yMax ? top - view.yMax : bottom < view.yMin ? bottom - view.yMin : 0f;
+        if (shift != 0f)
+        {
+            content.anchoredPosition -= new Vector2(0f, shift);
         }
     }
 
@@ -275,36 +411,8 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
             TroopLeaderRows.Add(this);
         }
 
-        LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)list);
+        LayoutRebuilder.ForceRebuildLayoutImmediate(content);
     }
-
-    /// <summary>A heading over the rows below it.</summary>
-    internal void AddHeader(Func<string> text, Func<bool>? visible = null) =>
-        Add(new MenuRow(NewRow(), text, null, null, visible, null, header: true, textTemplate));
-
-    /// <summary>A label with a value on the right.</summary>
-    internal void AddInfo(Func<string> label, Func<string>? value = null, Func<bool>? visible = null)
-    {
-        GameObject root = NewRow();
-        TMP_Text? valueText = value == null ? null : NewText(root.transform, "Value", TextAlignmentOptions.Right, flexible: false);
-        Add(new MenuRow(root, label, value, null, visible, null, header: false, textTemplate, valueText));
-    }
-
-    /// <summary>A label with a button on the right; a button not available dims but still answers, to say why.</summary>
-    internal void AddAction(Func<string> label, Func<string> button, Action onClick, Func<bool>? visible = null, Func<bool>? available = null)
-    {
-        GameObject root = NewRow();
-        Button clone = CoopMenu.CloneButton(buttonTemplate, root.transform, "Action", onClick);
-        var rect = (RectTransform)buttonTemplate.transform;
-        LayoutElement? existing = clone.GetComponent<LayoutElement>();
-        LayoutElement size = existing != null ? existing : clone.gameObject.AddComponent<LayoutElement>();
-        size.preferredWidth = Mathf.Max(220f, rect.rect.width * 0.7f);
-        size.preferredHeight = RowHeight;
-        size.flexibleWidth = 0f;
-        Add(new MenuRow(root, label, button, clone, visible, available, header: false, textTemplate));
-    }
-
-    private float RowHeight => Mathf.Max(44f, textTemplate.fontSize * 1.5f);
 
     private void Add(MenuRow row)
     {
@@ -312,50 +420,84 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         row.Refresh();
     }
 
-    private GameObject NewRow()
+    /// <summary>A row whose left column holds the label, and its explanation under it when <paramref name="described"/>.</summary>
+    private GameObject NewRow(float height, TextAnchor alignment, bool described)
     {
-        var root = new GameObject("BetterCoop.Row", typeof(RectTransform));
-        root.transform.SetParent(list, false);
-        HorizontalLayoutGroup layout = root.AddComponent<HorizontalLayoutGroup>();
-        layout.childAlignment = TextAnchor.MiddleLeft;
+        RectTransform root = NewRect("BetterCoop.Row", content);
+        HorizontalLayoutGroup layout = root.gameObject.AddComponent<HorizontalLayoutGroup>();
+        layout.childAlignment = alignment;
         layout.childControlWidth = true;
         layout.childControlHeight = true;
         layout.childForceExpandWidth = false;
-        layout.childForceExpandHeight = true;
-        layout.spacing = 16f;
-        LayoutElement size = root.AddComponent<LayoutElement>();
-        size.minHeight = RowHeight;
-        size.preferredHeight = RowHeight;
-        NewText(root.transform, "Label", TextAlignmentOptions.Left, flexible: true);
-        return root;
+        layout.childForceExpandHeight = false;
+        layout.spacing = 24f;
+        layout.padding = new RectOffset(12, 12, 4, 4);
+        LayoutElement size = root.gameObject.AddComponent<LayoutElement>();
+        size.minHeight = height;
+        size.preferredHeight = height;
+
+        RectTransform left = NewRect("Left", root);
+        VerticalLayoutGroup stack = left.gameObject.AddComponent<VerticalLayoutGroup>();
+        stack.childControlWidth = true;
+        stack.childControlHeight = true;
+        stack.childForceExpandWidth = true;
+        stack.childForceExpandHeight = false;
+        stack.childAlignment = TextAnchor.MiddleLeft;
+        stack.spacing = 2f;
+        left.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
+        NewText(left, "Label", TextAlignmentOptions.Left, -1f, 0.7f);
+        if (described)
+        {
+            TMP_Text about = NewText(left, "About", TextAlignmentOptions.Left, -1f, 0.5f);
+            about.color = new Color(about.color.r, about.color.g, about.color.b, about.color.a * 0.65f);
+        }
+
+        return root.gameObject;
     }
 
-    private TMP_Text NewText(Transform parent, string name, TextAlignmentOptions alignment, bool flexible)
+    /// <summary>A line of text; a fixed width when <paramref name="width"/> is positive, else as wide as its column.</summary>
+    private TMP_Text NewText(Transform parent, string name, TextAlignmentOptions alignment, float width, float scale)
     {
-        var holder = new GameObject(name, typeof(RectTransform));
-        holder.transform.SetParent(parent, false);
+        RectTransform rect = NewRect(name, parent);
+        TMP_Text text = Text(rect.gameObject, textTemplate.fontSize * scale, alignment);
+        LayoutElement size = rect.gameObject.AddComponent<LayoutElement>();
+        if (width > 0f)
+        {
+            size.minWidth = width;
+            size.preferredWidth = width;
+            size.flexibleWidth = 0f;
+        }
+        else
+        {
+            size.flexibleWidth = 1f;
+        }
+
+        return text;
+    }
+
+    private TMP_Text Text(GameObject holder, float fontSize, TextAlignmentOptions alignment)
+    {
         TextMeshProUGUI text = holder.AddComponent<TextMeshProUGUI>();
         text.font = textTemplate.font;
         text.fontSharedMaterial = textTemplate.fontSharedMaterial;
-        text.fontSize = textTemplate.fontSize * 0.8f;
+        text.fontSize = fontSize;
         text.color = textTemplate.color;
         text.alignment = alignment;
         text.textWrappingMode = TextWrappingModes.NoWrap;
         text.overflowMode = TextOverflowModes.Ellipsis;
         text.raycastTarget = false;
-        LayoutElement size = holder.AddComponent<LayoutElement>();
-        size.flexibleWidth = flexible ? 1f : 0f;
-        size.minWidth = flexible ? 0f : 120f;
         return text;
     }
 }
 
-/// <summary>One row of the Coop Menu: a label, and a value or a button.</summary>
+/// <summary>One row of the Coop Menu: a label and its explanation, and a value or a button.</summary>
 internal sealed class MenuRow
 {
     private const float UnavailableAlpha = 0.5f;
 
     private readonly Func<string> label;
+
+    private readonly Func<string>? about;
 
     private readonly Func<string>? right;
 
@@ -365,6 +507,8 @@ internal sealed class MenuRow
 
     private readonly TMP_Text labelText;
 
+    private readonly TMP_Text? aboutText;
+
     private readonly TMP_Text? rightText;
 
     private readonly Color rightColor;
@@ -372,6 +516,7 @@ internal sealed class MenuRow
     public MenuRow(
         GameObject root,
         Func<string> label,
+        Func<string>? about,
         Func<string>? right,
         Button? button,
         Func<bool>? visible,
@@ -383,14 +528,17 @@ internal sealed class MenuRow
         Root = root;
         Button = button;
         this.label = label;
+        this.about = about;
         this.right = right;
         this.visible = visible;
         this.available = available;
-        labelText = root.transform.Find("Label").GetComponent<TMP_Text>();
+        Transform left = root.transform.Find("Left");
+        labelText = left.Find("Label").GetComponent<TMP_Text>();
+        aboutText = left.Find("About")?.GetComponent<TMP_Text>();
         if (header)
         {
             labelText.fontStyle = FontStyles.Bold;
-            labelText.fontSize = template.fontSize * 0.9f;
+            labelText.fontSize = template.fontSize * 0.8f;
         }
 
         rightText = button != null ? button.GetComponentInChildren<TMP_Text>(true) : valueText;
@@ -416,6 +564,11 @@ internal sealed class MenuRow
         }
 
         Set(labelText, label());
+        if (aboutText != null && about != null)
+        {
+            Set(aboutText, about());
+        }
+
         if (rightText != null && right != null)
         {
             Set(rightText, right());
@@ -465,15 +618,24 @@ internal static class PlayerRows
         page.AddAction(
             () => Strings.MenuRolePreference,
             () => Strings.RoleName(CoopConfig.RolePreference.Value),
-            CycleRolePreference);
+            CycleRolePreference,
+            about: () => Strings.AboutRolePreference);
         page.AddAction(
             PartnerLine,
             () => RoleSwap.Pending ? Strings.CancelSwap : Strings.SwapPlaces,
             RoleSwap.Toggle,
             visible: () => PairRoster.TryGetPair(Character.localCharacter, out _),
-            available: () => RoleSwap.Pending || RoleSwap.CanRequest(out _));
-        page.AddInfo(() => Strings.MenuNoPartner, visible: () => PairRoster.Formed && !PairRoster.TryGetPair(Character.localCharacter, out _));
-        page.AddInfo(() => Strings.MenuNextShuffle, NextShuffle, visible: () => PairRoster.Formed);
+            available: () => RoleSwap.Pending || RoleSwap.CanRequest(out _),
+            about: () => Strings.AboutSwapPlaces);
+        page.AddInfo(
+            () => Strings.MenuNoPartner,
+            visible: () => PairRoster.Formed && !PairRoster.TryGetPair(Character.localCharacter, out _),
+            about: () => Strings.AboutNoPartner);
+        page.AddInfo(
+            () => Strings.MenuNextShuffle,
+            NextShuffle,
+            visible: () => PairRoster.Formed,
+            about: () => Strings.AboutNextShuffle);
         page.AddInfo(() => Strings.MenuPairsForm, visible: () => !PairRoster.Formed);
 
         if (!PairRoster.Formed)
@@ -567,41 +729,47 @@ internal static class TroopLeaderRows
             () => Strings.MenuGo,
             () => Order(PairShuffle.Request(OperationKind.OrderedShuffle)),
             visible: () => PairRoster.Formed,
-            available: () => !PairShuffle.Busy);
+            available: () => !PairShuffle.Busy,
+            about: () => Strings.AboutShuffleNow);
         page.AddAction(
             () => Strings.MenuRecover,
             () => Strings.MenuGo,
             CarryKeeper.RequestRecovery,
-            visible: () => PairRoster.Formed);
+            visible: () => PairRoster.Formed,
+            about: () => Strings.AboutRecover);
         page.AddAction(
             () => Strings.MenuAssignCarrier,
             () => PickName(assignCarrier),
             () => assignCarrier = NextPick(assignCarrier),
-            visible: () => PairRoster.Formed);
+            visible: () => PairRoster.Formed,
+            about: () => Strings.AboutAssignCarrier);
         page.AddAction(
             () => Strings.MenuAssignRider,
             () => PickName(assignRider),
             () => assignRider = NextPick(assignRider),
-            visible: () => PairRoster.Formed);
+            visible: () => PairRoster.Formed,
+            about: () => Strings.AboutAssignRider);
         page.AddAction(
             () => Strings.MenuAssign,
             () => Strings.MenuGo,
             Assign,
             visible: () => PairRoster.Formed,
-            available: () => !PairShuffle.Busy && PairShuffle.CanAssign(assignCarrier, assignRider));
+            available: () => !PairShuffle.Busy && PairShuffle.CanAssign(assignCarrier, assignRider),
+            about: () => Strings.AboutAssign);
 
         page.AddHeader(() => Strings.MenuRunRules);
-        Toggle(page, () => Strings.RuleCampfireShuffle, CoopConfig.CampfireShuffle);
-        Toggle(page, () => Strings.RuleTimedShuffle, CoopConfig.TimedShuffle);
+        Toggle(page, () => Strings.RuleCampfireShuffle, () => Strings.AboutCampfireShuffle, CoopConfig.CampfireShuffle);
+        Toggle(page, () => Strings.RuleTimedShuffle, () => Strings.AboutTimedShuffle, CoopConfig.TimedShuffle);
         page.AddAction(
             () => Strings.RuleTimedShuffleInterval,
             () => Strings.Minutes(ShuffleInterval.Clamp(CoopConfig.TimedShuffleInterval.Value)),
-            NextInterval);
-        Toggle(page, () => Strings.RuleHandOverPlace, CoopConfig.HandOverPlace);
-        Toggle(page, () => Strings.RuleHandOverItems, CoopConfig.HandOverItems);
-        Toggle(page, () => Strings.RuleCarryWeight, CoopConfig.CarryWeight);
-        Toggle(page, () => Strings.RuleRiderPicksFromBackpack, CoopConfig.RiderPicksFromBackpack);
-        Toggle(page, () => Strings.RuleAllowOddPlayerCount, CoopConfig.AllowOddPlayerCount);
+            NextInterval,
+            about: () => Strings.AboutTimedShuffleInterval);
+        Toggle(page, () => Strings.RuleHandOverPlace, () => Strings.AboutHandOverPlace, CoopConfig.HandOverPlace);
+        Toggle(page, () => Strings.RuleHandOverItems, () => Strings.AboutHandOverItems, CoopConfig.HandOverItems);
+        Toggle(page, () => Strings.RuleCarryWeight, () => Strings.AboutCarryWeight, CoopConfig.CarryWeight);
+        Toggle(page, () => Strings.RuleRiderPicksFromBackpack, () => Strings.AboutRiderPicksFromBackpack, CoopConfig.RiderPicksFromBackpack);
+        Toggle(page, () => Strings.RuleAllowOddPlayerCount, () => Strings.AboutAllowOddPlayerCount, CoopConfig.AllowOddPlayerCount);
     }
 
     /// <summary>Says why a Pair change the Troop Leader ordered did not start.</summary>
@@ -617,8 +785,8 @@ internal static class TroopLeaderRows
     /// A Run Rule as a switch. It writes the Troop Leader's own setting, which
     /// is saved and published to the room as any change in the config editor is.
     /// </summary>
-    private static void Toggle(CoopMenuPage page, Func<string> label, BepInEx.Configuration.ConfigEntry<bool> rule) =>
-        page.AddAction(label, () => rule.Value ? Strings.On : Strings.Off, () => rule.Value = !rule.Value);
+    private static void Toggle(CoopMenuPage page, Func<string> label, Func<string> about, BepInEx.Configuration.ConfigEntry<bool> rule) =>
+        page.AddAction(label, () => rule.Value ? Strings.On : Strings.Off, () => rule.Value = !rule.Value, about: about);
 
     private static void Assign()
     {
