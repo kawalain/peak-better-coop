@@ -73,6 +73,17 @@ internal static class ControlSplit
     internal static bool SoloPairWanted =>
         CoopConfig.SoloPair.Value && PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.PlayerCount == 1;
 
+    /// <summary>
+    /// Whether the local player has the Carrier's side of a Shared Body: a
+    /// Carrier with a living Rider, or Solo Pair, where the Rider is the player too.
+    /// </summary>
+    internal static bool LocalCarrier(out Character rider, out bool solo)
+    {
+        Mode mode = CurrentMode(out rider);
+        solo = mode == Mode.Solo;
+        return mode == Mode.Carrier || solo;
+    }
+
     private static Mode CurrentMode(out Character partner)
     {
         Character local = Character.localCharacter;

@@ -45,5 +45,7 @@ key never moves an action to the other player.
   item spawned into the Rider's hand) is dropped at the Shared Body for the
   Carrier to pick up.
 - The Shared Body has the Carrier's three hand slots and back slot. The back
-  slot holds a backpack, fanny pack, jetpack, or rocket pack as usual; the
-  back-slot key brings that item to hand and never puts the Rider down.
+  slot holds a backpack, fanny pack, jetpack, or rocket pack as usual; a tap of
+  the back-slot key brings that item to hand and never puts the Rider down,
+  and holding it opens the Carrier's own backpack wheel, which the game
+  otherwise offers only for a backpack on the ground or on someone else.
