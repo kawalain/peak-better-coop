@@ -30,6 +30,9 @@ internal sealed class RelayedPresses
         initialized = false;
     }
 
+    /// <summary>Drops the presses not yet played.</summary>
+    public void Discard() => applied = latest;
+
     /// <summary>Advances one game frame; true when a press plays this frame.</summary>
     public bool Step()
     {

@@ -248,8 +248,20 @@ internal static class ControlSplit
         input.scrollBackwardWasPressed = input.scrollForwardWasPressed = false;
         input.scrollBackwardIsPressed = input.scrollForwardIsPressed = false;
         input.scrollInput = 0f;
-        if (!active || !receivedAny)
+        if (!receivedAny)
         {
+            return;
+        }
+
+        if (!active)
+        {
+            // A menu or wheel blocks the Carrier's input; the game drops the
+            // Carrier's own clicks meanwhile, so the Rider's do not pile up.
+            PrimaryIn.Discard();
+            SecondaryIn.Discard();
+            ScrollForwardPresses.Discard();
+            ScrollBackwardPresses.Discard();
+            scrollTotalApplied = scrollTotalIn;
             return;
         }
 

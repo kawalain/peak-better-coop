@@ -27,6 +27,17 @@ public class RelayedPressesTests
     }
 
     [Fact]
+    public void Discarded_presses_are_not_replayed()
+    {
+        var presses = new RelayedPresses();
+        presses.Receive(0);
+        presses.Receive(4);
+        presses.Discard();
+
+        Assert.False(presses.Step());
+    }
+
+    [Fact]
     public void Counter_survives_wraparound()
     {
         var presses = new RelayedPresses();

@@ -71,17 +71,49 @@ public class RelayedButtonTests
     }
 
     [Fact]
-    public void Edges_wait_while_the_carrier_cannot_take_input()
+    public void Edges_arriving_together_play_one_per_frame()
     {
         var button = new RelayedButton();
         button.Receive(State(false, 0, 0));
         button.Step();
 
-        // Two clicks arrive while the Carrier's menu is open (no Step).
         button.Receive(State(false, 2, 2));
 
         bool[] pressed = Enumerable.Range(0, 5).Select(_ => button.Step().WasPressed).ToArray();
         Assert.Equal([true, false, true, false, false], pressed);
+    }
+
+    [Fact]
+    public void Clicks_while_the_carrier_cannot_take_input_are_dropped()
+    {
+        var button = new RelayedButton();
+        button.Receive(State(false, 0, 0));
+        button.Step();
+
+        // Two clicks arrive while the Carrier's menu is open.
+        button.Receive(State(false, 2, 2));
+        button.Discard();
+
+        Assert.All(Enumerable.Range(0, 5).Select(_ => button.Step()), frame =>
+        {
+            Assert.False(frame.WasPressed);
+            Assert.False(frame.IsPressed);
+        });
+    }
+
+    [Fact]
+    public void A_hold_through_a_menu_resumes_without_a_new_press()
+    {
+        var button = new RelayedButton();
+        button.Receive(State(false, 0, 0));
+        button.Step();
+
+        button.Receive(State(true, 1, 0));
+        button.Discard();
+        ButtonFrame frame = button.Step();
+
+        Assert.False(frame.WasPressed);
+        Assert.True(frame.IsPressed);
     }
 
     [Fact]

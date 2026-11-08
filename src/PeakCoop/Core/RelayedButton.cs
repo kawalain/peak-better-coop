@@ -58,6 +58,17 @@ internal sealed class RelayedButton
         initialized = false;
     }
 
+    /// <summary>
+    /// Drops the edges not yet played and takes the latest held state, as the
+    /// game drops a player's own input while a menu blocks it.
+    /// </summary>
+    public void Discard()
+    {
+        appliedPresses = latest.Presses;
+        appliedReleases = latest.Releases;
+        held = latest.Down;
+    }
+
     /// <summary>Advances one game frame.</summary>
     public ButtonFrame Step()
     {
