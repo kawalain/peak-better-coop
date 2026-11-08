@@ -16,7 +16,7 @@ internal enum RunRule
 }
 
 /// <summary>
-/// What the Coop Menu shows and asks for: the room as the local player sees
+/// What the Roster shows and asks for: the room as the local player sees
 /// it. The game's room answers in play; a made-up room answers in the Zoo.
 /// Players are named by actor number.
 /// </summary>
@@ -89,7 +89,7 @@ internal static class CoopRooms
     public static IEnumerable<int> Unpaired(this ICoopRoom room) =>
         room.Players.Where(a => !room.Pairs.Any(p => p.Contains(a)));
 
-    /// <summary>What decides the Coop Menu's rows: the room, the Pairs, and who leads.</summary>
+    /// <summary>What decides the Roster's rows: the room, the Pairs, and who leads.</summary>
     public static string Shape(this ICoopRoom room)
     {
         if (!room.InRoom)

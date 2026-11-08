@@ -60,7 +60,7 @@ theirs from their own Gale profile.
 
 Debug builds (`#if DEBUG`, never in a test build or on Thunderstore) add a
 Zoo button to the pause menu. The Zoo shows every paper component in
-`Ui/Paper/` in its states. It also opens the Coop Menu on a `FakeRoom` of any
+`Ui/Paper/` in its states. It also opens the Roster on a `FakeRoom` of any
 size, led by you or not, which changes its Pairs by the real rules without
 touching the config, the room, or the network. Add a new paper component to
 the Zoo along with it.

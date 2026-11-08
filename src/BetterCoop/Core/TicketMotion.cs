@@ -3,7 +3,7 @@ using System;
 namespace BetterCoop.Core;
 
 /// <summary>
-/// How the Coop Menu's paper rises and sinks, like a ticket out of the
+/// How the Roster's paper rises and sinks, like a ticket out of the
 /// airport kiosk: it shoots up from below, passes its place a little while
 /// it tips, and settles; it leaves with a small lift before it drops away.
 /// Offsets are fractions of the travel, negative below the panel's place;

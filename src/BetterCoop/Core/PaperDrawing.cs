@@ -35,7 +35,7 @@ internal readonly struct Ink
 }
 
 /// <summary>
-/// The Coop Menu's paper as an SVG drawing: a card like the game's passport
+/// The Roster's paper as an SVG drawing: a card like the game's passport
 /// and boarding pass, drawn from shapes rather than taken from the game's
 /// textures. A rounded sheet of cream paper with a hard drop shadow like the
 /// game's buttons, a near-black outline, faint watercolour blotches and

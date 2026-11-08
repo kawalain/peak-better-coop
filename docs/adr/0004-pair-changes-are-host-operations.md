@@ -39,7 +39,7 @@ not done and runs it.
   by the players' user ids, since a reconnecting player gets a new actor
   number; when both are Unpaired again they pair first, in their former roles,
   and the left-behind member does not wait for them otherwise.
-- A Pair Assignment, which the Troop Leader orders from the Coop Menu, is an
+- A Pair Assignment, which the Troop Leader orders from the Roster, is an
   operation too. It moves no items or places: the named Carrier keeps their
   body, the Rider comes to it, and the two former partners are left Unpaired
   for a Late Pairing. A Pair Shuffle or Role Swap the Troop Leader orders

@@ -45,7 +45,7 @@ internal static class Strings
         ? $"코옵: {seconds}초 뒤 짝을 이어 줍니다."
         : $"Coop: pairing you up in {seconds}...";
 
-    public static string CoopMenu => Korean ? "코옵" : "Coop";
+    public static string Roster => Korean ? "편성표" : "Roster";
 
     public static string MenuRolePreference => Korean ? "원하는 역할" : "Role Preference";
 
@@ -53,7 +53,7 @@ internal static class Strings
     {
         Core.RolePreference.Carrier => Korean ? "업는 사람" : "Carrier",
         Core.RolePreference.Rider => Korean ? "업힌 사람" : "Rider",
-        _ => Korean ? "무작위" : "Random",
+        _ => Korean ? "상관없음" : "Either",
     };
 
     public static string MenuPartner(string partner, bool carrying) => Korean
@@ -84,7 +84,7 @@ internal static class Strings
 
     public static string MenuShuffleNowLabel => Korean ? "지금 짝 섞기" : "Shuffle Pairs now";
 
-    public static string MenuRecover => Korean ? "모든 짝 다시 붙이기" : "Re-attach every Pair";
+    public static string MenuRecover => Korean ? "모든 짝 다시 업히기" : "Re-carry every Pair";
 
     public static string MenuGo => Korean ? "실행" : "Go";
 
@@ -110,7 +110,7 @@ internal static class Strings
 
     public static string RuleHandOverItems => Korean ? "몸 인계: 아이템" : "Hand Over Items";
 
-    public static string RuleCarryWeight => Korean ? "사람 무게 적용" : "Carry Weight";
+    public static string RuleCarryWeight => Korean ? "업은 사람 무게" : "Carry Weight";
 
     public static string RuleRiderPicksFromBackpack => Korean ? "가방은 업힌 사람이 고르기" : "Rider Picks From Backpack";
 
@@ -125,7 +125,7 @@ internal static class Strings
         : "When both of you ask, you trade Carrier and Rider.";
 
     public static string AboutNoPartner => Korean
-        ? "짝 없는 사람이 생기거나 짝을 섞으면 짝이 생깁니다."
+        ? "다른 짝 없는 사람과 짝 이어주기가 되거나, 짝 섞기 때 짝이 생깁니다."
         : "You get a partner when another player is free or the Pairs shuffle.";
 
     public static string AboutNextShuffle => Korean
@@ -173,7 +173,7 @@ internal static class Strings
         : "A new Carrier takes the items of the body they take over.";
 
     public static string AboutCarryWeight => Korean
-        ? "업는 사람에게 사람을 업은 무게를 적용합니다."
+        ? "업는 사람이 업힌 사람의 무게를 느낍니다."
         : "Carriers feel the weight of the person they carry.";
 
     public static string AboutRiderPicksFromBackpack => Korean
@@ -209,12 +209,12 @@ internal static class Strings
         : "Coop: you can swap places only while you and your partner are alive on the island.";
 
     public static string SwapAsked(string partner) => Korean
-        ? $"코옵: {partner} 님에게 자리 바꾸기를 청했습니다. 30초 안에 상대도 누르면 바꿉니다."
+        ? $"코옵: {partner} 님에게 자리 바꾸기를 요청했습니다. 30초 안에 상대도 누르면 바꿉니다."
         : $"Coop: asked {partner} to swap places. It happens if they agree within 30 seconds.";
 
     public static string SwapOffered(string partner) => Korean
-        ? $"코옵: {partner} 님이 자리를 바꾸고 싶어 합니다. ESC에서 자리 바꾸기를 누르면 바꿉니다."
-        : $"Coop: {partner} wants to swap places. Press Swap Places in the ESC menu to agree.";
+        ? $"코옵: {partner} 님이 자리를 바꾸고 싶어 합니다. ESC → 편성표에서 자리 바꾸기를 누르면 바꿉니다."
+        : $"Coop: {partner} wants to swap places. Press Swap Places in ESC → Roster to agree.";
 
     public static string SwapWithdrawn(string partner) => Korean
         ? $"코옵: {partner} 님의 자리 바꾸기 요청이 취소되었습니다."
@@ -225,7 +225,7 @@ internal static class Strings
         : "Coop: your request to swap places is cancelled.";
 
     public static string SwapExpired => Korean
-        ? "코옵: 30초 동안 답이 없어 자리 바꾸기 요청을 거두었습니다."
+        ? "코옵: 30초 동안 답이 없어 자리 바꾸기 요청이 취소되었습니다."
         : "Coop: no answer in 30 seconds, so your request to swap places lapsed.";
 
     public static string SwapCancelledByShuffle => Korean
@@ -241,8 +241,8 @@ internal static class Strings
         : "Coop: a Rider cannot wear a back item, so it was dropped.";
 
     public static string Recovered => Korean
-        ? "코옵: 분대장이 모든 짝의 업기 상태를 되돌렸습니다."
-        : "Coop: the Troop Leader repaired every Pair's carry.";
+        ? "코옵: 분대장이 모든 짝을 다시 업히고 업힌 사람을 깨웠습니다."
+        : "Coop: the Troop Leader re-carried every Pair and woke every Rider.";
 
     public static string SoloPairOn(int latencyMs) => Korean
         ? $"코옵: 1인 짝 테스트를 켰습니다. (마우스 지연 {latencyMs}ms)"

@@ -23,7 +23,7 @@ and come back together.
 - Pairs change when a campfire is lit, and optionally on a timer. A Pair can
   also trade roles with **Swap Places**. Items and statuses carry over;
   nothing is lost.
-- **Coop** in the ESC menu lists the Pairs and the time to the next shuffle,
+- **Roster** in the ESC menu lists the Pairs and the time to the next shuffle,
   and is where you swap places and set the role you would like.
 
 ## Installing
@@ -35,15 +35,15 @@ the Troop Leader (host) allows an odd one.
 
 ## Settings
 
-In the **Coop** page of the ESC menu, or in your mod manager's config editor
+In the **Roster** of the ESC menu, or in your mod manager's config editor
 under `in.kawala.bettercoop`. The Troop Leader's values apply to the room,
 except your own Role Preference and the Debug settings. The Troop Leader's
-Coop page can also shuffle the Pairs at once, swap any Pair's roles, pair two
-chosen players, and re-attach every Pair.
+Roster can also shuffle the Pairs at once, swap any Pair's roles, pair two
+chosen players, and re-carry every Pair.
 
 | Setting | Default | |
 | --- | --- | --- |
-| Role Preference | Random | Carrier, Rider, or Random. |
+| Role Preference | Random | Carrier, Rider, or Random for either. |
 | Rider Picks From Backpack | On | Off: the Carrier picks from the backpack wheel. |
 | Allow Odd Player Count | Off | The extra player plays without a Pair. |
 | Campfire Shuffle | On | New Pairs at each campfire. |

@@ -5,7 +5,7 @@ using System.Linq;
 namespace BetterCoop.Core;
 
 /// <summary>
-/// A made-up room for trying the Coop Menu without other players: it holds
+/// A made-up room for trying the Roster without other players: it holds
 /// its players, Pairs, and Run Rules in memory and changes its Pairs with
 /// the same rules a real room uses, at once rather than over the network.
 /// Nothing it does reaches the game, the config, or the room.

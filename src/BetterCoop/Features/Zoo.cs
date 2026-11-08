@@ -10,7 +10,7 @@ namespace BetterCoop.Features;
 
 /// <summary>
 /// The Zoo, in debug builds only: a pause menu page that shows every paper
-/// component in its states, and opens the Coop Menu on a made-up room of any
+/// component in its states, and opens the Roster on a made-up room of any
 /// size, led by the local player or not, so its Pair changes can be tried
 /// without other players. Nothing here reaches the config, the room, or the
 /// network.
@@ -21,7 +21,7 @@ internal sealed class ZooPage : PaperPage
 
     private static readonly int[] Counts = Enumerable.Range(1, 12).ToArray();
 
-    private CoopMenuPage example = null!;
+    private RosterPage example = null!;
 
     private bool toggle = true;
 
@@ -40,7 +40,7 @@ internal sealed class ZooPage : PaperPage
     public static ZooPage Build(UIPageHandler handler, PauseMenuControlsPage controls, Button template, UIPage parent)
     {
         ZooPage zoo = Create<ZooPage>(handler, controls, template, parent, () => "Zoo");
-        zoo.example = Create<CoopMenuPage>(handler, controls, template, zoo, () => $"{Strings.CoopMenu} (Zoo)");
+        zoo.example = Create<RosterPage>(handler, controls, template, zoo, () => $"{Strings.Roster} (Zoo)");
         return zoo;
     }
 
@@ -80,7 +80,7 @@ internal sealed class ZooPage : PaperPage
             about: () => T("누를 때마다 다음 값으로 넘어갑니다.", "Each press steps to the next value."));
         list.Action(() => T("종이 다시 올리기", "Raise the paper again"), () => T("재생", "Play"), Rise);
 
-        list.Header(() => T("코옵 메뉴 예제", "Coop Menu examples"));
+        list.Header(() => T("편성표 예제", "Roster examples"));
         list.Cycle(
             () => T("인원", "Players"),
             () => players,
@@ -95,8 +95,8 @@ internal sealed class ZooPage : PaperPage
             () => T("열기", "Open"),
             OpenExample,
             about: () => T(
-                "실제 규칙으로 짝을 섞고 지정하는 가짜 방에서 코옵 메뉴를 엽니다. 게임, 설정, 네트워크에는 닿지 않습니다.",
-                "Opens the Coop Menu on a made-up room that shuffles and assigns Pairs by the real rules. It never touches the game, the config, or the network."));
+                "실제 규칙으로 짝을 섞고 지정하는 가짜 방에서 편성표를 엽니다. 게임, 설정, 네트워크에는 닿지 않습니다.",
+                "Opens the Roster on a made-up room that shuffles and assigns Pairs by the real rules. It never touches the game, the config, or the network."));
 
         list.Header(() => T("긴 목록", "Long list"));
         for (int i = 1; i <= 20; i++)

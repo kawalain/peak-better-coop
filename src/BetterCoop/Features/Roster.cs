@@ -14,13 +14,13 @@ using Zorro.UI;
 namespace BetterCoop.Features;
 
 /// <summary>
-/// The Coop Menu: one "Coop" button in the pause menu opening a paper page
+/// The Roster: one button in the pause menu opening a paper page
 /// that keeps the game's own Back button and menu button style. Debug builds
 /// also get the Zoo next to it.
 /// </summary>
 [HarmonyPatch]
 [HarmonyWrapSafe]
-internal static class CoopMenu
+internal static class Roster
 {
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PauseMenuMainPage), "Start")]
@@ -30,23 +30,23 @@ internal static class CoopMenu
         PauseMenuControlsPage? controls = handler != null ? handler.GetComponentInChildren<PauseMenuControlsPage>(true) : null;
         if (handler == null || controls == null)
         {
-            Plugin.Log.LogWarning("The pause menu has no Controls page to build the Coop Menu from.");
+            Plugin.Log.LogWarning("The pause menu has no Controls page to build the Roster from.");
             return;
         }
 
         // Pages are built on first use, after the pause menu has started: its
         // handler registers the pages under it by type, one each, and would
-        // fail on two of a type (the Coop Menu and the Zoo's example of it).
+        // fail on two of a type (the Roster and the Zoo's example of it).
         Button template = __instance.m_settingsButton;
-        CoopMenuPage? page = null;
-        Button coop = AddButton(
+        RosterPage? page = null;
+        Button roster = AddButton(
             __instance,
-            Strings.CoopMenu,
-            () => (page ??= PaperPage.Create<CoopMenuPage>(handler, controls, template, __instance, () => Strings.CoopMenu)).Open(),
+            Strings.Roster,
+            () => (page ??= PaperPage.Create<RosterPage>(handler, controls, template, __instance, () => Strings.Roster)).Open(),
             after: __instance.m_resumeButton);
 #if DEBUG
         ZooPage? zoo = null;
-        AddButton(__instance, "Zoo", () => (zoo ??= ZooPage.Build(handler, controls, template, __instance)).Open(), after: coop);
+        AddButton(__instance, "Zoo", () => (zoo ??= ZooPage.Build(handler, controls, template, __instance)).Open(), after: roster);
 #endif
     }
 
@@ -91,12 +91,12 @@ internal static class CoopMenu
 }
 
 /// <summary>
-/// The Coop Menu page: the room's Pairs and the local player's own Pair and
+/// The Roster page: the room's Pairs and the local player's own Pair and
 /// Role Preference, and for the Troop Leader the Pair changes and the Run
 /// Rules. It shows whatever room it is given: the game's own, or a made-up
 /// one in the Zoo.
 /// </summary>
-internal sealed class CoopMenuPage : PaperPage
+internal sealed class RosterPage : PaperPage
 {
     private ICoopRoom room = new LiveRoom();
 
@@ -308,7 +308,7 @@ internal static class TroopLeaderRows
 }
 
 /// <summary>
-/// The game's own room as the Coop Menu sees it. A Run Rule is the Troop
+/// The game's own room as the Roster sees it. A Run Rule is the Troop
 /// Leader's own setting, saved and published to the room as any change in
 /// the config editor is.
 /// </summary>

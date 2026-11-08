@@ -36,10 +36,10 @@ _Avoid_: host, driver, keyboard side, 운반자
 The member of a Pair who is carried; their mouse drives the shared body.
 _Avoid_: climber, passenger, carried player, mouse side, 탑승자
 
-**Shared Body**:
+**Shared Body** (공유 몸):
 The Carrier's character, which both members of a Pair control at once.
 
-**Control Split**:
+**Control Split** (조작 분담):
 The rule that divides the Shared Body's game actions between the Pair: look,
 use, secondary use, scroll, and ping belong to the Rider, and every other
 action belongs to the Carrier. With default bindings this is mouse to the Rider
@@ -59,8 +59,8 @@ Forming the Pairs for the first time in a Run, when the party arrives on the
 island.
 _Avoid_: 짝짓기, 짝 짓기, matchmaking
 
-**Role Preference**:
-A player's stated wish to be Carrier, Rider, or either (Random) in a Pair
+**Role Preference** (원하는 역할):
+A player's stated wish to be Carrier, Rider, or either (상관없음; stored as Random) in a Pair
 Formation, a Pair Shuffle, or a Late Pairing.
 
 **Pair Shuffle** (짝 섞기):
@@ -83,10 +83,10 @@ carries. Their former partners become Unpaired Players, and the next Pair
 Shuffle mixes the assigned Pair like any other.
 _Avoid_: manual pairing, forced pair
 
-**Campfire Shuffle**:
+**Campfire Shuffle** (모닥불 짝 섞기):
 A Pair Shuffle when a campfire is lit and the Run moves on to the next segment.
 
-**Timed Shuffle**:
+**Timed Shuffle** (시간마다 짝 섞기):
 A Pair Shuffle at a fixed interval set by the Troop Leader.
 
 **Body Handover** (몸 인계):
@@ -100,7 +100,7 @@ The Carrier and Rider of a Pair trading roles when both ask for it or the
 Troop Leader orders it, with a Body Handover to the new Carrier.
 _Avoid_: role switch, flip
 
-**Shared Life**:
+**Shared Life** (생사 공유):
 The rule that the Rider lives and dies with the Shared Body: the Rider dies
 when the Carrier dies, comes back when the Carrier comes back, and never passes
 out or dies alone. Reviving either member revives both.
@@ -114,11 +114,11 @@ _Avoid_: solo player, odd player
 
 ### Controls
 
-**Coop Menu** (코옵 메뉴):
-The page of the pause menu for the mod: every player sees the Pairs and the
+**Roster** (편성표):
+The page of the pause menu for the mod, drawn as a paper form: every player sees the Pairs and the
 Unpaired Players, sets their Role Preference, and asks for a Role Swap; the
 Troop Leader also changes the Pairs and the Run Rules there.
-_Avoid_: coop panel, admin menu
+_Avoid_: Coop Menu, 코옵 메뉴, coop panel, admin menu
 
 **Run Rules** (원정 규칙):
 The Troop Leader's settings that hold for everyone in the room: shuffles,

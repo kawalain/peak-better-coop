@@ -42,7 +42,7 @@ internal static class CoopConfig
             "Pair",
             "Role Preference",
             Core.RolePreference.Random,
-            "Your wish when Pairs are formed: Carrier (keyboard), Rider (mouse), or Random. Conflicts are settled at random.");
+            "Your wish when Pairs are formed: Carrier (keyboard), Rider (mouse), or Random for either. Conflicts are settled at random.");
 
         RiderPicksFromBackpack = config.Bind(
             "Pair",
