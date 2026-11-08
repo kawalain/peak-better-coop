@@ -68,6 +68,7 @@ positive and restore it, or reinstall.
 
 - [Sappheiros009](https://github.com/Sappheiros009/CoopMod): the original
   idea, from Co-op Mod.
-- [Puro](https://steamcommunity.com/profiles/76561198105109754): ideas.
+- [Puro](https://steamcommunity.com/profiles/76561198105109754): ideas and
+  testing.
 - [kawalain](https://steamcommunity.com/profiles/76561198436496102):
   maintainer.

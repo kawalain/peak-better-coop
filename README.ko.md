@@ -66,5 +66,5 @@ Role Preference와 Debug 설정을 빼면 분대장의 값이 방 전체에 적�
 
 - [Sappheiros009](https://github.com/Sappheiros009/CoopMod): Co-op Mod의
   원래 아이디어.
-- [Puro](https://steamcommunity.com/profiles/76561198105109754): 아이디어 제공.
+- [Puro](https://steamcommunity.com/profiles/76561198105109754): 아이디어 제공, 테스터.
 - [kawalain](https://steamcommunity.com/profiles/76561198436496102): 관리자.
