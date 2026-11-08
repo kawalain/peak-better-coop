@@ -144,6 +144,8 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
             Refill();
         }
 
+        // The paper and its rules show drawn from the first frame.
+        VectorView.DrawAll(panel);
         Rise();
     }
 
@@ -185,6 +187,8 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         List.Clear();
         Fill(List);
         LayoutRebuilder.ForceRebuildLayoutImmediate(content);
+        // New rows' drawings show at once, not their fallback colour for a frame.
+        VectorView.DrawAll(content);
     }
 
     private void GoBack()

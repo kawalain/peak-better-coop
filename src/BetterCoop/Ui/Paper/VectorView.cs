@@ -10,9 +10,10 @@ namespace BetterCoop.Ui.Paper;
 /// <summary>
 /// Shows an SVG drawing made for its own size: the game's vector graphics
 /// parse and tessellate it into triangles, drawn into a multisampled texture
-/// at the size the view takes on screen, and drawn again when that size
-/// changes. Until the drawing is ready, or if it cannot be made, the view
-/// shows its fallback colour.
+/// at the size the view takes on screen, and drawn again when that size or
+/// the drawing changes. Views showing the same drawing at the same size
+/// share one texture, so a view made anew shows at once. Until the drawing
+/// is ready, or if it cannot be made, the view shows its fallback colour.
 /// </summary>
 [RequireComponent(typeof(RawImage))]
 internal sealed class VectorView : MonoBehaviour
@@ -21,15 +22,20 @@ internal sealed class VectorView : MonoBehaviour
 
     private const int MaxSide = 4096;
 
+    /// <summary>Textures by drawing and pixel size, with how many views show each.</summary>
+    private static readonly Dictionary<string, Shared> Textures = new();
+
     private static Material? material;
 
-    private RawImage image = null!;
+    private RawImage? image;
 
-    private RenderTexture? texture;
+    private string? key;
 
     private Vector2 drawnSize;
 
     private float drawnScale;
+
+    private bool stale;
 
     private bool failed;
 
@@ -51,51 +57,102 @@ internal sealed class VectorView : MonoBehaviour
         return view;
     }
 
-    /// <summary>Draws again on the next frame, as when what the drawing shows has changed.</summary>
-    public void Redraw() => drawnSize = Vector2.zero;
-
-    private void Awake()
+    /// <summary>Draws every view under <paramref name="root"/> now, once its layout is known, so none shows its fallback for a frame.</summary>
+    public static void DrawAll(Transform root)
     {
-        image = GetComponent<RawImage>();
+        foreach (VectorView view in root.GetComponentsInChildren<VectorView>())
+        {
+            view.DrawNow();
+        }
     }
 
-    private void LateUpdate()
+    /// <summary>Draws again, as when what the drawing shows has changed.</summary>
+    public void Redraw()
+    {
+        stale = true;
+        DrawNow();
+    }
+
+    /// <summary>Draws now if the view's size, scale, or drawing has changed or its texture was lost.</summary>
+    public void DrawNow()
     {
         try
         {
+            image ??= GetComponent<RawImage>();
             Canvas? canvas = image.canvas;
-            if (failed || canvas == null)
+            if (failed || canvas == null || !isActiveAndEnabled)
             {
                 return;
             }
 
             Vector2 size = ((RectTransform)transform).rect.size;
             float scale = canvas.rootCanvas.scaleFactor;
-            bool lost = texture != null && !texture.IsCreated();
-            if (size.x < 1f || size.y < 1f || (!lost && texture != null && size == drawnSize && Mathf.Approximately(scale, drawnScale)))
+            bool lost = key != null && !(Textures.TryGetValue(key, out Shared? shared) && shared.Texture.IsCreated());
+            if (size.x < 1f || size.y < 1f
+                || (!stale && !lost && key != null && size == drawnSize && Mathf.Approximately(scale, drawnScale)))
             {
                 return;
             }
 
-            Draw(size, scale);
+            Show(size, scale);
             drawnSize = size;
             drawnScale = scale;
+            stale = false;
         }
         catch (Exception exception)
         {
             failed = true;
             Release();
-            image.texture = null;
-            image.color = Fallback;
+            if (image != null)
+            {
+                image.texture = null;
+                image.color = Fallback;
+            }
+
             Guard.Report("VectorView.Draw", exception);
         }
     }
 
+    private void LateUpdate() => DrawNow();
+
     private void OnDestroy() => Release();
 
-    private void Draw(Vector2 size, float scale)
+    /// <summary>Shows the drawing for this size, from the shared textures or drawn anew.</summary>
+    private void Show(Vector2 size, float scale)
     {
-        SVGParser.SceneInfo scene = SVGParser.ImportSVG(new StringReader(Drawing(size)));
+        string svg = Drawing(size);
+        int pixelWidth = Mathf.Clamp(Mathf.CeilToInt(size.x * scale), 1, MaxSide);
+        int pixelHeight = Mathf.Clamp(Mathf.CeilToInt(size.y * scale), 1, MaxSide);
+        string wanted = $"{pixelWidth}x{pixelHeight}:{svg}";
+        if (wanted != key)
+        {
+            Release();
+            if (!Textures.TryGetValue(wanted, out Shared? shared))
+            {
+                shared = new Shared(NewTexture(pixelWidth, pixelHeight));
+                Textures[wanted] = shared;
+                Paint(shared.Texture, svg, size);
+            }
+
+            shared.Users++;
+            key = wanted;
+        }
+
+        Shared current = Textures[key];
+        if (!current.Texture.IsCreated())
+        {
+            current.Texture.Create();
+            Paint(current.Texture, svg, size);
+        }
+
+        image!.texture = current.Texture;
+        image.color = Color.white;
+    }
+
+    /// <summary>Tessellates the SVG and draws its triangles into the texture.</summary>
+    private void Paint(RenderTexture target, string svg, Vector2 size)
+    {
+        SVGParser.SceneInfo scene = SVGParser.ImportSVG(new StringReader(svg));
         // Fine enough that curves stay round at any size the view is shown.
         var options = new VectorUtils.TessellationOptions
         {
@@ -105,10 +162,6 @@ internal sealed class VectorView : MonoBehaviour
             SamplingStepSize = 0.01f,
         };
         List<VectorUtils.Geometry> shapes = VectorUtils.TessellateScene(scene.Scene, options);
-
-        int pixelWidth = Mathf.Clamp(Mathf.CeilToInt(size.x * scale), 1, MaxSide);
-        int pixelHeight = Mathf.Clamp(Mathf.CeilToInt(size.y * scale), 1, MaxSide);
-        RenderTexture target = Target(pixelWidth, pixelHeight);
 
         bool linear = QualitySettings.activeColorSpace == ColorSpace.Linear;
         RenderTexture previous = RenderTexture.active;
@@ -140,19 +193,11 @@ internal sealed class VectorView : MonoBehaviour
             RenderTexture.active = previous;
         }
 
-        image.texture = target;
-        image.color = Color.white;
-        Plugin.Verbose($"Drew {name} at {pixelWidth}x{pixelHeight} from {shapes.Count} shapes.");
+        Plugin.Verbose($"Drew {name} at {target.width}x{target.height} from {shapes.Count} shapes.");
     }
 
-    private RenderTexture Target(int width, int height)
+    private static RenderTexture NewTexture(int width, int height)
     {
-        if (texture != null && texture.width == width && texture.height == height && texture.IsCreated())
-        {
-            return texture;
-        }
-
-        Release();
         var description = new RenderTextureDescriptor(width, height, RenderTextureFormat.ARGB32, 0)
         {
             msaaSamples = Samples,
@@ -161,7 +206,7 @@ internal sealed class VectorView : MonoBehaviour
             autoGenerateMips = false,
         };
         description.msaaSamples = Mathf.Clamp(SystemInfo.GetRenderTextureSupportedMSAASampleCount(description), 1, Samples);
-        texture = new RenderTexture(description)
+        var texture = new RenderTexture(description)
         {
             name = "BetterCoop.Vector",
             filterMode = FilterMode.Bilinear,
@@ -172,21 +217,27 @@ internal sealed class VectorView : MonoBehaviour
         return texture;
     }
 
+    /// <summary>Lets go of this view's texture, freeing it once no view shows it.</summary>
     private void Release()
     {
-        if (texture == null)
+        if (key == null)
         {
             return;
         }
 
-        if (image != null && image.texture == texture)
+        if (Textures.TryGetValue(key, out Shared? shared) && --shared.Users <= 0)
         {
-            image.texture = null;
+            Textures.Remove(key);
+            if (image != null && image.texture == shared.Texture)
+            {
+                image.texture = null;
+            }
+
+            shared.Texture.Release();
+            Destroy(shared.Texture);
         }
 
-        texture.Release();
-        Destroy(texture);
-        texture = null;
+        key = null;
     }
 
     /// <summary>The UI's own material, sampling nothing but white and clipping nothing.</summary>
@@ -209,5 +260,14 @@ internal sealed class VectorView : MonoBehaviour
         material.DisableKeyword("UNITY_UI_CLIP_RECT");
         material.DisableKeyword("UNITY_UI_ALPHACLIP");
         return material;
+    }
+
+    private sealed class Shared
+    {
+        public Shared(RenderTexture texture) => Texture = texture;
+
+        public RenderTexture Texture { get; }
+
+        public int Users { get; set; }
     }
 }
