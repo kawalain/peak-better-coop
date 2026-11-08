@@ -116,6 +116,32 @@ internal static class PaperDrawing
         return svg.ToString();
     }
 
+    /// <summary>
+    /// A slip of the same paper laid over a page to ask something or carry a
+    /// message: outline, shadow, blotches and printed rule as the page has,
+    /// but one perforation, <paramref name="tear"/> below its top, under its
+    /// heading. The view box starts at the margin's outer corner.
+    /// </summary>
+    public static string Slip(float width, float height, float tear, int seed = 5, Ink? paper = null)
+    {
+        var sheet = new Sheet(width, height, tear, float.NaN);
+        Ink face = paper ?? Paper;
+        (float canvasWidth, float canvasHeight) = Canvas(width, height);
+        var svg = new StringBuilder();
+        svg.Append(F($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{canvasWidth}\" height=\"{canvasHeight}\" viewBox=\"0 0 {canvasWidth} {canvasHeight}\">"));
+        svg.Append(F($"<g transform=\"translate({Margin} {Margin})\">"));
+        svg.Append(F($"<path d=\"{sheet.Edge(0f)}\" transform=\"translate(0 {ShadowDrop})\" fill=\"#000000\" fill-opacity=\"{ShadowOpacity}\"/>"));
+        svg.Append(F($"<path d=\"{sheet.Edge(0f)}\" fill=\"{InkBlack.Hex}\"/>"));
+        svg.Append(F($"<path d=\"{sheet.Edge(Outline)}\" fill=\"{face.Hex}\"/>"));
+        var random = new Random(seed);
+        AppendBlotches(svg, random, width, height);
+        AppendFibres(svg, random, width, height);
+        svg.Append(F($"<path d=\"{sheet.Edge(RuleInset)}\" fill=\"none\" stroke=\"{face.Mix(PassportBlue, 0.5f).Hex}\" stroke-width=\"1.6\"/>"));
+        AppendPerforation(svg, width, tear);
+        svg.Append("</g></svg>");
+        return svg.ToString();
+    }
+
     /// <summary>The colour of every dashed line on the paper.</summary>
     public static Ink DashInk => Paper.Mix(PassportBlue, 0.7f);
 
@@ -163,7 +189,7 @@ internal static class PaperDrawing
         int count = Math.Max(5, (int)(width * height / 80000f));
         for (int i = 0; i < count; i++)
         {
-            float size = Next(random, 80f, 170f);
+            float size = Math.Min(Next(random, 80f, 170f), Math.Min(width, height) * 0.3f);
             float cx = Next(random, 50f + size * 0.6f, width - 50f - size * 0.6f);
             float cy = Next(random, 50f + size * 0.6f, height - 50f - size * 0.6f);
             bool dark = random.NextDouble() < 0.55;
@@ -261,10 +287,18 @@ internal static class PaperDrawing
             var path = new StringBuilder();
             path.Append(F($"M{left + r} {top}H{right - r}A{r} {r} 0 0 1 {right} {top + r}"));
             path.Append(F($"V{TopTear - j}A{n} {n} 0 0 0 {right} {TopTear + j}"));
-            path.Append(F($"V{BottomTear - j}A{n} {n} 0 0 0 {right} {BottomTear + j}"));
+            if (!float.IsNaN(BottomTear))
+            {
+                path.Append(F($"V{BottomTear - j}A{n} {n} 0 0 0 {right} {BottomTear + j}"));
+            }
+
             path.Append(F($"V{bottom - r}A{r} {r} 0 0 1 {right - r} {bottom}"));
             path.Append(F($"H{left + r}A{r} {r} 0 0 1 {left} {bottom - r}"));
-            path.Append(F($"V{BottomTear + j}A{n} {n} 0 0 0 {left} {BottomTear - j}"));
+            if (!float.IsNaN(BottomTear))
+            {
+                path.Append(F($"V{BottomTear + j}A{n} {n} 0 0 0 {left} {BottomTear - j}"));
+            }
+
             path.Append(F($"V{TopTear + j}A{n} {n} 0 0 0 {left} {TopTear - j}"));
             path.Append(F($"V{top + r}A{r} {r} 0 0 1 {left + r} {top}Z"));
             return path.ToString();

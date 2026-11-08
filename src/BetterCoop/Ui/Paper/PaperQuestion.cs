@@ -16,11 +16,14 @@ namespace BetterCoop.Ui.Paper;
 /// </summary>
 internal sealed class PaperQuestion : MonoBehaviour
 {
-    private const float Width = 620f;
+    private const float Width = 640f;
 
-    private const float Height = 250f;
+    /// <summary>The heading band above the slip's perforation.</summary>
+    private const float Band = 62f;
 
-    private const float Seconds = 0.18f;
+    private const float Side = 46f;
+
+    private const float Seconds = 0.2f;
 
     private CanvasGroup group = null!;
 
@@ -43,7 +46,7 @@ internal sealed class PaperQuestion : MonoBehaviour
         cover.offsetMin = cover.offsetMax = Vector2.zero;
         cover.SetAsLastSibling();
         // A shade over the page that takes every click meant for it.
-        cover.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.18f);
+        cover.gameObject.AddComponent<Image>().color = new Color(0.08f, 0.06f, 0.04f, 0.32f);
         PaperQuestion asking = cover.gameObject.AddComponent<PaperQuestion>();
         asking.group = cover.gameObject.AddComponent<CanvasGroup>();
         asking.group.alpha = 0f;
@@ -51,41 +54,66 @@ internal sealed class PaperQuestion : MonoBehaviour
         cover.gameObject.AddComponent<ClickCatcher>().Clicked = asking.Stay;
 
         RectTransform slip = PaperList.NewRect("Slip", cover);
-        slip.sizeDelta = new Vector2(Width, Height);
-        slip.localRotation = Quaternion.Euler(0f, 0f, -1.5f);
+        slip.localRotation = Quaternion.Euler(0f, 0f, -1.2f);
         asking.slip = slip;
-        VectorView.Add(slip, s => FormDrawing.Card(s.x, s.y, lifted: true), PaperText.Paper);
-        slip.gameObject.GetComponent<RawImage>().raycastTarget = true;
+        float inner = Width - 2f * Side;
 
-        VerticalLayoutGroup lines = slip.gameObject.AddComponent<VerticalLayoutGroup>();
-        lines.padding = new RectOffset(40, 46, 30, 30);
-        lines.spacing = 10f;
-        lines.childControlWidth = lines.childControlHeight = true;
-        lines.childForceExpandWidth = true;
-        lines.childForceExpandHeight = false;
-        lines.childAlignment = TextAnchor.UpperCenter;
-        TMP_Text asked = PaperText.Make(PaperList.NewRect("Question", slip).gameObject, template, PaperText.Heading, TextAlignmentOptions.Center);
+        // Every line is placed by hand from its own measured height, so the slip grows to its words.
+        TMP_Text heading = Text(slip, template, "Heading", PaperText.Note, TextAlignmentOptions.Left);
+        heading.text = Strings.SlipQuery;
+        heading.fontStyle = FontStyles.Bold | FontStyles.SmallCaps;
+        heading.characterSpacing = 4f;
+        heading.color = PaperText.Blue;
+        TMP_Text number = Text(slip, template, "Number", PaperText.Note, TextAlignmentOptions.Right);
+        number.text = Strings.FormTitle;
+        number.color = PaperList.Faded(PaperText.Ink, 0.55f);
+
+        TMP_Text asked = Text(slip, template, "Question", PaperText.Heading, TextAlignmentOptions.Center);
         asked.text = question;
         asked.fontStyle = FontStyles.Bold;
-        TMP_Text small = PaperText.Make(PaperList.NewRect("Note", slip).gameObject, template, PaperText.Note, TextAlignmentOptions.Center);
+        asked.textWrappingMode = TextWrappingModes.Normal;
+        TMP_Text small = Text(slip, template, "Note", PaperText.Value, TextAlignmentOptions.Center);
         small.text = note;
         small.textWrappingMode = TextWrappingModes.Normal;
-        small.color = PaperList.Faded(PaperText.Ink, 0.7f);
+        small.color = PaperList.Faded(PaperText.Ink, 0.75f);
 
         RectTransform answers = PaperList.NewRect("Answers", slip);
         HorizontalLayoutGroup row = answers.gameObject.AddComponent<HorizontalLayoutGroup>();
-        row.spacing = 48f;
+        row.spacing = 56f;
         row.childAlignment = TextAnchor.MiddleCenter;
         row.childControlWidth = row.childControlHeight = true;
         row.childForceExpandWidth = row.childForceExpandHeight = false;
-        answers.gameObject.AddComponent<LayoutElement>().minHeight = 70f;
         var goStamp = new StampMark(answers, template, () => go, asking.Go);
         var stayStamp = new StampMark(answers, template, () => stay, asking.Stay);
         stayStamp.Recolour(PaperList.Pen);
         goStamp.Refresh(true);
         stayStamp.Refresh(true);
 
-        LayoutRebuilder.ForceRebuildLayoutImmediate(slip);
+        float askedHeight = asked.GetPreferredValues(question, inner, 0f).y;
+        float noteHeight = small.GetPreferredValues(note, inner, 0f).y;
+        const float answersHeight = 84f;
+        float y = Band + 26f;
+        Place(heading.rectTransform, Side - 8f, 20f, inner + 16f, Band - 28f);
+        Place(number.rectTransform, Side - 8f, 20f, inner + 16f, Band - 28f);
+        Place(asked.rectTransform, Side, y, inner, askedHeight);
+        y += askedHeight + 10f;
+        Place(small.rectTransform, Side, y, inner, noteHeight);
+        y += noteHeight + 22f;
+        Place(answers, Side, y, inner, answersHeight);
+        y += answersHeight + 30f;
+        slip.sizeDelta = new Vector2(Width, y);
+
+        // The paper, drawn under everything, with room round it for its shadow.
+        RectTransform sheet = PaperList.NewRect("Sheet", slip);
+        sheet.SetAsFirstSibling();
+        sheet.anchorMin = Vector2.zero;
+        sheet.anchorMax = Vector2.one;
+        sheet.offsetMin = new Vector2(-PaperDrawing.Margin, -PaperDrawing.Margin);
+        sheet.offsetMax = new Vector2(PaperDrawing.Margin, PaperDrawing.Margin);
+        VectorView.Add(sheet, size => PaperDrawing.Slip(size.x - 2f * PaperDrawing.Margin, size.y - 2f * PaperDrawing.Margin, Band), PaperText.Paper);
+        sheet.gameObject.GetComponent<RawImage>().raycastTarget = true;
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(answers);
         VectorView.DrawAll(cover);
         if (EventSystem.current != null)
         {
@@ -94,6 +122,18 @@ internal sealed class PaperQuestion : MonoBehaviour
 
         asking.Pose();
         return asking;
+    }
+
+    private static TMP_Text Text(RectTransform slip, TMP_Text template, string name, float size, TextAlignmentOptions alignment) =>
+        PaperText.Make(PaperList.NewRect(name, slip).gameObject, template, size, alignment);
+
+    /// <summary>Puts <paramref name="rect"/> <paramref name="top"/> below the slip's top edge, <paramref name="left"/> in from its left.</summary>
+    private static void Place(RectTransform rect, float left, float top, float width, float height)
+    {
+        rect.anchorMin = rect.anchorMax = new Vector2(0f, 1f);
+        rect.pivot = new Vector2(0f, 1f);
+        rect.anchoredPosition = new Vector2(left, -top);
+        rect.sizeDelta = new Vector2(width, height);
     }
 
     /// <summary>Answers "stay": the slip lifts away and the page carries on.</summary>
@@ -122,8 +162,9 @@ internal sealed class PaperQuestion : MonoBehaviour
         float eased = Easing.Out(shown);
         group.alpha = eased;
         group.blocksRaycasts = !closing;
-        slip.localScale = Vector3.one * Mathf.Lerp(1.06f, 1f, eased);
-        slip.anchoredPosition = new Vector2(0f, Mathf.Lerp(18f, 0f, eased));
+        // Dropped onto the page from a little above, and lifted the same way.
+        slip.localScale = Vector3.one * Mathf.Lerp(1.05f, 1f, eased);
+        slip.anchoredPosition = new Vector2(0f, Mathf.Lerp(26f, 0f, eased));
     }
 }
 

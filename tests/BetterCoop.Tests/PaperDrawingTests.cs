@@ -31,6 +31,17 @@ public class PaperDrawingTests
     }
 
     [Fact]
+    public void A_slip_cuts_only_the_notches_under_its_heading()
+    {
+        XElement slip = XElement.Parse(PaperDrawing.Slip(620f, 300f, 64f));
+        string edge = slip.Descendants(Svg + "path").Skip(1).First().Attribute("d")!.Value;
+
+        Assert.Equal("0 0 652 332", slip.Attribute("viewBox")!.Value);
+        Assert.Equal(6, edge.Count(c => c == 'A'));
+        Assert.DoesNotContain("NaN", slip.ToString());
+    }
+
+    [Fact]
     public void Each_edge_cuts_four_notches_with_arcs()
     {
         string edge = Draw().Descendants(Svg + "path").Skip(1).First().Attribute("d")!.Value;

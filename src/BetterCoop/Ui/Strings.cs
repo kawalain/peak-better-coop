@@ -108,6 +108,9 @@ internal static class Strings
 
     public static string Serial(int number) => $"No. {number:D7}";
 
+    /// <summary>The heading printed on a slip that asks before going on.</summary>
+    public static string SlipQuery => Korean ? "확인 요청" : "Query";
+
     public static string StampNotify => Korean ? "통보" : "Notified";
 
     /// <summary>The post office round a postmark's top.</summary>
