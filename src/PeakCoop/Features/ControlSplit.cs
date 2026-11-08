@@ -174,11 +174,13 @@ internal static class ControlSplit
         switch (CurrentMode(out _))
         {
             case Mode.Rider:
+                RiderIntent.Capture(__instance);
                 CaptureRiderActions(__instance);
                 RiderBinoculars.Zoom(__instance);
                 DropCarrierActions(__instance);
                 break;
             case Mode.Carrier:
+                RiderIntent.Clear();
                 PlayRiderActions(__instance, playerMovementActive);
                 break;
             case Mode.Solo:

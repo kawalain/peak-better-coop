@@ -54,6 +54,7 @@ public sealed class Plugin : BaseUnityPlugin
         runtime.AddComponent<ControlSplitLink>();
         runtime.AddComponent<RiderHudRefresher>();
         runtime.AddComponent<RiderEffectsKeeper>();
+        runtime.AddComponent<RiderPreviewsKeeper>();
         runtime.AddComponent<PairShuffleLink>();
 
         Log.LogInfo($"{MyPluginInfo.PLUGIN_NAME} {MyPluginInfo.PLUGIN_VERSION} loaded.");

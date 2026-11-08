@@ -54,6 +54,9 @@ internal sealed class ProgressSmoother
         lastAt = now;
     }
 
+    /// <summary>Whether a use is under way, as far as the updates tell.</summary>
+    public bool IsActive(float now) => lastValue > 0f && now - lastAt < StaleSeconds;
+
     /// <summary>The value to draw at <paramref name="now"/>; 0 hides the bar.</summary>
     public float Display(float now)
     {

@@ -21,6 +21,9 @@ internal static class UseFeedback
 
     private static readonly ProgressSmoother RiderProgress = new();
 
+    /// <summary>Whether the Shared Body's use is under way, on the Rider's client.</summary>
+    internal static bool RiderSeesUse => RiderProgress.IsActive(Time.unscaledTime);
+
     /// <summary>Called every frame: the Carrier sends the progress of the Rider's action.</summary>
     internal static void SendFromCarrier()
     {
