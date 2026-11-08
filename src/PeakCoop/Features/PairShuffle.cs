@@ -62,6 +62,10 @@ internal static class PairShuffle
     /// <summary>Whether an operation is announced and not yet done.</summary>
     internal static bool Busy => Current is { Done: false };
 
+    /// <summary>Whether an operation on this player ran in the last few seconds, so its Body Handover may still be arriving.</summary>
+    internal static bool HandingOver(int actor) =>
+        Current is { Done: true } op && op.Involves(actor) && PhotonNetwork.Time - op.At < LockTimeoutSeconds;
+
     /// <summary>Whether the local player's hands stay empty for an operation now.</summary>
     internal static bool LocalLocked
     {
