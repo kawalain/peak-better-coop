@@ -10,3 +10,6 @@ exactly the hard-to-diagnose bugs of the previous version after the last update.
 
 - A disabled mod publishes no version, so the host's party gate reports that
   player as missing the mod and the Run cannot depart half-modded.
+- The same holds when Co-op Mod, the mod BetterCoop grew from, is loaded too:
+  both patch the carry and shared stamina, so the mod turns itself off and asks
+  the player to remove Co-op Mod.

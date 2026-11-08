@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace BetterCoop.Ui;
@@ -5,6 +6,9 @@ namespace BetterCoop.Ui;
 /// <summary>Tells the player, once per scene, that the mod turned itself off.</summary>
 internal sealed class DisabledNotice : MonoBehaviour
 {
+    /// <summary>Why the mod is off; read when shown, so it follows the game language.</summary>
+    internal Func<string> Message = () => Strings.ModDisabled;
+
     private PlayerConnectionLog? shownOn;
 
     private float nextCheck;
@@ -21,7 +25,7 @@ internal sealed class DisabledNotice : MonoBehaviour
         if (log != null && log != shownOn)
         {
             shownOn = log;
-            CoopNotice.Warning(Strings.ModDisabled);
+            CoopNotice.Warning(Message());
         }
     }
 }

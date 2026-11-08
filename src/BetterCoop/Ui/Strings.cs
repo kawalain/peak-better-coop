@@ -13,6 +13,10 @@ internal static class Strings
         ? "코옵: 지금 게임 버전과 맞지 않아 모드를 껐습니다."
         : "Coop: the mod is off because it does not match this game version.";
 
+    public static string ModDisabledByCoopMod => Korean
+        ? "코옵: Co-op Mod와 함께 쓸 수 없어 모드를 껐습니다. Co-op Mod를 지워 주세요."
+        : "Coop: the mod is off because Co-op Mod is also installed. Remove Co-op Mod to play.";
+
     public static string PairFormed(string carrier, string rider) => Korean
         ? $"코옵: {carrier} 님이 {rider} 님을 업습니다. {carrier} 님은 키보드, {rider} 님은 마우스로 조작합니다."
         : $"Coop: {carrier} (Carrier, keyboard) carries {rider} (Rider, mouse).";
