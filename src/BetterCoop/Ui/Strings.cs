@@ -80,6 +80,42 @@ internal static class Strings
 
     public static string MenuPair(string carrier, string rider) => $"{carrier} ⇄ {rider}";
 
+    public static string MenuTroopLeader => Korean ? "분대장" : "Troop Leader";
+
+    public static string MenuShuffleNowLabel => Korean ? "지금 짝 섞기" : "Shuffle Pairs now";
+
+    public static string MenuRecover => Korean ? "모든 짝 다시 붙이기" : "Re-attach every Pair";
+
+    public static string MenuGo => Korean ? "실행" : "Go";
+
+    public static string MenuBusy => Korean
+        ? "코옵: 다른 짝 변경이 진행 중이라 지금은 할 수 없습니다."
+        : "Coop: another Pair change is under way; try again in a moment.";
+
+    public static string MenuRunRules => Korean ? "원정 규칙" : "Run Rules";
+
+    public static string On => Korean ? "켬" : "On";
+
+    public static string Off => Korean ? "끔" : "Off";
+
+    public static string Minutes(int minutes) => Korean ? $"{minutes}분" : $"{minutes} min";
+
+    public static string RuleCampfireShuffle => Korean ? "모닥불에서 짝 섞기" : "Campfire Shuffle";
+
+    public static string RuleTimedShuffle => Korean ? "시간마다 짝 섞기" : "Timed Shuffle";
+
+    public static string RuleTimedShuffleInterval => Korean ? "짝 섞기 간격" : "Timed Shuffle Interval";
+
+    public static string RuleHandOverPlace => Korean ? "몸 인계: 자리" : "Hand Over Place";
+
+    public static string RuleHandOverItems => Korean ? "몸 인계: 아이템" : "Hand Over Items";
+
+    public static string RuleCarryWeight => Korean ? "사람 무게 적용" : "Carry Weight";
+
+    public static string RuleRiderPicksFromBackpack => Korean ? "가방은 업힌 사람이 고르기" : "Rider Picks From Backpack";
+
+    public static string RuleAllowOddPlayerCount => Korean ? "홀수 인원 출발 허용" : "Allow Odd Player Count";
+
     public static string MenuUnpaired => Korean ? "짝 없는 사람" : "Unpaired";
 
     public static string SwapPlaces => Korean ? "자리 바꾸기" : "Swap Places";

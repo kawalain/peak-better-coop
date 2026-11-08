@@ -6,7 +6,6 @@ using BetterCoop.Ui;
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Zorro.Core;
 using Zorro.Core.Serizalization;
 
@@ -39,21 +38,24 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
         }
     }
 
-    private void Tick()
+    /// <summary>The Troop Leader asks every client to re-attach its Pair and wake its Rider.</summary>
+    internal static void RequestRecovery()
     {
-        if (CoopConfig.RecoveryKey.Value
-            && PhotonNetwork.IsMasterClient
-            && Keyboard.current != null
-            && Keyboard.current.f8Key.wasPressedThisFrame)
+        if (!PhotonNetwork.IsMasterClient)
         {
-            Plugin.Log.LogInfo("Host requested Pair recovery.");
-            PhotonNetwork.RaiseEvent(
-                RoomKeys.RecoveryEvent,
-                null,
-                new RaiseEventOptions { Receivers = ReceiverGroup.All },
-                SendOptions.SendReliable);
+            return;
         }
 
+        Plugin.Log.LogInfo("Troop Leader requested Pair recovery.");
+        PhotonNetwork.RaiseEvent(
+            RoomKeys.RecoveryEvent,
+            null,
+            new RaiseEventOptions { Receivers = ReceiverGroup.All },
+            SendOptions.SendReliable);
+    }
+
+    private void Tick()
+    {
         Character local = Character.localCharacter;
         PairRole role = PairRoster.RoleOf(local);
         if (role != lastRole)

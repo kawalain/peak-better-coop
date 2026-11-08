@@ -270,6 +270,11 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
 
         rows.Clear();
         PlayerRows.Add(this);
+        if (PhotonNetwork.IsMasterClient)
+        {
+            TroopLeaderRows.Add(this);
+        }
+
         LayoutRebuilder.ForceRebuildLayoutImmediate((RectTransform)list);
     }
 
@@ -479,7 +484,19 @@ internal static class PlayerRows
         page.AddHeader(() => Strings.MenuPairs);
         foreach (Pair pair in PairRoster.Pairs)
         {
-            page.AddInfo(() => Strings.MenuPair(NameOf(pair.Carrier), NameOf(pair.Rider)));
+            if (PhotonNetwork.IsMasterClient)
+            {
+                // The Troop Leader turns any Pair round without waiting for both to ask.
+                page.AddAction(
+                    () => Strings.MenuPair(NameOf(pair.Carrier), NameOf(pair.Rider)),
+                    () => Strings.SwapPlaces,
+                    () => TroopLeaderRows.Order(PairShuffle.Request(OperationKind.RoleSwap, pair.Carrier, pair.Rider)),
+                    available: () => !PairShuffle.Busy);
+            }
+            else
+            {
+                page.AddInfo(() => Strings.MenuPair(NameOf(pair.Carrier), NameOf(pair.Rider)));
+            }
         }
 
         page.AddInfo(
@@ -528,5 +545,64 @@ internal static class PlayerRows
             RolePreference.Carrier => RolePreference.Rider,
             _ => RolePreference.Random,
         };
+    }
+}
+
+/// <summary>The Troop Leader's rows: Pair changes and the Run Rules.</summary>
+internal static class TroopLeaderRows
+{
+    /// <summary>Timed Shuffle intervals the menu steps through, in minutes.</summary>
+    private static readonly int[] Intervals = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60];
+
+    public static void Add(CoopMenuPage page)
+    {
+        page.AddHeader(() => Strings.MenuTroopLeader);
+        page.AddAction(
+            () => Strings.MenuShuffleNowLabel,
+            () => Strings.MenuGo,
+            () => Order(PairShuffle.Request(OperationKind.OrderedShuffle)),
+            visible: () => PairRoster.Formed,
+            available: () => !PairShuffle.Busy);
+        page.AddAction(
+            () => Strings.MenuRecover,
+            () => Strings.MenuGo,
+            CarryKeeper.RequestRecovery,
+            visible: () => PairRoster.Formed);
+
+        page.AddHeader(() => Strings.MenuRunRules);
+        Toggle(page, () => Strings.RuleCampfireShuffle, CoopConfig.CampfireShuffle);
+        Toggle(page, () => Strings.RuleTimedShuffle, CoopConfig.TimedShuffle);
+        page.AddAction(
+            () => Strings.RuleTimedShuffleInterval,
+            () => Strings.Minutes(ShuffleInterval.Clamp(CoopConfig.TimedShuffleInterval.Value)),
+            NextInterval);
+        Toggle(page, () => Strings.RuleHandOverPlace, CoopConfig.HandOverPlace);
+        Toggle(page, () => Strings.RuleHandOverItems, CoopConfig.HandOverItems);
+        Toggle(page, () => Strings.RuleCarryWeight, CoopConfig.CarryWeight);
+        Toggle(page, () => Strings.RuleRiderPicksFromBackpack, CoopConfig.RiderPicksFromBackpack);
+        Toggle(page, () => Strings.RuleAllowOddPlayerCount, CoopConfig.AllowOddPlayerCount);
+    }
+
+    /// <summary>Says why a Pair change the Troop Leader ordered did not start.</summary>
+    internal static void Order(bool started)
+    {
+        if (!started)
+        {
+            CoopNotice.Info(Strings.MenuBusy);
+        }
+    }
+
+    /// <summary>
+    /// A Run Rule as a switch. It writes the Troop Leader's own setting, which
+    /// is saved and published to the room as any change in the config editor is.
+    /// </summary>
+    private static void Toggle(CoopMenuPage page, Func<string> label, BepInEx.Configuration.ConfigEntry<bool> rule) =>
+        page.AddAction(label, () => rule.Value ? Strings.On : Strings.Off, () => rule.Value = !rule.Value);
+
+    private static void NextInterval()
+    {
+        int now = ShuffleInterval.Clamp(CoopConfig.TimedShuffleInterval.Value);
+        int next = Intervals.FirstOrDefault(m => m > now);
+        CoopConfig.TimedShuffleInterval.Value = next == 0 ? Intervals[0] : next;
     }
 }

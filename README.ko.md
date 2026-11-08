@@ -34,8 +34,10 @@ PEAK를 짝을 지어 오르는 모드입니다. 한 사람이 원정 내내 다
 
 ## 설정
 
-모드 매니저의 설정 편집기에서 `in.kawala.bettercoop` 아래에 있습니다. 자신의
-Role Preference와 Debug 설정을 빼면 분대장의 값이 방 전체에 적용됩니다.
+ESC 메뉴의 **코옵** 페이지나 모드 매니저의 설정 편집기에서
+`in.kawala.bettercoop` 아래에 있습니다. 자신의 Role Preference와 Debug 설정을
+빼면 분대장의 값이 방 전체에 적용됩니다. 분대장의 코옵 페이지에서는 짝을
+바로 섞고, 아무 짝의 자리를 바꾸고, 모든 짝을 다시 붙일 수도 있습니다.
 
 | 설정 | 기본값 | |
 | --- | --- | --- |
@@ -47,7 +49,6 @@ Role Preference와 Debug 설정을 빼면 분대장의 값이 방 전체에 적�
 | Hand Over Place, Items | 켬, 켬 | 새 업는 사람이 이전 몸의 자리와 아이템을 이어받습니다. |
 | Carry Weight | 끔 | 업는 사람에게 사람 무게를 적용합니다. |
 | Verbose Log | 끔 | 버그를 알릴 때 켜고 `BepInEx/LogOutput.log`를 보내 주세요. |
-| Recovery Key | 켬 | 분대장이 F8로 모든 짝을 다시 붙입니다. |
 
 ## 호환성
 

@@ -261,6 +261,21 @@ public class OperationTests
     }
 
     [Fact]
+    public void An_ordered_shuffle_is_a_shuffle_for_everyone()
+    {
+        var queue = new OperationQueue();
+        Operation swap = queue.Request(null, OperationKind.RoleSwap, 0, 1, 2)!;
+
+        Assert.Null(queue.Request(swap, OperationKind.OrderedShuffle, 1));
+        Operation next = queue.After(swap.Finished(), 4)!;
+
+        Assert.Equal(OperationKind.OrderedShuffle, next.Kind);
+        Assert.True(next.IsShuffle);
+        Assert.True(next.Involves(9));
+        Assert.Equal(OperationKind.OrderedShuffle, Operation.Decode(next.Encode())!.Kind);
+    }
+
+    [Fact]
     public void A_late_pairing_involves_only_its_two()
     {
         var pairing = new Operation(1, OperationKind.LatePairing, 0, 5, 6, false);

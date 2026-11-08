@@ -85,8 +85,8 @@ is lost or copied: the items swap between the two bodies.
 _Avoid_: body swap, inheritance
 
 **Role Swap** (자리 바꾸기):
-The Carrier and Rider of a Pair trading roles when both ask for it, with a
-Body Handover to the new Carrier.
+The Carrier and Rider of a Pair trading roles when both ask for it or the
+Troop Leader orders it, with a Body Handover to the new Carrier.
 _Avoid_: role switch, flip
 
 **Shared Life**:

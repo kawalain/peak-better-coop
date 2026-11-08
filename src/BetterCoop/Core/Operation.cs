@@ -10,6 +10,7 @@ internal enum OperationKind : byte
     TimedShuffle = 2,
     RoleSwap = 3,
     LatePairing = 4,
+    OrderedShuffle = 5,
 }
 
 /// <summary>
@@ -50,7 +51,7 @@ internal sealed class Operation
 
     public bool Done { get; }
 
-    public bool IsShuffle => Kind is OperationKind.CampfireShuffle or OperationKind.TimedShuffle;
+    public bool IsShuffle => Kind is OperationKind.CampfireShuffle or OperationKind.TimedShuffle or OperationKind.OrderedShuffle;
 
     /// <summary>Whether the operation concerns this player: everyone for a Pair Shuffle.</summary>
     public bool Involves(int actor) => IsShuffle || actor == SwapCarrier || actor == SwapRider;
@@ -103,7 +104,7 @@ internal sealed class OperationQueue
     {
         if (current is { Done: false })
         {
-            bool shuffle = kind is OperationKind.CampfireShuffle or OperationKind.TimedShuffle;
+            bool shuffle = kind is OperationKind.CampfireShuffle or OperationKind.TimedShuffle or OperationKind.OrderedShuffle;
             if (shuffle && !current.IsShuffle && waiting == OperationKind.None)
             {
                 waiting = kind;

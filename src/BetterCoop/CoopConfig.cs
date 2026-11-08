@@ -24,8 +24,6 @@ internal static class CoopConfig
 
     public static ConfigEntry<bool> HandOverItems { get; private set; } = null!;
 
-    public static ConfigEntry<bool> RecoveryKey { get; private set; } = null!;
-
     public static ConfigEntry<bool> VerboseLog { get; private set; } = null!;
 
     public static ConfigEntry<bool> SoloPair { get; private set; } = null!;
@@ -89,12 +87,6 @@ internal static class CoopConfig
             "Hand Over Items",
             true,
             "When Pairs change, each new Carrier takes over the items of the Shared Body they take over; the items swap, so nothing is lost. Statuses are always handed over. The host's value applies.");
-
-        RecoveryKey = config.Bind(
-            "Debug",
-            "Recovery Key",
-            true,
-            "Let the host press F8 to re-attach every Pair's carry and wake every Rider.");
 
         VerboseLog = config.Bind(
             "Debug",
