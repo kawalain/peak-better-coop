@@ -24,6 +24,7 @@ namespace BetterCoop.Features;
 /// latency instead of crossing the network, and replayed on the Carrier's path.
 /// </remarks>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class ControlSplit
 {
     private enum Mode

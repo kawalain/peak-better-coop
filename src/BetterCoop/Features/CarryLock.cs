@@ -242,6 +242,7 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
 }
 
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class CarryLockPatches
 {
     private static bool IsLivePair(Character carrier, Character? carried) =>

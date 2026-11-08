@@ -21,6 +21,7 @@ namespace BetterCoop.Features;
 /// time it was made, so it lapses by itself and dies with the Pair.
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class RoleSwap
 {
     private const double RequestSeconds = 30;

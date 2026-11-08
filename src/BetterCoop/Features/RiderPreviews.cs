@@ -45,6 +45,7 @@ internal static class RiderIntent
 /// The Carrier's client still places the item, from the look it receives.
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class RiderPreviews
 {
     private static GameObject? pitonPreview;

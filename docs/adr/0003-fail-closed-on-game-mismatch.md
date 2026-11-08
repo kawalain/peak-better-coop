@@ -19,3 +19,7 @@ exactly the hard-to-diagnose bugs of the previous version after the last update.
   feature, rather than failing the other mod's patching. The backpack wheel's
   key check is the one rewrite that can stop fitting; without it the wheel
   works as in the unmodded game, for the Carrier only.
+- At run time the mod fails open instead: every patch is wrapped so that one
+  that throws is logged and skipped, and the game method, with other mods'
+  patches, runs on as unmodded for that call. An exception in a patch would
+  otherwise reach the game's caller and stop code that is not the mod's.

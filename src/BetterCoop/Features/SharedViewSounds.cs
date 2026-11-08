@@ -20,6 +20,7 @@ namespace BetterCoop.Features;
 /// state on the Rider's client instead.
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class SharedViewSounds
 {
     /// <summary>The least time between two sends of one sound, as some steps play theirs each frame.</summary>

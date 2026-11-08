@@ -11,6 +11,7 @@ namespace BetterCoop.Features;
 /// patches below only make the common cases immediate.
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class SharedLife
 {
     private const float RetrySeconds = 1f;

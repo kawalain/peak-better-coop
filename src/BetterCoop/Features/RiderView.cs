@@ -13,6 +13,7 @@ namespace BetterCoop.Features;
 /// Carrier's eyes.
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class RiderView
 {
     /// <summary>The local Rider's Carrier while the carry holds.</summary>

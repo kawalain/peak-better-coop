@@ -22,6 +22,7 @@ namespace BetterCoop.Features;
 /// owns, and applies its own part of the handover once per operation.
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class PairShuffle
 {
     /// <summary>How long after an operation's time hands stay locked without its handover.</summary>

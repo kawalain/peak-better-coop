@@ -12,6 +12,7 @@ namespace BetterCoop.Features;
 /// broken (after a revival, before the Carrier picks the Rider up again).
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class RiderHud
 {
     private static int cachedFrame = -1;

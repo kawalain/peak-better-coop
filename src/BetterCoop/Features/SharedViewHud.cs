@@ -16,6 +16,7 @@ namespace BetterCoop.Features;
 /// A shooting crosshair depends on aim, so the Rider's client judges it.
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class SharedViewHud
 {
     private static readonly HudFeed Feed = new();

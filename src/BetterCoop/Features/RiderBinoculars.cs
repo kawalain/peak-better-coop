@@ -12,6 +12,7 @@ namespace BetterCoop.Features;
 /// and the Rider's own scrolling zooms it as it zooms the Carrier's.
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class RiderBinoculars
 {
     /// <summary>The Carrier's binoculars as last opened, seen on the Rider's client.</summary>

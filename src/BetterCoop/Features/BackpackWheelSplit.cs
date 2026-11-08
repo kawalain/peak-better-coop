@@ -31,6 +31,7 @@ namespace BetterCoop.Features;
 /// hand, on release.
 /// </remarks>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class BackpackWheelSplit
 {
     private const byte BackSlot = Player.BACKPACKSLOTINDEX;
@@ -678,6 +679,7 @@ internal static class BackpackWheelSplit
 /// stay empty; the wheel shown there works for the Shared Body instead.
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class BackpackWheelShownCharacter
 {
     private static readonly FieldInfo LocalCharacter = AccessTools.Field(typeof(Character), nameof(Character.localCharacter));

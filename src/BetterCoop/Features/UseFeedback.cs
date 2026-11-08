@@ -15,6 +15,7 @@ namespace BetterCoop.Features;
 /// only the Carrier sees interaction prompts. Names show on both screens.
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class UseFeedback
 {
     private static readonly ProgressFeed Feed = new();

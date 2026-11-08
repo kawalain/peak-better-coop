@@ -13,6 +13,7 @@ namespace BetterCoop.Features;
 /// count (unless odd counts are allowed) and the same mod version everywhere.
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class PartyGate
 {
     private static PartyGateVerdict Evaluate()

@@ -14,6 +14,7 @@ namespace BetterCoop.Features;
 /// are played locally.
 /// </summary>
 [HarmonyPatch]
+[HarmonyWrapSafe]
 internal static class RiderEffects
 {
     /// <summary>A full-screen tint the game starts and ends with an affliction.</summary>
