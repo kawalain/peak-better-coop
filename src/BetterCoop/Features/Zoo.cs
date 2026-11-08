@@ -23,7 +23,13 @@ internal sealed class ZooPage : PaperPage
 
     private RosterPage example = null!;
 
-    private bool toggle = true;
+    private static readonly int[] ManyChoices = [1, 2, 3, 5, 10, 15, 20, 30];
+
+    private bool check = true;
+
+    private int minutes = 10;
+
+    private bool swapped;
 
     private string choice = Choices[0];
 
@@ -48,49 +54,69 @@ internal sealed class ZooPage : PaperPage
 
     protected override void Fill(PaperList list)
     {
-        list.Header(() => T("컴포넌트", "Components"));
-        list.Info(() => T("정보 행", "Info row"));
-        list.Info(() => T("값이 있는 정보 행", "Info row with a value"), () => T("값", "Value"));
-        list.Info(
-            () => T("설명이 있는 정보 행", "Info row with an explanation"),
-            about: () => T("라벨 아래에 한 줄 설명이 붙습니다.", "A line of explanation sits under the label."));
-        list.Info(
-            () => T("긴 설명", "Long explanation"),
-            about: () => T(
-                "설명이 한 줄을 넘으면 잘리지 않고 다음 줄로 넘어가며, 행은 그만큼 높아집니다. 이 문장은 그 모습을 보이려고 일부러 길게 썼습니다.",
-                "An explanation longer than a line wraps instead of being cut off, and its row grows to fit. This sentence is long on purpose to show that."));
-        list.Action(
-            () => T($"버튼 행 (누른 횟수 {presses})", $"Action row (pressed {presses})"),
-            () => T("누르기", "Press"),
-            () => presses++,
-            about: () => T("오른쪽 버튼은 게임의 메뉴 버튼입니다.", "The button on the right is the game's menu button."));
-        list.Action(
-            () => T("쓸 수 없는 버튼", "Unavailable action"),
-            () => T("누르기", "Press"),
-            () => CoopNotice.Info(T("Zoo: 지금은 쓸 수 없어 이유를 알립니다.", "Zoo: unavailable now, so this says why.")),
-            available: () => false,
-            about: () => T("흐리게 보이지만 누르면 이유를 알려 줍니다.", "Dimmed, but pressing it says why."));
-        list.Toggle(() => T("켬/끔", "Switch"), () => toggle, on => toggle = on, () => T("누를 때마다 켜고 끕니다.", "Each press turns it on or off."));
-        list.Cycle(
-            () => T("고르기", "Choice"),
+        list.Masthead(() => T("Zoo 서식 제0호 · 견본", "Zoo Form No. 0 · Specimen"), () => T($"찍은 횟수 {presses}", $"Stamped {presses}"));
+        list.Header(() => T("서식 컴포넌트", "Form components"));
+        list.Note(() => T(
+            "작은 글씨의 안내문입니다. 한 줄을 넘으면 다음 줄로 넘어가며, 항목은 그만큼 높아집니다.",
+            "A note in small print. Longer than a line, it wraps and its entry grows to fit."));
+        list.Field(() => T("항목", "Field"), () => T("펜으로 쓴 답", "Answer in pen"));
+        list.Field(
+            () => T("설명이 붙은 항목", "Field with small print"),
+            () => T("값", "Value"),
+            about: () => T("라벨 아래에 작은 글씨로 설명이 붙습니다.", "Small print sits under the label."));
+        list.Check(
+            () => T("체크 박스", "Check box"),
+            () => check,
+            on => check = on,
+            () => T("줄 어디를 눌러도 체크하거나 지웁니다. 오른쪽 클릭도 같습니다.", "Pressing anywhere on the line ticks or clears it; so does a right click."));
+        list.Choice(
+            () => T("동그라미 고르기", "Circle one"),
             () => choice,
             value => choice = value,
             () => Choices,
             value => value,
-            about: () => T("누를 때마다 다음 값으로 넘어갑니다.", "Each press steps to the next value."));
-        list.Action(() => T("종이 다시 올리기", "Raise the paper again"), () => T("재생", "Play"), Rise);
+            about: () => T(
+                "답을 누르면 펜으로 동그라미를 칩니다. 오른쪽 클릭이나 ←는 앞의 답, →는 다음 답입니다.",
+                "Pressing an answer rings it. A right click or left goes back, right goes forward."));
+        list.Choice(
+            () => T("넘겨 고르기", "Step through"),
+            () => minutes,
+            value => minutes = value,
+            () => ManyChoices,
+            value => T($"{value}분", $"{value} min"),
+            about: () => T(
+                "답이 많으면 하나만 보이고 화살표로 넘깁니다. 누르면 다음, 오른쪽 클릭이나 ←는 앞의 답입니다.",
+                "Many answers show one at a time with arrows. A press steps forward; a right click or left steps back."));
+        list.Stamp(
+            () => T("도장", "Stamp"),
+            () => T("확정", "Approved"),
+            () => presses++,
+            about: () => T("누르면 쿵 하고 찍힙니다.", "Pressed, it comes down with a thump."));
+        list.Stamp(
+            () => T("쓸 수 없는 도장", "Unavailable stamp"),
+            () => T("반려", "Denied"),
+            () => CoopNotice.Info(T("Zoo: 지금은 쓸 수 없어 이유를 알립니다.", "Zoo: unavailable now, so this says why.")),
+            available: () => false,
+            about: () => T("흐리게 보이지만 누르면 이유를 알려 줍니다.", "Faint, but pressing it says why."));
+        list.Stamp(
+            () => T("값과 도장", "Value and stamp"),
+            () => T("교대", "Swap"),
+            () => swapped = !swapped,
+            value: () => swapped ? "Birch ⇄ Alder" : "Alder ⇄ Birch");
+        list.Stamp(() => T("종이 다시 올리기", "Raise the paper again"), () => T("재생", "Play"), Rise);
+        list.Signature(() => T("서명", "Signed"), () => "Alder");
 
         list.Header(() => T("편성표 예제", "Roster examples"));
-        list.Cycle(
+        list.Choice(
             () => T("인원", "Players"),
             () => players,
             count => players = count,
             () => Counts,
             count => T($"{count}명", $"{count}"),
             about: () => T("가짜 방의 인원입니다. 첫 사람이 나입니다.", "Players in the made-up room; the first is you."));
-        list.Toggle(() => T("내가 분대장", "You lead"), () => leader, on => leader = on);
-        list.Toggle(() => T("짝 편성 끝남", "Pairs formed"), () => formed, on => formed = on);
-        list.Action(
+        list.Check(() => T("내가 분대장", "You lead"), () => leader, on => leader = on);
+        list.Check(() => T("짝 편성 끝남", "Pairs formed"), () => formed, on => formed = on);
+        list.Stamp(
             () => T("예제 열기", "Open the example"),
             () => T("열기", "Open"),
             OpenExample,
@@ -102,7 +128,7 @@ internal sealed class ZooPage : PaperPage
         for (int i = 1; i <= 20; i++)
         {
             int line = i;
-            list.Info(() => T($"{line}번째 줄", $"Line {line}"), () => line.ToString());
+            list.Field(() => T($"{line}번째 줄", $"Line {line}"), () => line.ToString());
         }
     }
 

@@ -56,9 +56,20 @@ internal static class Strings
         _ => Korean ? "상관없음" : "Either",
     };
 
-    public static string MenuPartner(string partner, bool carrying) => Korean
-        ? carrying ? $"짝: {partner} 님을 업고 있습니다" : $"짝: {partner} 님에게 업혀 있습니다"
-        : carrying ? $"Partner: you carry {partner}" : $"Partner: {partner} carries you";
+    /// <summary>The Roster's printed head: what form it is.</summary>
+    public static string FormTitle => Korean ? "BetterCoop 서식 제1호 · 편성표" : "BetterCoop Form No. 1 · Roster";
+
+    public static string FormMembers(int count) => Korean ? $"대원 {count}명" : count == 1 ? "1 scout" : $"{count} scouts";
+
+    public static string MenuYou => Korean ? "나의 짝" : "Your Pair";
+
+    public static string MenuPartner => Korean ? "짝" : "Partner";
+
+    public static string MenuYourRole => Korean ? "나의 역할" : "Your role";
+
+    public static string RoleOf(bool carrying) => carrying
+        ? Korean ? "업는 사람" : "Carrier"
+        : Korean ? "업힌 사람" : "Rider";
 
     public static string MenuNoPartner => Korean ? "지금은 짝이 없습니다" : "You have no partner for now";
 
@@ -76,27 +87,37 @@ internal static class Strings
 
     public static string MenuPairsForm => Korean ? "짝은 섬에 도착하면 편성됩니다" : "Pairs form on the island";
 
-    public static string MenuPairs => Korean ? "짝 (업는 사람 ⇄ 업힌 사람)" : "Pairs (Carrier ⇄ Rider)";
+    public static string MenuPairs => Korean ? "짝 명단 (업는 사람 ⇄ 업힌 사람)" : "Pairs (Carrier ⇄ Rider)";
+
+    public static string MenuPairNumber(int number) => Korean ? $"{number}조" : $"Pair {number}";
 
     public static string MenuPair(string carrier, string rider) => $"{carrier} ⇄ {rider}";
 
-    public static string MenuTroopLeader => Korean ? "분대장" : "Troop Leader";
+    public static string MenuTroopLeader => Korean ? "분대장 지시" : "Troop Leader's orders";
+
+    public static string MenuTroopLeaderSign => Korean ? "분대장 확인" : "Troop Leader";
 
     public static string MenuShuffleNowLabel => Korean ? "지금 짝 섞기" : "Shuffle Pairs now";
 
     public static string MenuRecover => Korean ? "모든 짝 다시 업히기" : "Re-carry every Pair";
 
-    public static string MenuGo => Korean ? "실행" : "Go";
+    public static string StampShuffle => Korean ? "섞기" : "Shuffle";
+
+    public static string StampRestore => Korean ? "복구" : "Restore";
+
+    public static string StampApproved => Korean ? "확정" : "Approved";
+
+    public static string StampAsk => Korean ? "요청" : "Request";
+
+    public static string StampCancel => Korean ? "취소" : "Cancel";
+
+    public static string StampSwap => Korean ? "교대" : "Swap";
 
     public static string MenuBusy => Korean
         ? "코옵: 다른 짝 변경이 진행 중이라 지금은 할 수 없습니다."
         : "Coop: another Pair change is under way; try again in a moment.";
 
     public static string MenuRunRules => Korean ? "원정 규칙" : "Run Rules";
-
-    public static string On => Korean ? "켬" : "On";
-
-    public static string Off => Korean ? "끔" : "Off";
 
     public static string Minutes(int minutes) => Korean ? $"{minutes}분" : $"{minutes} min";
 

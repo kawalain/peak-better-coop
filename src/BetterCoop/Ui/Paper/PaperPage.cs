@@ -118,8 +118,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     public (UIPage, PageTransistion) GetParentPage() => (parent, new SinkTransistion());
 
     public GameObject GetFirstSelectedGameObject() =>
-        List.Rows.Select(r => r.Button).FirstOrDefault(b => b != null && b.gameObject.activeInHierarchy)?.gameObject
-        ?? back.gameObject;
+        List.FirstSelectable()?.gameObject ?? back.gameObject;
 
     /// <summary>Opens this page from the current one, which gives way at once while the paper rises.</summary>
     public void Open()

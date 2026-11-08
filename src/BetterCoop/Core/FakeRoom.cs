@@ -70,6 +70,9 @@ internal sealed class FakeRoom : ICoopRoom
 
     public bool IsTroopLeader { get; }
 
+    /// <summary>The local player when they lead, else the next player in the room.</summary>
+    public int TroopLeader => IsTroopLeader || players.Count < 2 ? Me : players[1];
+
     public bool Formed { get; private set; }
 
     public int Me => 1;

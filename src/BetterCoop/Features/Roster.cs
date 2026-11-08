@@ -120,6 +120,8 @@ internal sealed class RosterPage : PaperPage
         {
             TroopLeaderRows.Add(list, room, picks);
         }
+
+        PlayerRows.Sign(list, room);
     }
 
     protected override void Tick() => room.Tick(Time.unscaledDeltaTime);
@@ -133,37 +135,44 @@ internal sealed class AssignPicks
     public int Rider { get; set; } = -1;
 }
 
-/// <summary>Every player's rows: their own Pair and Role Preference, and the Pairs of the room.</summary>
+/// <summary>The parts of the Roster every player fills in: their own Pair and Role Preference, and the room's Pairs.</summary>
 internal static class PlayerRows
 {
     private static readonly RolePreference[] Preferences = [RolePreference.Random, RolePreference.Carrier, RolePreference.Rider];
 
     public static void Add(PaperList list, ICoopRoom room)
     {
-        list.Cycle(
+        list.Masthead(() => Strings.FormTitle, () => Strings.FormMembers(room.Players.Count));
+
+        list.Header(() => Strings.MenuYou);
+        list.Choice(
             () => Strings.MenuRolePreference,
             () => room.Preference,
             value => room.Preference = value,
             () => Preferences,
             Strings.RoleName,
             about: () => Strings.AboutRolePreference);
-        list.Action(
-            () => PartnerLine(room),
-            () => room.SwapPending ? Strings.CancelSwap : Strings.SwapPlaces,
+        Func<bool> paired = () => room.PairOf(room.Me) != null;
+        list.Field(() => Strings.MenuPartner, () => PartnerName(room), visible: paired);
+        list.Field(() => Strings.MenuYourRole, () => Strings.RoleOf(room.PairOf(room.Me)?.Carrier == room.Me), visible: paired);
+        list.Stamp(
+            () => Strings.SwapPlaces,
+            () => room.SwapPending ? Strings.StampCancel : Strings.StampAsk,
             room.ToggleSwap,
-            visible: () => room.PairOf(room.Me) != null,
             available: () => room.SwapPending || room.CanAskSwap,
-            about: () => Strings.AboutSwapPlaces);
-        list.Info(
-            () => Strings.MenuNoPartner,
-            visible: () => room.Formed && room.PairOf(room.Me) == null,
-            about: () => Strings.AboutNoPartner);
-        list.Info(
+            about: () => Strings.AboutSwapPlaces,
+            visible: paired);
+        list.Field(
+            () => Strings.MenuPartner,
+            () => "—",
+            about: () => $"{Strings.MenuNoPartner}. {Strings.AboutNoPartner}",
+            visible: () => room.Formed && !paired());
+        list.Field(
             () => Strings.MenuNextShuffle,
             () => NextShuffle(room),
-            visible: () => room.Formed,
-            about: () => Strings.AboutNextShuffle);
-        list.Info(() => Strings.MenuPairsForm, visible: () => !room.Formed);
+            about: () => Strings.AboutNextShuffle,
+            visible: () => room.Formed);
+        list.Note(() => Strings.MenuPairsForm, visible: () => !room.Formed);
 
         if (!room.Formed)
         {
@@ -171,38 +180,41 @@ internal static class PlayerRows
         }
 
         list.Header(() => Strings.MenuPairs);
+        int number = 0;
         foreach (Pair pair in room.Pairs)
         {
+            int shown = ++number;
+            Func<string> names = () => Strings.MenuPair(room.NameOf(pair.Carrier), room.NameOf(pair.Rider));
             if (room.IsTroopLeader)
             {
                 // The Troop Leader turns any Pair round without waiting for both to ask.
-                list.Action(
-                    () => Strings.MenuPair(room.NameOf(pair.Carrier), room.NameOf(pair.Rider)),
-                    () => Strings.SwapPlaces,
+                list.Stamp(
+                    () => Strings.MenuPairNumber(shown),
+                    () => Strings.StampSwap,
                     () => TroopLeaderRows.Order(room.SwapRoles(pair)),
-                    available: () => !room.Busy);
+                    available: () => !room.Busy,
+                    value: names);
             }
             else
             {
-                list.Info(() => Strings.MenuPair(room.NameOf(pair.Carrier), room.NameOf(pair.Rider)));
+                list.Field(() => Strings.MenuPairNumber(shown), names);
             }
         }
 
-        list.Info(
+        list.Field(
             () => Strings.MenuUnpaired,
             () => string.Join(", ", room.Unpaired().Select(room.NameOf)),
             visible: () => room.Unpaired().Any());
     }
 
-    private static string PartnerLine(ICoopRoom room)
-    {
-        if (room.PairOf(room.Me) is not Pair pair)
-        {
-            return string.Empty;
-        }
+    /// <summary>The line at the foot of the form, signed by the Troop Leader.</summary>
+    public static void Sign(PaperList list, ICoopRoom room) =>
+        list.Signature(
+            () => Strings.MenuTroopLeaderSign,
+            () => room.TroopLeader >= 0 ? room.NameOf(room.TroopLeader) : string.Empty);
 
-        return Strings.MenuPartner(room.NameOf(pair.PartnerOf(room.Me)), pair.Carrier == room.Me);
-    }
+    private static string PartnerName(ICoopRoom room) =>
+        room.PairOf(room.Me) is Pair pair ? room.NameOf(pair.PartnerOf(room.Me)) : string.Empty;
 
     private static string NextShuffle(ICoopRoom room)
     {
@@ -217,29 +229,29 @@ internal static class PlayerRows
     }
 }
 
-/// <summary>The Troop Leader's rows: Pair changes and the Run Rules.</summary>
+/// <summary>The Troop Leader's part of the Roster: orders for the Pairs, and the Run Rules.</summary>
 internal static class TroopLeaderRows
 {
-    /// <summary>Timed Shuffle intervals the menu steps through, in minutes.</summary>
+    /// <summary>Timed Shuffle intervals the form steps through, in minutes.</summary>
     private static readonly int[] Intervals = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60];
 
     public static void Add(PaperList list, ICoopRoom room, AssignPicks picks)
     {
         list.Header(() => Strings.MenuTroopLeader);
-        list.Action(
+        list.Stamp(
             () => Strings.MenuShuffleNowLabel,
-            () => Strings.MenuGo,
+            () => Strings.StampShuffle,
             () => Order(room.Shuffle()),
-            visible: () => room.Formed,
             available: () => !room.Busy,
-            about: () => Strings.AboutShuffleNow);
-        list.Action(
+            about: () => Strings.AboutShuffleNow,
+            visible: () => room.Formed);
+        list.Stamp(
             () => Strings.MenuRecover,
-            () => Strings.MenuGo,
+            () => Strings.StampRestore,
             room.Recover,
-            visible: () => room.Formed,
-            about: () => Strings.AboutRecover);
-        list.Cycle(
+            about: () => Strings.AboutRecover,
+            visible: () => room.Formed);
+        list.Choice(
             () => Strings.MenuAssignCarrier,
             () => picks.Carrier,
             actor => picks.Carrier = actor,
@@ -247,7 +259,7 @@ internal static class TroopLeaderRows
             actor => PickName(room, actor),
             about: () => Strings.AboutAssignCarrier,
             visible: () => room.Formed);
-        list.Cycle(
+        list.Choice(
             () => Strings.MenuAssignRider,
             () => picks.Rider,
             actor => picks.Rider = actor,
@@ -255,18 +267,18 @@ internal static class TroopLeaderRows
             actor => PickName(room, actor),
             about: () => Strings.AboutAssignRider,
             visible: () => room.Formed);
-        list.Action(
+        list.Stamp(
             () => Strings.MenuAssign,
-            () => Strings.MenuGo,
+            () => Strings.StampApproved,
             () => Assign(room, picks),
-            visible: () => room.Formed,
             available: () => !room.Busy && room.CanAssign(picks.Carrier, picks.Rider),
-            about: () => Strings.AboutAssign);
+            about: () => Strings.AboutAssign,
+            visible: () => room.Formed);
 
         list.Header(() => Strings.MenuRunRules);
         Rule(list, room, RunRule.CampfireShuffle, () => Strings.RuleCampfireShuffle, () => Strings.AboutCampfireShuffle);
         Rule(list, room, RunRule.TimedShuffle, () => Strings.RuleTimedShuffle, () => Strings.AboutTimedShuffle);
-        list.Cycle(
+        list.Choice(
             () => Strings.RuleTimedShuffleInterval,
             () => room.ShuffleMinutes,
             minutes => room.ShuffleMinutes = minutes,
@@ -290,7 +302,7 @@ internal static class TroopLeaderRows
     }
 
     private static void Rule(PaperList list, ICoopRoom room, RunRule rule, Func<string> label, Func<string> about) =>
-        list.Toggle(label, () => room.Rule(rule), on => room.SetRule(rule, on), about);
+        list.Check(label, () => room.Rule(rule), on => room.SetRule(rule, on), about);
 
     private static void Assign(ICoopRoom room, AssignPicks picks)
     {
@@ -317,6 +329,8 @@ internal sealed class LiveRoom : ICoopRoom
     public bool InRoom => PhotonNetwork.InRoom;
 
     public bool IsTroopLeader => PhotonNetwork.IsMasterClient;
+
+    public int TroopLeader => PhotonNetwork.MasterClient?.ActorNumber ?? -1;
 
     public bool Formed => PairRoster.Formed;
 

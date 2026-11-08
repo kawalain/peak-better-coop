@@ -26,6 +26,9 @@ internal interface ICoopRoom
 
     bool IsTroopLeader { get; }
 
+    /// <summary>The player who leads the room, or -1 when none is known.</summary>
+    int TroopLeader { get; }
+
     /// <summary>Whether the Run's Pair Formation has happened.</summary>
     bool Formed { get; }
 
