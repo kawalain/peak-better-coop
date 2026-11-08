@@ -132,6 +132,37 @@ internal static class PairingRules
     }
 
     /// <summary>
+    /// Forms Pairs as <see cref="Form"/> does, preferring a result that
+    /// repeats none of the <paramref name="previous"/> partners (Pair Shuffle).
+    /// Every attempt overrides the same number of wishes, so only repeats count.
+    /// </summary>
+    public static PairingResult FormAvoiding(
+        IReadOnlyList<PairCandidate> candidates,
+        Random random,
+        IReadOnlyList<Pair> previous,
+        int attempts = 64)
+    {
+        var before = new HashSet<(int, int)>(previous.Select(PartnersOf));
+        PairingResult best = Form(candidates, random);
+        int bestRepeats = best.Pairs.Count(p => before.Contains(PartnersOf(p)));
+        for (int i = 1; i < attempts && bestRepeats > 0; i++)
+        {
+            PairingResult next = Form(candidates, random);
+            int repeats = next.Pairs.Count(p => before.Contains(PartnersOf(p)));
+            if (repeats < bestRepeats)
+            {
+                best = next;
+                bestRepeats = repeats;
+            }
+        }
+
+        return best;
+    }
+
+    private static (int, int) PartnersOf(Pair pair) =>
+        pair.Carrier < pair.Rider ? (pair.Carrier, pair.Rider) : (pair.Rider, pair.Carrier);
+
+    /// <summary>
     /// Dissolves every Pair with a member no longer in the room; the partner
     /// left behind becomes unpaired. Idempotent, so the host may apply it to a
     /// stale copy of the Pairs and still converge.
