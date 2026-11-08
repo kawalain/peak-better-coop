@@ -44,7 +44,7 @@ internal static class RiderHud
     }
 }
 
-/// <summary>Keeps the Rider's HUD in step with the Carrier: slot highlight, item prompts, binocular view.</summary>
+/// <summary>Keeps the Rider's HUD and view in step with the Carrier: slot highlight, item prompts, binocular view, hidden bodies.</summary>
 internal sealed class RiderHudRefresher : MonoBehaviour
 {
     private float nextRefresh;
@@ -52,6 +52,7 @@ internal sealed class RiderHudRefresher : MonoBehaviour
     private void Update()
     {
         RiderBinoculars.Keep();
+        RiderView.Keep();
         if (Time.unscaledTime < nextRefresh || GUIManager.instance == null)
         {
             return;
