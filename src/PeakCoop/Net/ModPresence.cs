@@ -15,7 +15,9 @@ internal sealed class ModPresence : MonoBehaviourPunCallbacks
         player.CustomProperties.TryGetValue(RoomKeys.Version, out object value) ? value as string : null;
 
     public static RolePreference RoleOf(PhotonPlayer player) =>
-        player.CustomProperties.TryGetValue(RoomKeys.Role, out object value) && value is byte role
+        player.CustomProperties.TryGetValue(RoomKeys.Role, out object value)
+        && value is byte role
+        && System.Enum.IsDefined(typeof(RolePreference), role)
             ? (RolePreference)role
             : RolePreference.Random;
 

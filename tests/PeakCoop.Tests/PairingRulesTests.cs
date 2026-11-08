@@ -86,6 +86,25 @@ public class PairingRulesTests
     }
 
     [Fact]
+    public void An_unknown_wish_counts_as_no_wish()
+    {
+        for (int seed = 0; seed < 50; seed++)
+        {
+            PairingResult result = Form(
+                seed,
+                C(1, RolePreference.Carrier),
+                C(2, (RolePreference)7),
+                C(3, RolePreference.Rider),
+                C(4, (RolePreference)200));
+
+            Assert.Equal(2, result.Pairs.Count);
+            Assert.Contains(result.Pairs, p => p.Carrier == 1);
+            Assert.Contains(result.Pairs, p => p.Rider == 3);
+            Assert.Empty(result.PreferenceOverridden);
+        }
+    }
+
+    [Fact]
     public void Complete_pairs_need_no_dissolving()
     {
         var pairs = new PairingResult([new Pair(1, 2), new Pair(3, 4)], [5], []);

@@ -59,7 +59,12 @@ internal static class PairingRules
 {
     public static PairingResult Form(IReadOnlyList<PairCandidate> candidates, Random random)
     {
-        List<PairCandidate> players = Shuffle(candidates, random);
+        // A wish this version does not know counts as no wish.
+        List<PairCandidate> players = Shuffle(
+            candidates.Select(c => c.Preference is RolePreference.Carrier or RolePreference.Rider
+                ? c
+                : new PairCandidate(c.Actor, RolePreference.Random)),
+            random);
         var unpaired = new List<int>();
 
         if (players.Count % 2 != 0)
