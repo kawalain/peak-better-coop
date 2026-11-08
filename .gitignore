@@ -8,3 +8,6 @@ Directory.Build.user.props
 
 # Decompiled game code: reference only, never committed
 decompiled/
+
+# Test build zips
+artifacts/

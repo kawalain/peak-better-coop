@@ -38,4 +38,31 @@
     <Message Importance="high" Text="Deployed $(TargetFileName) to $(PeakCoopDeployDir)" />
   </Target>
 
+  <!--
+    Release builds also produce a Thunderstore-format zip in artifacts/ that
+    players import into Gale as a local mod. Nothing is uploaded.
+  -->
+  <PropertyGroup>
+    <PackageStageDir>$(BaseIntermediateOutputPath)package\</PackageStageDir>
+    <PackageZip>$(MSBuildThisFileDirectory)..\..\artifacts\PeakCoop-$(Version).zip</PackageZip>
+  </PropertyGroup>
+
+  <Target Name="PackageTestBuild" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
+    <PropertyGroup>
+      <ManifestJson><![CDATA[{
+  "name": "PeakCoop",
+  "version_number": "$(Version)",
+  "website_url": "",
+  "description": "Climb PEAK in Pairs: the Carrier carries the Rider, the Carrier drives the body with the keyboard and the Rider with the mouse.",
+  "dependencies": ["BepInEx-BepInExPack_PEAK-5.4.75301"]
+}]]></ManifestJson>
+    </PropertyGroup>
+    <RemoveDir Directories="$(PackageStageDir)" />
+    <Copy SourceFiles="$(TargetPath);$(MSBuildThisFileDirectory)..\..\README.md" DestinationFolder="$(PackageStageDir)" />
+    <WriteLinesToFile File="$(PackageStageDir)manifest.json" Lines="$(ManifestJson)" Overwrite="true" />
+    <MakeDir Directories="$(MSBuildThisFileDirectory)..\..\artifacts" />
+    <ZipDirectory SourceDirectory="$(PackageStageDir)" DestinationFile="$(PackageZip)" Overwrite="true" />
+    <Message Importance="high" Text="Packaged $(PackageZip)" />
+  </Target>
+
 </Project>

@@ -51,6 +51,7 @@ that field in the downloaded BepInExPack_PEAK zip first; otherwise it lands in
 Players must run the exact same version to depart, so bump `<Version>` in
 `PeakCoop.csproj` only when a test build goes to players: minor for a build with
 new features, patch for a build of fixes. Commits in between keep the version.
+A Release build writes the test build to `artifacts/PeakCoop-<version>.zip`.
 
 ## Code layout
 
