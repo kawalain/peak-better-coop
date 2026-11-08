@@ -174,6 +174,7 @@ internal static class RiderView
         }
 
         nextSweep = Time.unscaledTime + 0.25f;
+        WatchRiderCamera();
         Wanted.Clear();
         if (!MainCameraMovement.IsSpectating && TryGetCarrierOfLocalRider(out Character carrier))
         {
@@ -195,6 +196,42 @@ internal static class RiderView
             renderer.forceRenderingOff = true;
             Hidden.Add(renderer);
         }
+    }
+
+    private static string? lastCameraState;
+
+    /// <summary>
+    /// Logs, when it changes, why the Rider's camera is where it is: the game
+    /// spectates for a passed-out or rocketing body, and blends toward the
+    /// body's own torso as its ragdoll control drops.
+    /// </summary>
+    private static void WatchRiderCamera()
+    {
+        Character local = Character.localCharacter;
+        if (local == null
+            || PairRoster.RoleOf(local) != PairRole.Rider
+            || !PairRoster.TryGetPartner(local, out Character carrier)
+            || MainCamera.instance == null)
+        {
+            lastCameraState = null;
+            return;
+        }
+
+        MainCameraMovement movement = Zorro.Core.Singleton<MainCameraMovement>.Instance;
+        float offHead = Vector3.Distance(MainCamera.instance.transform.position, carrier.GetCameraPos(CameraForwardOffset));
+        Character spectated = MainCameraMovement.specCharacter;
+        string state = $"spectating={MainCameraMovement.IsSpectating} ({(spectated != null ? spectated.characterName : "nobody")}), "
+            + $"carried={local.data.carrier == carrier}, passedOut={local.data.passedOut}, fullyPassedOut={local.data.fullyPassedOut}, "
+            + $"dead={local.data.dead}, rocketing={movement != null && movement.isRocketing}, "
+            + $"ragdollControl={(local.data.currentRagdollControll >= 0.95f ? "full" : "low")}, "
+            + $"cameraOffHead={offHead > 1f}";
+        if (state == lastCameraState)
+        {
+            return;
+        }
+
+        lastCameraState = state;
+        Plugin.Verbose($"Rider camera: {state} (camera {offHead:0.0} m from the Carrier's eyes).");
     }
 
     /// <summary>Every renderer of the Rider but the shadow stand-ins the game uses for one's own body.</summary>
