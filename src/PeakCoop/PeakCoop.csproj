@@ -14,7 +14,6 @@
 
   <!-- Legacy feature files awaiting their rewrite against the current game. -->
   <ItemGroup>
-    <Compile Remove="Features/Pairing.cs" />
     <Compile Remove="Features/ControlSplit.cs" />
     <Compile Remove="Features/SharedDeath.cs" />
     <Compile Remove="Features/SharedRevival.cs" />

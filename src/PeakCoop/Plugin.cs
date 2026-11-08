@@ -2,6 +2,7 @@ using System;
 using BepInEx;
 using BepInEx.Logging;
 using HarmonyLib;
+using PeakCoop.Features;
 using PeakCoop.Net;
 using PeakCoop.Ui;
 using UnityEngine;
@@ -48,6 +49,7 @@ public sealed class Plugin : BaseUnityPlugin
 
         runtime.AddComponent<ModPresence>();
         runtime.AddComponent<RunRules>();
+        runtime.AddComponent<PairingDirector>();
 
         Log.LogInfo($"{MyPluginInfo.PLUGIN_NAME} {MyPluginInfo.PLUGIN_VERSION} loaded.");
     }
