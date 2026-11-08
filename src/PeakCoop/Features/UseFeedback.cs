@@ -17,14 +17,9 @@ namespace PeakCoop.Features;
 [HarmonyPatch]
 internal static class UseFeedback
 {
-    /// <summary>How long the Rider trusts the last progress without a new one.</summary>
-    private const float StaleSeconds = 0.5f;
-
     private static readonly ProgressFeed Feed = new();
 
-    private static float riderProgress;
-
-    private static float riderProgressAt = float.NegativeInfinity;
+    private static readonly ProgressSmoother RiderProgress = new();
 
     /// <summary>Called every frame: the Carrier sends the progress of the Rider's action.</summary>
     internal static void SendFromCarrier()
@@ -61,8 +56,7 @@ internal static class UseFeedback
             return;
         }
 
-        riderProgress = progress;
-        riderProgressAt = Time.unscaledTime;
+        RiderProgress.Receive(progress, Time.unscaledTime);
     }
 
     /// <summary>The progress bar the game would show the one using the item.</summary>
@@ -73,20 +67,22 @@ internal static class UseFeedback
         return Mathf.Clamp01(Mathf.Max(use, character.refs.items.climbingSpikeCastProgress));
     }
 
-    /// <summary>The Rider's progress bar shows the progress of the Shared Body's use.</summary>
+    /// <summary>The Rider's progress bar shows the progress of the Shared Body's use, smoothed between updates.</summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(UI_UseItemProgress), nameof(UI_UseItemProgress.UpdateFillAmount))]
     private static bool ShowCarrierProgress(UI_UseItemProgress __instance, ref bool __result)
     {
         if (RiderHud.ObservedCarrier() == null)
         {
+            RiderProgress.Reset();
             return true;
         }
 
-        __result = riderProgress > 0f && Time.unscaledTime - riderProgressAt < StaleSeconds;
+        float shown = RiderProgress.Display(Time.unscaledTime);
+        __result = shown > 0f;
         if (__result)
         {
-            __instance.fill.fillAmount = riderProgress;
+            __instance.fill.fillAmount = shown;
         }
 
         return false;
