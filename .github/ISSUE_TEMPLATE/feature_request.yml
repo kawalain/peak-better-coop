@@ -1,0 +1,16 @@
+name: Idea / 제안
+description: Suggest a change to how Pairs play. / 짝 플레이에 대한 변경을 제안합니다.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What feels wrong or missing / 불편하거나 빠진 점
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What you would like instead / 바라는 모습
+    validations:
+      required: true

@@ -1,0 +1,60 @@
+name: Bug report / 버그 제보
+description: Something in BetterCoop does not work as it should. / BetterCoop이 제대로 동작하지 않습니다.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before playing again, turn on `[Debug] Verbose Log` in your mod manager's config editor, reproduce the problem, and attach `BepInEx/LogOutput.log` from your profile. Logs from both players of the Pair help most.
+        다시 플레이하기 전에 모드 매니저의 설정 편집기에서 `[Debug] Verbose Log`를 켜고, 문제를 재현한 뒤 프로필의 `BepInEx/LogOutput.log`를 첨부해 주세요. 짝 두 사람의 로그가 모두 있으면 가장 좋습니다.
+  - type: input
+    id: version
+    attributes:
+      label: BetterCoop version / 버전
+      placeholder: "0.5.4"
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Your role when it happened / 문제가 생겼을 때 역할
+      multiple: true
+      options:
+        - Carrier / 업는 사람
+        - Rider / 업힌 사람
+        - Unpaired Player / 짝 없는 사람
+        - Troop Leader (host) / 분대장
+        - Solo Pair (debug) / 1인 짝 테스트
+    validations:
+      required: true
+  - type: input
+    id: players
+    attributes:
+      label: Players in the room / 방 인원
+      placeholder: "4"
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened / 무슨 일이 있었나요
+      description: What you did, what you expected, and what happened instead. / 무엇을 했고, 무엇을 기대했고, 실제로는 어땠는지 적어 주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen again / 재현 방법
+      placeholder: |
+        1. ...
+        2. ...
+  - type: textarea
+    id: mods
+    attributes:
+      label: Other mods / 함께 쓴 모드
+      description: Your mod list, or your Gale profile code. / 모드 목록이나 Gale 프로필 코드를 적어 주세요.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / 로그
+      description: Drag `LogOutput.log` here. / `LogOutput.log`를 여기에 끌어다 놓으세요.
+    validations:
+      required: true

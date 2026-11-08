@@ -1,0 +1,30 @@
+name: Mod compatibility / 모드 호환성
+description: BetterCoop misbehaves next to another mod. / 다른 모드와 함께 쓸 때 문제가 생깁니다.
+labels: [compatibility]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: BetterCoop version / 버전
+      placeholder: "0.5.4"
+    validations:
+      required: true
+  - type: input
+    id: other
+    attributes:
+      label: Other mod and its version / 다른 모드와 그 버전
+      description: A Thunderstore link is best. / Thunderstore 링크가 가장 좋습니다.
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What goes wrong / 어떤 문제가 생기나요
+      description: Does it also happen with only BetterCoop, or only the other mod? / BetterCoop만 켰을 때, 다른 모드만 켰을 때도 생기나요?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / 로그
+      description: "`BepInEx/LogOutput.log` with `[Debug] Verbose Log` on. / `[Debug] Verbose Log`를 켠 상태의 `BepInEx/LogOutput.log`."
