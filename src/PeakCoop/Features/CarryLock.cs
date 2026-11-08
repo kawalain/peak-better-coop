@@ -23,6 +23,8 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
 
     private float nextCarryAttempt;
 
+    private float nextHandCheck;
+
     private void Update()
     {
         if (CoopConfig.RecoveryKey.Value
@@ -55,6 +57,59 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
         {
             nextCarryAttempt = Time.unscaledTime + RetrySeconds;
             KeepCarrying(local, force: false);
+        }
+
+        if (role == PairRole.Rider && Time.unscaledTime >= nextHandCheck)
+        {
+            nextHandCheck = Time.unscaledTime + 0.5f;
+            EmptyRiderHandsAndBack(local);
+        }
+    }
+
+    /// <summary>
+    /// The Rider's hands and back stay empty (ADR 0002): an item that lands
+    /// there, such as one a cheat spawns into the hand or a back item worn
+    /// before pairing, is dropped in front of the Shared Body.
+    /// </summary>
+    private static void EmptyRiderHandsAndBack(Character rider)
+    {
+        if (rider.data.dead || !PairRoster.TryGetPartner(rider, out Character carrier))
+        {
+            return;
+        }
+
+        Vector3 forward = Vector3.ProjectOnPlane(carrier.data.lookDirection, Vector3.up).normalized;
+        Vector3 at = carrier.Center + (forward * 0.8f);
+        CharacterItems items = rider.refs.items;
+        if (rider.data.currentItem != null)
+        {
+            ItemSlot? slot = items.currentSelectedSlot.IsSome ? rider.player.GetItemSlot(items.currentSelectedSlot.Value) : null;
+            if (slot != null && !slot.IsEmpty())
+            {
+                Plugin.Verbose($"Dropping {slot.GetPrefabName()} from the Rider's hand.");
+                items.photonView.RPC(
+                    "DropItemRpc",
+                    RpcTarget.All,
+                    0f,
+                    items.currentSelectedSlot.Value,
+                    at,
+                    Vector3.zero,
+                    Quaternion.identity,
+                    slot.data,
+                    true);
+                CoopNotice.Info(Strings.RiderHandEmptied);
+            }
+            else
+            {
+                items.EquipSlot(Optionable<byte>.None);
+            }
+        }
+
+        if (!rider.player.backpackSlot.IsEmpty())
+        {
+            Plugin.Verbose($"Dropping {rider.player.backpackSlot.GetPrefabName()} from the Rider's back.");
+            items.photonView.RPC("DropItemFromSlotRPC", RpcTarget.All, (byte)Player.BACKPACKSLOTINDEX, at + (Vector3.up * 0.5f));
+            CoopNotice.Info(Strings.RiderBackEmptied);
         }
     }
 

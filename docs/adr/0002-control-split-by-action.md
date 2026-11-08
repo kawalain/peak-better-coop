@@ -34,7 +34,10 @@ key never moves an action to the other player.
   statuses are cleared at pairing and kept clear, and the Rider lives or dies
   only through shared death and revival.
 - The Rider's keyboard plays no part beyond menus and push-to-talk, and the
-  Rider's own inventory is idle while paired.
+  Rider's own inventory is idle while paired: the Rider's hands and back stay
+  empty, and anything that lands there (a back item worn before pairing, an
+  item spawned into the Rider's hand) is dropped at the Shared Body for the
+  Carrier to pick up.
 - The Shared Body has the Carrier's three hand slots and back slot. The back
   slot holds a backpack, fanny pack, jetpack, or rocket pack as usual; the
   back-slot key brings that item to hand and never puts the Rider down.
