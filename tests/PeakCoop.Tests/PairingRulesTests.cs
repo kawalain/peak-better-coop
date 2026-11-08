@@ -86,6 +86,26 @@ public class PairingRulesTests
     }
 
     [Fact]
+    public void Odd_one_out_comes_from_an_oversubscribed_wish()
+    {
+        for (int seed = 0; seed < 50; seed++)
+        {
+            PairingResult result = Form(
+                seed,
+                C(1, RolePreference.Carrier),
+                C(2, RolePreference.Carrier),
+                C(3));
+
+            int left = Assert.Single(result.Unpaired);
+            Assert.Contains(left, new[] { 1, 2 });
+            Pair pair = Assert.Single(result.Pairs);
+            Assert.Equal(3 - left, pair.Carrier);
+            Assert.Equal(3, pair.Rider);
+            Assert.Empty(result.PreferenceOverridden);
+        }
+    }
+
+    [Fact]
     public void An_unknown_wish_counts_as_no_wish()
     {
         for (int seed = 0; seed < 50; seed++)

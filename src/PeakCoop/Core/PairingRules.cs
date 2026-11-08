@@ -69,13 +69,15 @@ internal static class PairingRules
 
         if (players.Count % 2 != 0)
         {
-            // The odd one out is someone without a wish, when there is one.
-            int index = players.FindIndex(p => p.Preference == RolePreference.Random);
-            if (index < 0)
-            {
-                index = random.Next(players.Count);
-            }
-
+            // The odd one out comes from a wish more players hold than there are
+            // Pairs, so leaving them out overrides one wish fewer; otherwise it
+            // is someone without a wish. One of the two always exists.
+            int slots = players.Count / 2;
+            RolePreference leaveOut =
+                players.Count(p => p.Preference == RolePreference.Carrier) > slots ? RolePreference.Carrier
+                : players.Count(p => p.Preference == RolePreference.Rider) > slots ? RolePreference.Rider
+                : RolePreference.Random;
+            int index = players.FindIndex(p => p.Preference == leaveOut);
             unpaired.Add(players[index].Actor);
             players.RemoveAt(index);
         }
