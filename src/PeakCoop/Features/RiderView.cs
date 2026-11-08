@@ -61,23 +61,26 @@ internal static class RiderView
     }
 
     /// <summary>
-    /// The Rider's interaction ray starts inside the Carrier's head; skip the
-    /// Carrier's colliders as the game skips the local player's own.
+    /// The interaction ray never lands on the partner: the Rider's starts
+    /// inside the Carrier's head, and the Carrier's can catch the Rider on
+    /// their back. Skip the partner's colliders as the game skips one's own.
     /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Interaction), nameof(Interaction.DoInteractableRaycasts))]
-    private static void IgnoreCarrierColliders(out int __state)
+    private static void IgnorePartnerColliders(out int __state)
     {
         __state = 0;
-        if (!TryGetCarrierOfLocalRider(out Character carrier))
+        Character local = Character.localCharacter;
+        if (local == null || !PairRoster.TryGetPartner(local, out Character partner)
+            || (local.data.carrier != partner && local.data.carriedPlayer != partner))
         {
             return;
         }
 
-        List<Collider> own = Character.localCharacter.refs.ragdoll.colliderList;
-        List<Collider> carrierColliders = carrier.refs.ragdoll.colliderList;
-        own.AddRange(carrierColliders);
-        __state = carrierColliders.Count;
+        List<Collider> own = local.refs.ragdoll.colliderList;
+        List<Collider> partnerColliders = partner.refs.ragdoll.colliderList;
+        own.AddRange(partnerColliders);
+        __state = partnerColliders.Count;
     }
 
     [HarmonyFinalizer]

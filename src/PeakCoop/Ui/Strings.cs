@@ -29,10 +29,6 @@ internal static class Strings
         ? $"코옵: {carrier} 님과 {rider} 님의 짝이 풀렸습니다."
         : $"Co-op: the Pair of {carrier} and {rider} has ended.";
 
-    public static string NoBackpack => Korean
-        ? "코옵: 짝을 업고 있을 때는 배낭을 멜 수 없습니다."
-        : "Co-op: you cannot wear a backpack while carrying your Rider.";
-
     public static string Recovered => Korean
         ? "코옵: 분대장이 모든 짝의 업기 상태를 되돌렸습니다."
         : "Co-op: the Troop Leader repaired every Pair's carry.";

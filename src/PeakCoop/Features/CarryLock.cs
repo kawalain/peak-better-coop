@@ -135,6 +135,30 @@ internal static class CarryLockPatches
         && !carrier.data.dead
         && !carried.data.dead;
 
+    /// <summary>
+    /// Clears a live Pair's carry slot for the length of one game call, so the
+    /// game treats the Carrier as carrying nobody; returns what to restore.
+    /// </summary>
+    private static Character? HideRider(Character? carrier)
+    {
+        if (carrier == null || !IsLivePair(carrier, carrier.data.carriedPlayer))
+        {
+            return null;
+        }
+
+        Character rider = carrier.data.carriedPlayer;
+        carrier.data.carriedPlayer = null;
+        return rider;
+    }
+
+    private static void RestoreRider(Character? carrier, Character? rider)
+    {
+        if (carrier != null && rider != null)
+        {
+            carrier.data.carriedPlayer = rider;
+        }
+    }
+
     /// <summary>The game drops a passenger who is awake; a Rider always is.</summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(CharacterCarrying), "Update")]
@@ -184,23 +208,67 @@ internal static class CarryLockPatches
         }
     }
 
-    /// <summary>Carrying leaves no room for a backpack.</summary>
+    /// <summary>
+    /// A Pair's carry keeps the Carrier's back item: the game would empty the
+    /// back slot onto the ground when a carry starts, as after a revival.
+    /// </summary>
     [HarmonyPrefix]
-    [HarmonyPatch(typeof(Backpack), nameof(Backpack.Wear))]
-    private static bool NoBackpackWhilePaired(Character interactor)
+    [HarmonyPatch(typeof(CharacterCarrying), nameof(CharacterCarrying.RPCA_StartCarry))]
+    private static void KeepBackItemOnPairCarry(CharacterCarrying __instance, PhotonView targetView, out BackpackSlot? __state)
     {
-        if (PairRoster.RoleOf(interactor) == PairRole.None)
+        __state = null;
+        Character carrier = __instance.character;
+        if (PairRoster.RoleOf(carrier) != PairRole.Carrier
+            || !PairRoster.TryGetPartner(carrier, out Character rider)
+            || rider.photonView != targetView)
         {
-            return true;
+            return;
         }
 
-        if (interactor.IsLocal)
-        {
-            CoopNotice.Warning(Strings.NoBackpack);
-        }
-
-        return false;
+        __state = carrier.player.backpackSlot;
+        carrier.player.backpackSlot = new BackpackSlot(Player.BACKPACKSLOTINDEX);
     }
+
+    [HarmonyFinalizer]
+    [HarmonyPatch(typeof(CharacterCarrying), nameof(CharacterCarrying.RPCA_StartCarry))]
+    private static void RestoreBackItem(CharacterCarrying __instance, BackpackSlot? __state)
+    {
+        if (__state != null)
+        {
+            __instance.character.player.backpackSlot = __state;
+            __instance.character.refs.afflictions.UpdateWeight();
+        }
+    }
+
+    /// <summary>
+    /// With the back slot selected the game aims the interact key at the
+    /// carried player, to put them down; a Pair's back slot holds a back item
+    /// instead, and the interact key works on the world as usual.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Interaction), nameof(Interaction.DoInteractableRaycasts))]
+    private static void InteractPastRider(out Character? __state) => __state = HideRider(Character.localCharacter);
+
+    [HarmonyFinalizer]
+    [HarmonyPatch(typeof(Interaction), nameof(Interaction.DoInteractableRaycasts))]
+    private static void RestoreRiderAfterInteract(Character? __state) => RestoreRider(Character.localCharacter, __state);
+
+    /// <summary>The HUD's back slot shows the back item, not the Rider.</summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(InventoryItemUI), nameof(InventoryItemUI.SetItem))]
+    private static void ShowBackItemInSlot(out Character? __state) => __state = HideRider(Character.observedCharacter);
+
+    [HarmonyFinalizer]
+    [HarmonyPatch(typeof(InventoryItemUI), nameof(InventoryItemUI.SetItem))]
+    private static void RestoreRiderAfterSlot(Character? __state) => RestoreRider(Character.observedCharacter, __state);
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(InventoryItemUI), nameof(InventoryItemUI.SetSelected))]
+    private static void ShowBackItemSelection(out Character? __state) => __state = HideRider(Character.observedCharacter);
+
+    [HarmonyFinalizer]
+    [HarmonyPatch(typeof(InventoryItemUI), nameof(InventoryItemUI.SetSelected))]
+    private static void RestoreRiderAfterSelection(Character? __state) => RestoreRider(Character.observedCharacter, __state);
 
     /// <summary>
     /// Carry Weight off (the default) lifts the weight of the Rider: the game
@@ -210,28 +278,14 @@ internal static class CarryLockPatches
     [HarmonyPatch(typeof(CharacterAfflictions), nameof(CharacterAfflictions.UpdateWeight))]
     private static void HideRiderFromWeight(CharacterAfflictions __instance, out Character? __state)
     {
-        __state = null;
         Character carrier = __instance.character;
-        if (RunRules.CarryWeight
-            || !carrier.photonView.IsMine
-            || !IsLivePair(carrier, carrier.data.carriedPlayer))
-        {
-            return;
-        }
-
-        __state = carrier.data.carriedPlayer;
-        carrier.data.carriedPlayer = null;
+        __state = RunRules.CarryWeight || !carrier.photonView.IsMine ? null : HideRider(carrier);
     }
 
     [HarmonyFinalizer]
     [HarmonyPatch(typeof(CharacterAfflictions), nameof(CharacterAfflictions.UpdateWeight))]
-    private static void RestoreRiderAfterWeight(CharacterAfflictions __instance, Character? __state)
-    {
-        if (__state != null)
-        {
-            __instance.character.data.carriedPlayer = __state;
-        }
-    }
+    private static void RestoreRiderAfterWeight(CharacterAfflictions __instance, Character? __state) =>
+        RestoreRider(__instance.character, __state);
 
     /// <summary>The Shared Body has one set of statuses: the Rider gains none.</summary>
     [HarmonyPrefix]
