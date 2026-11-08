@@ -102,4 +102,18 @@ public class LatePairingRulesTests
         Assert.True(higherRider.CarrierMovesToRider);
         Assert.False(higherCarrier.CarrierMovesToRider);
     }
+
+    [Fact]
+    public void A_new_character_settles_before_it_can_be_paired()
+    {
+        var clock = new ArrivalClock();
+
+        Assert.False(clock.Settled(1, 100, 0f));
+        Assert.False(clock.Settled(1, 100, ArrivalClock.SettleSeconds - 0.1f));
+        Assert.True(clock.Settled(1, 100, ArrivalClock.SettleSeconds));
+
+        // A character spawned anew, as on a respawn, settles again.
+        Assert.False(clock.Settled(1, 101, 10f));
+        Assert.True(clock.Settled(1, 101, 10f + ArrivalClock.SettleSeconds));
+    }
 }

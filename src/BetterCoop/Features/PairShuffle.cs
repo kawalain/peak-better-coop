@@ -48,6 +48,8 @@ internal static class PairShuffle
 
     private static float nextLatePairingCheck;
 
+    private static readonly ArrivalClock Arrivals = new();
+
     /// <summary>The latest operation: the room's, or this host's newer one not yet echoed back.</summary>
     internal static Operation? Current
     {
@@ -202,7 +204,10 @@ internal static class PairShuffle
         }
     }
 
-    /// <summary>Players outside every Pair who run this version and have a character.</summary>
+    /// <summary>
+    /// Players outside every Pair who run this version and whose character
+    /// has settled: other mods move and revive a player who has just joined.
+    /// </summary>
     private static List<LateCandidate> LateCandidates(PairingResult current)
     {
         var candidates = new List<LateCandidate>();
@@ -211,7 +216,8 @@ internal static class PairShuffle
             if (player.IsInactive
                 || ModPresence.VersionOf(player) != MyPluginInfo.PLUGIN_VERSION
                 || current.Pairs.Any(p => p.Contains(player.ActorNumber))
-                || CharacterOf(player.ActorNumber) is not Character character)
+                || CharacterOf(player.ActorNumber) is not Character character
+                || !Arrivals.Settled(player.ActorNumber, character.GetInstanceID(), Time.unscaledTime))
             {
                 continue;
             }
