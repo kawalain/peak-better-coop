@@ -181,6 +181,17 @@ public class PairShuffleTests
     }
 
     [Fact]
+    public void A_place_only_entry_survives_encoding()
+    {
+        var plan = new HandoverPlan(3, true, [new HandoverEntry(2, 5, [1f, 80f, 3f], [], 0f, 0f)]);
+
+        HandoverEntry entry = HandoverPlan.Decode(plan.Encode())!.For(2)!;
+
+        Assert.False(entry.TakesStatuses);
+        Assert.Equal([1f, 80f, 3f], entry.Place);
+    }
+
+    [Fact]
     public void A_malformed_plan_is_ignored()
     {
         Assert.Null(HandoverPlan.Decode(new object[] { 1, true, 2, new[] { 1 }, new[] { 1 }, new float[3], new float[1], new float[2] }));
@@ -234,6 +245,29 @@ public class OperationTests
         Assert.Equal(OperationKind.CampfireShuffle, next.Kind);
         Assert.Equal(2, next.Id);
         Assert.Null(queue.After(next.Finished(), 8));
+    }
+
+    [Fact]
+    public void A_shuffle_during_a_late_pairing_waits_for_it()
+    {
+        var queue = new OperationQueue();
+        Operation pairing = queue.Request(null, OperationKind.LatePairing, 0, 5, 6)!;
+
+        Assert.Null(queue.Request(pairing, OperationKind.CampfireShuffle, 1));
+        Assert.Null(queue.Request(pairing, OperationKind.LatePairing, 1, 7, 8));
+        Operation next = queue.After(pairing.Finished(), 4)!;
+
+        Assert.Equal(OperationKind.CampfireShuffle, next.Kind);
+    }
+
+    [Fact]
+    public void A_late_pairing_involves_only_its_two()
+    {
+        var pairing = new Operation(1, OperationKind.LatePairing, 0, 5, 6, false);
+
+        Assert.True(pairing.Involves(5));
+        Assert.True(pairing.Involves(6));
+        Assert.False(pairing.Involves(1));
     }
 
     [Fact]

@@ -26,8 +26,8 @@ internal static class Strings
         : $"Coop: roles clashed, so {player} takes the other role.";
 
     public static string Unpaired(string player) => Korean
-        ? $"코옵: 이번 원정에서 {player} 님은 짝 없이 올라갑니다."
-        : $"Coop: {player} plays this Run without a Pair.";
+        ? $"코옵: {player} 님은 지금은 짝 없이 올라갑니다."
+        : $"Coop: {player} plays without a Pair for now.";
 
     public static string PairDissolved(string carrier, string rider) => Korean
         ? $"코옵: {carrier} 님과 {rider} 님의 짝이 풀렸습니다."
@@ -40,6 +40,10 @@ internal static class Strings
     public static string RoleSwapCountdown(int seconds) => Korean
         ? $"코옵: {seconds}초 뒤 자리를 바꿉니다."
         : $"Coop: swapping places in {seconds}...";
+
+    public static string LatePairingCountdown(int seconds) => Korean
+        ? $"코옵: {seconds}초 뒤 짝을 이어 줍니다."
+        : $"Coop: pairing you up in {seconds}...";
 
     public static string SwapPlaces => Korean ? "자리 바꾸기" : "Swap Places";
 

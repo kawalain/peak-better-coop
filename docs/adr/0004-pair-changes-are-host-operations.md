@@ -19,8 +19,8 @@ not done and runs it.
 ## Consequences
 
 - One operation at a time. A Pair Shuffle that comes during another merges into
-  it; one that comes during a Role Swap waits for it; a Role Swap request during
-  a Pair Shuffle is cancelled.
+  it; one that comes during a Role Swap or Late Pairing waits for it; a Role
+  Swap request during a Pair Shuffle is cancelled.
 - Held items are separate network objects, so hands are emptied and equipping is
   blocked from just before the run until the handover arrives (or five seconds
   pass), and a forced inventory sync puts away anything still held.
@@ -30,3 +30,9 @@ not done and runs it.
 - If the Troop Leader leaves after moving inventories but before the write, the
   new one runs the operation again; the Shared Bodies stay intact, but items may
   move twice.
+- A Late Pairing is an operation too, run whenever two Unpaired Players with
+  the same mod version and a spawned character are present, at least one of
+  them awake, and no other operation is running. It moves no items and leaves
+  the new Rider's statuses to be cleared as at any pairing; its plan only takes
+  the Shared Body to the higher member's place. A lone Unpaired Player waits
+  rather than breaking up another Pair.

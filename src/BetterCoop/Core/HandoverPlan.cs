@@ -18,7 +18,7 @@ internal sealed class HandoverEntry
 
     public int Carrier { get; }
 
-    /// <summary>The former Shared Body's Carrier; the Carrier itself when nothing changes.</summary>
+    /// <summary>The former Shared Body's Carrier, or the member whose place a Late Pairing starts from.</summary>
     public int Source { get; }
 
     /// <summary>Where the former Shared Body stood (x, y, z).</summary>
@@ -29,6 +29,12 @@ internal sealed class HandoverEntry
     public float Stamina { get; }
 
     public float ExtraStamina { get; }
+
+    /// <summary>
+    /// Whether the Carrier takes over the source's statuses and stamina; an
+    /// entry without statuses moves the Carrier to the source's place only.
+    /// </summary>
+    public bool TakesStatuses => Statuses.Length > 0;
 }
 
 /// <summary>

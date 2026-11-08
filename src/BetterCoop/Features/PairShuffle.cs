@@ -15,7 +15,7 @@ using PhotonPlayer = Photon.Realtime.Player;
 namespace BetterCoop.Features;
 
 /// <summary>
-/// Pair Shuffles and Role Swaps (ADR 0004). The Troop Leader runs one
+/// Pair Shuffles, Role Swaps, and Late Pairings (ADR 0004). The Troop Leader runs one
 /// operation at a time: announces it with a server time, refuses pickups
 /// from just before it, then writes the new Pairs and their Body Handover in
 /// one room property write. Every client counts down, empties the hands it
@@ -45,6 +45,8 @@ internal static class PairShuffle
     private static int countdownShown;
 
     private static int emptiedHandsId;
+
+    private static float nextLatePairingCheck;
 
     /// <summary>The latest operation: the room's, or this host's newer one not yet echoed back.</summary>
     internal static Operation? Current
@@ -109,7 +111,7 @@ internal static class PairShuffle
         }
     }
 
-    /// <summary>The Troop Leader asks for a Pair Shuffle or Role Swap.</summary>
+    /// <summary>The Troop Leader asks for a Pair Shuffle, Role Swap, or Late Pairing.</summary>
     internal static bool Request(OperationKind kind, int swapCarrier = -1, int swapRider = -1)
     {
         if (!PhotonNetwork.IsMasterClient || !PairRoster.Formed)
@@ -168,7 +170,7 @@ internal static class PairShuffle
             return;
         }
 
-        if (RunRules.TimedShuffle && PairRoster.Formed && (!Busy || op!.Kind == OperationKind.RoleSwap))
+        if (RunRules.TimedShuffle && PairRoster.Formed && (!Busy || !op!.IsShuffle))
         {
             if (ReadClock() is not double clock)
             {
@@ -180,14 +182,63 @@ internal static class PairShuffle
             }
         }
 
+        if (!Busy && Time.unscaledTime >= nextLatePairingCheck)
+        {
+            nextLatePairingCheck = Time.unscaledTime + 1f;
+            RequestLatePairing();
+        }
+
         RoleSwap.HostTick();
+    }
+
+    /// <summary>Announces a Late Pairing when two Unpaired Players can be paired.</summary>
+    private static void RequestLatePairing()
+    {
+        if (PairRoster.Formed
+            && PairRoster.Read() is PairingResult current
+            && LatePairingRules.PickTwo(LateCandidates(current)) is (int first, int second))
+        {
+            Request(OperationKind.LatePairing, first, second);
+        }
+    }
+
+    /// <summary>Players outside every Pair who run this version and have a character.</summary>
+    private static List<LateCandidate> LateCandidates(PairingResult current)
+    {
+        var candidates = new List<LateCandidate>();
+        foreach (PhotonPlayer player in PhotonNetwork.PlayerList)
+        {
+            if (player.IsInactive
+                || ModPresence.VersionOf(player) != MyPluginInfo.PLUGIN_VERSION
+                || current.Pairs.Any(p => p.Contains(player.ActorNumber))
+                || CharacterOf(player.ActorNumber) is not Character character)
+            {
+                continue;
+            }
+
+            bool awake = !character.data.dead && !character.data.passedOut && !character.data.fullyPassedOut;
+            candidates.Add(new LateCandidate(player.ActorNumber, ModPresence.RoleOf(player), awake, character.Center.y));
+        }
+
+        return candidates;
     }
 
     private static void Execute(Operation op)
     {
         executedId = op.Id;
         PairingResult? before = PairRoster.Read();
-        PairingResult? after = before == null ? null : op.IsShuffle ? Shuffle(before) : Swap(before, op);
+        PairingResult? after = null;
+        HandoverPlan? plan = null;
+        if (before != null && op.Kind == OperationKind.LatePairing)
+        {
+            after = LatePair(before, op, out plan);
+        }
+        else if (before != null)
+        {
+            after = op.IsShuffle ? Shuffle(before) : Swap(before, op);
+            plan = after == null ? null : PlanHandover(op.Id, before.Pairs, after.Pairs);
+        }
+
         var properties = new PhotonHashtable { [RoomKeys.Operation] = op.Finished().Encode() };
         if (op.IsShuffle)
         {
@@ -195,9 +246,8 @@ internal static class PairShuffle
             properties[RoomKeys.ShuffleClock] = hostClock;
         }
 
-        if (before != null && after != null)
+        if (after != null && plan != null)
         {
-            HandoverPlan plan = PlanHandover(op.Id, before.Pairs, after.Pairs);
             properties[RoomKeys.Pairs] = PairRoster.Encode(after);
             properties[RoomKeys.Handover] = plan.Encode();
             Plugin.Verbose(
@@ -239,6 +289,46 @@ internal static class PairShuffle
             .Where(a => !pairs.Any(p => p.Contains(a)))
             .ToList();
         return new PairingResult(pairs, unpaired, formed.PreferenceOverridden);
+    }
+
+    /// <summary>
+    /// The two of a Late Pairing as a new Pair, when both are still outside
+    /// every Pair and one is awake. Nothing moves but the Shared Body, to the
+    /// higher member's place; the new Rider's statuses clear as at any pairing.
+    /// </summary>
+    private static PairingResult? LatePair(PairingResult before, Operation op, out HandoverPlan? plan)
+    {
+        plan = null;
+        List<LateCandidate> candidates = LateCandidates(before);
+        LateCandidate? first = candidates.FirstOrDefault(c => c.Actor == op.SwapCarrier);
+        LateCandidate? second = candidates.FirstOrDefault(c => c.Actor == op.SwapRider);
+        if (first == null
+            || second == null
+            || LatePairingRules.Form(first, second, new System.Random()) is not LatePairing pairing)
+        {
+            return null;
+        }
+
+        Pair pair = pairing.Pair;
+        var pairs = before.Pairs.Append(pair).ToList();
+        var unpaired = PhotonNetwork.PlayerList
+            .Select(p => p.ActorNumber)
+            .Where(a => !pairs.Any(p => p.Contains(a)))
+            .ToList();
+        var overridden = before.PreferenceOverridden
+            .Where(a => !pair.Contains(a))
+            .Concat(pairing.PreferenceOverridden)
+            .ToList();
+
+        var entries = new List<HandoverEntry>();
+        if (pairing.CarrierMovesToRider && CharacterOf(pair.Rider) is Character riderBody)
+        {
+            Vector3 place = riderBody.Center;
+            entries.Add(new HandoverEntry(pair.Carrier, pair.Rider, [place.x, place.y, place.z], [], 0f, 0f));
+        }
+
+        plan = new HandoverPlan(op.Id, movesPlaces: true, entries);
+        return new PairingResult(pairs, unpaired, overridden);
     }
 
     private static PairingResult? Swap(PairingResult before, Operation op)
@@ -322,7 +412,12 @@ internal static class PairShuffle
         if (left > 0 && left != countdownShown)
         {
             countdownShown = left;
-            CoopNotice.Info(op.IsShuffle ? Strings.ShuffleCountdown(left) : Strings.RoleSwapCountdown(left));
+            CoopNotice.Info(op.Kind switch
+            {
+                OperationKind.RoleSwap => Strings.RoleSwapCountdown(left),
+                OperationKind.LatePairing => Strings.LatePairingCountdown(left),
+                _ => Strings.ShuffleCountdown(left),
+            });
         }
     }
 
@@ -451,7 +546,11 @@ internal static class PairShuffle
         if (plan.For(actor) is HandoverEntry entry)
         {
             Plugin.Verbose($"Taking over the Shared Body of {entry.Source}.");
-            TakeOverStatuses(local, entry);
+            if (entry.TakesStatuses)
+            {
+                TakeOverStatuses(local, entry);
+            }
+
             if (plan.MovesPlaces)
             {
                 MoveTo(local, ToVector(entry.Place));
@@ -460,7 +559,10 @@ internal static class PairShuffle
             return;
         }
 
-        if (PairRoster.RoleOf(local) == PairRole.Rider && PairRoster.TryGetPartner(local, out Character carrier))
+        // A dead Rider comes back at the Carrier instead (Shared Life).
+        if (PairRoster.RoleOf(local) == PairRole.Rider
+            && !local.data.dead
+            && PairRoster.TryGetPartner(local, out Character carrier))
         {
             Vector3 target = plan.MovesPlaces && plan.For(PairRoster.ActorOf(carrier)) is HandoverEntry carried
                 ? ToVector(carried.Place)
@@ -518,7 +620,7 @@ internal static class PairShuffle
     private static bool IsAlive(int actor) => CharacterOf(actor) is Character character && !character.data.dead;
 }
 
-/// <summary>Drives Pair Shuffles and Role Swaps.</summary>
+/// <summary>Drives Pair Shuffles, Role Swaps, and Late Pairings.</summary>
 internal sealed class PairShuffleLink : MonoBehaviourPunCallbacks
 {
     public override void OnJoinedRoom()

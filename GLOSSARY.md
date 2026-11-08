@@ -23,8 +23,8 @@ _Avoid_: host, 방장 (in player text)
 
 **Pair** (짝):
 Two players bound together, one as Carrier and one as Rider, from when Pairs
-are formed until a Pair Shuffle, a Role Swap, a member leaving, or the end of
-the Run.
+are formed or a Late Pairing until a Pair Shuffle, a Role Swap, a member
+leaving, or the end of the Run.
 _Avoid_: partner, couple, team
 
 **Carrier** (업는 사람):
@@ -64,6 +64,13 @@ new partners where there are enough players, otherwise the same two with
 their roles traded. Role Preferences hold where they allow it.
 _Avoid_: re-pairing, reshuffle
 
+**Late Pairing** (짝 이어주기):
+Forming a Pair in the middle of a Run from two Unpaired Players, leaving every
+other Pair as it is. A member who is dead or passed out becomes the Rider and
+comes back on the Carrier's back; otherwise Role Preferences decide. The
+Shared Body starts where the higher of the two is.
+_Avoid_: re-pairing, late join pairing
+
 **Campfire Shuffle**:
 A Pair Shuffle when a campfire is lit and the Run moves on to the next segment.
 
@@ -88,7 +95,9 @@ out or dies alone. Reviving either member revives both.
 _Avoid_: shared death, shared revival
 
 **Unpaired Player** (짝 없는 사람):
-A player in the room who is not in any Pair and plays as in unmodded PEAK.
+A player in the room who is not in any Pair and plays as in unmodded PEAK,
+until a Late Pairing or a Pair Shuffle gives them a partner. A player joining
+during a Run starts as one.
 _Avoid_: solo player, odd player
 
 **Solo Pair** (1인 짝 테스트):

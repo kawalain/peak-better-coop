@@ -9,10 +9,11 @@ internal enum OperationKind : byte
     CampfireShuffle = 1,
     TimedShuffle = 2,
     RoleSwap = 3,
+    LatePairing = 4,
 }
 
 /// <summary>
-/// A Pair Shuffle or Role Swap the Troop Leader announced, published as a
+/// A Pair Shuffle, Role Swap, or Late Pairing the Troop Leader announced, published as a
 /// room property: every client counts down to <see cref="At"/> (server
 /// time), and a new Troop Leader picks up one that is not done.
 /// </summary>
@@ -41,10 +42,10 @@ internal sealed class Operation
     /// <summary>Server time the operation runs at.</summary>
     public double At { get; }
 
-    /// <summary>The Carrier of the Pair a Role Swap turns round, else -1.</summary>
+    /// <summary>The Carrier of the Pair a Role Swap turns round, or one of the two a Late Pairing pairs, else -1.</summary>
     public int SwapCarrier { get; }
 
-    /// <summary>The Rider of the Pair a Role Swap turns round, else -1.</summary>
+    /// <summary>The Rider of the Pair a Role Swap turns round, or the other of the two a Late Pairing pairs, else -1.</summary>
     public int SwapRider { get; }
 
     public bool Done { get; }
@@ -89,8 +90,9 @@ internal sealed class Operation
 
 /// <summary>
 /// The Troop Leader's rule of one operation at a time. A Pair Shuffle that
-/// comes during a Role Swap waits for it; one that comes during another
-/// Pair Shuffle merges into it; a Role Swap that comes during either is refused.
+/// comes during a Role Swap or Late Pairing waits for it; one that comes
+/// during another Pair Shuffle merges into it; a Role Swap or Late Pairing
+/// that comes during any operation is refused, and asked again later.
 /// </summary>
 internal sealed class OperationQueue
 {
@@ -102,7 +104,7 @@ internal sealed class OperationQueue
         if (current is { Done: false })
         {
             bool shuffle = kind is OperationKind.CampfireShuffle or OperationKind.TimedShuffle;
-            if (shuffle && current.Kind == OperationKind.RoleSwap && waiting == OperationKind.None)
+            if (shuffle && !current.IsShuffle && waiting == OperationKind.None)
             {
                 waiting = kind;
             }
