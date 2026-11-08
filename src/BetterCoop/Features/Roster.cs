@@ -107,6 +107,9 @@ internal sealed class RosterPage : PaperPage
 
     private PairBoard? board;
 
+    /// <summary>Where each scout's photo was before the board was drawn again, so it moves rather than jumps.</summary>
+    private IReadOnlyDictionary<int, Vector3>? places;
+
     /// <summary>Shows another room, with its scouts' photos, its rows filled anew at once.</summary>
     public void Show(ICoopRoom shown, IPortraits faces)
     {
@@ -117,6 +120,18 @@ internal sealed class RosterPage : PaperPage
     }
 
     protected override string Shape() => room.Shape();
+
+    protected override bool HasDraft => draft is { Changed: true } && room.InRoom && room.IsTroopLeader && !room.Busy;
+
+    protected override string FormNumber() => Strings.FormTitle;
+
+    protected override string FormNote() => room.InRoom ? Strings.FormMembers(room.Players.Count) : string.Empty;
+
+    /// <summary>A number for the troop, the same while the same scout leads it.</summary>
+    protected override string FormSerial() =>
+        room.InRoom && room.TroopLeader >= 0
+            ? Strings.Serial((int)(FormDrawing.Hash(room.NameOf(room.TroopLeader)) % 10_000_000))
+            : string.Empty;
 
     protected override void Fill(PaperList list)
     {
@@ -160,6 +175,20 @@ internal sealed class RosterPage : PaperPage
         }
     }
 
+    protected override void DropDraft() => draft?.Reset(room.Pairs, room.Players);
+
+    protected override void BeforeRefill() => places = board != null ? board.Places() : null;
+
+    protected override void AfterRefill()
+    {
+        if (board != null && places != null)
+        {
+            board.GlideFrom(places);
+        }
+
+        places = null;
+    }
+
     private void StartOver()
     {
         draft?.Reset(room.Pairs, room.Players);
@@ -183,6 +212,7 @@ internal static class PairRows
         if (leads)
         {
             list.Note(() => Strings.MenuBoardHelp);
+            list.Note(() => Strings.MenuDraft, visible: () => draft.Changed);
         }
 
         PairBoard? board = null;
@@ -193,10 +223,11 @@ internal static class PairRows
         {
             list.Stamp(
                 () => Strings.MenuAssign,
-                () => Strings.StampApproved,
+                () => Strings.StampNotify,
                 () => Approve(room, draft),
                 available: () => draft.Changed && !room.Busy && room.CanArrange(draft.Pairs),
-                about: () => Strings.AboutAssign);
+                about: () => Strings.AboutAssign,
+                face: new PostmarkFace(() => Strings.PostmarkOffice, () => Strings.PostmarkDate(System.DateTime.Now)));
             list.Stamp(
                 () => Strings.MenuAssignReset,
                 () => Strings.StampCancel,
@@ -231,8 +262,6 @@ internal static class PlayerRows
 
     public static void Add(PaperList list, ICoopRoom room)
     {
-        list.Masthead(() => Strings.FormTitle, () => Strings.FormMembers(room.Players.Count));
-
         list.Header(() => Strings.MenuYou);
         list.Choice(
             () => Strings.MenuRolePreference,
@@ -268,7 +297,8 @@ internal static class PlayerRows
     public static void Sign(PaperList list, ICoopRoom room) =>
         list.Signature(
             () => Strings.MenuTroopLeaderSign,
-            () => room.TroopLeader >= 0 ? room.NameOf(room.TroopLeader) : string.Empty);
+            () => room.TroopLeader >= 0 ? room.NameOf(room.TroopLeader) : string.Empty,
+            motto: () => Strings.Motto);
 
     private static string PartnerName(ICoopRoom room) =>
         room.PairOf(room.Me) is Pair pair ? room.NameOf(pair.PartnerOf(room.Me)) : string.Empty;

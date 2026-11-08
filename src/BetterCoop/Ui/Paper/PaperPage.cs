@@ -47,6 +47,12 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
 
     private TMP_Text titleText = null!;
 
+    private TMP_Text formText = null!;
+
+    private TMP_Text noteText = null!;
+
+    private TMP_Text serialText = null!;
+
     private RectTransform panel = null!;
 
     private CanvasGroup group = null!;
@@ -66,6 +72,9 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     private bool filled;
 
     private GameObject? lastSelected;
+
+    /// <summary>The question laid over the page before leaving it, while it is asked.</summary>
+    private PaperQuestion? asking;
 
     private enum Motion
     {
@@ -122,7 +131,27 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         List.FirstSelectable()?.gameObject ?? back.gameObject;
 
     /// <summary>Gives Back to the form first, as to put a held card back; false to leave the page.</summary>
-    internal bool TakeBack() => List.Back();
+    internal bool TakeBack()
+    {
+        if (asking != null && asking.Open)
+        {
+            asking.Stay();
+            return true;
+        }
+
+        if (List.Back())
+        {
+            return true;
+        }
+
+        if (HasDraft)
+        {
+            AskToLeave();
+            return true;
+        }
+
+        return false;
+    }
 
     /// <summary>Opens this page from the current one, which gives way at once while the paper rises.</summary>
     public void Open()
@@ -142,6 +171,11 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         base.OnPageEnter();
         scroll.Reset();
         lastSelected = null;
+        if (asking != null)
+        {
+            Destroy(asking.gameObject);
+            asking = null;
+        }
         if (!filled)
         {
             Refill();
@@ -177,6 +211,33 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
 
     protected abstract void Fill(PaperList list);
 
+    /// <summary>Runs before the list is filled again, to note where things were.</summary>
+    protected virtual void BeforeRefill()
+    {
+    }
+
+    /// <summary>Runs once the list is filled again and laid out, to carry things over from where they were.</summary>
+    protected virtual void AfterRefill()
+    {
+    }
+
+    /// <summary>Whether the page holds work not yet sent, which leaving would throw away.</summary>
+    protected virtual bool HasDraft => false;
+
+    /// <summary>Throws the page's unsent work away, as the player leaves without sending it.</summary>
+    protected virtual void DropDraft()
+    {
+    }
+
+    /// <summary>What form the paper is, printed small in its top left corner.</summary>
+    protected virtual string FormNumber() => string.Empty;
+
+    /// <summary>A note printed small in the paper's top right corner, such as how many it concerns.</summary>
+    protected virtual string FormNote() => string.Empty;
+
+    /// <summary>The paper's serial number, printed in red under the note, as on a membership card.</summary>
+    protected virtual string FormSerial() => string.Empty;
+
     /// <summary>Runs every frame while the page is open, before its rows refresh.</summary>
     protected virtual void Tick()
     {
@@ -185,16 +246,60 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     /// <summary>Fills the list anew now, as when what the rows show has been replaced.</summary>
     protected void Refill()
     {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
         shape = Shape();
+        BeforeRefill();
         filled = true;
         List.Clear();
         Fill(List);
         LayoutRebuilder.ForceRebuildLayoutImmediate(content);
         // New rows' drawings show at once, not their fallback colour for a frame.
         VectorView.DrawAll(content);
+        AfterRefill();
+        Plugin.Verbose($"Filled {name} in {clock.Elapsed.TotalMilliseconds:F1} ms.");
     }
 
     private void GoBack()
+    {
+        if (asking != null && asking.Open)
+        {
+            return;
+        }
+
+        if (HasDraft)
+        {
+            AskToLeave();
+            return;
+        }
+
+        Leave();
+    }
+
+    /// <summary>Asks on a slip of paper whether to throw the draft away before leaving.</summary>
+    private void AskToLeave()
+    {
+        try
+        {
+            asking = PaperQuestion.Ask(
+                panel,
+                List.Template,
+                Strings.DiscardDraft,
+                Strings.DiscardDraftNote,
+                Strings.StampDiscard,
+                Strings.StampKeep,
+                () =>
+                {
+                    DropDraft();
+                    Leave();
+                });
+        }
+        catch (Exception exception)
+        {
+            Guard.Report(name + ".AskToLeave", exception);
+        }
+    }
+
+    private void Leave()
     {
         try
         {
@@ -202,7 +307,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         }
         catch (Exception exception)
         {
-            Guard.Report(name + ".GoBack", exception);
+            Guard.Report(name + ".Leave", exception);
         }
     }
 
@@ -239,6 +344,9 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
             }
 
             PaperText.Set(titleText, title());
+            PaperText.Set(formText, FormNumber());
+            PaperText.Set(noteText, FormNote());
+            PaperText.Set(serialText, FormSerial());
             List.Refresh();
             KeepSelectionInView();
             scroll.Max = content.rect.height - viewport.rect.height;
@@ -353,6 +461,15 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         titleText.fontStyle = FontStyles.Bold;
         titleText.color = PaperText.Blue;
 
+        // The form's number and note stay printed in the head of the paper, above everything that scrolls.
+        formText = Corner(titleRect, template, TextAlignmentOptions.TopLeft);
+        noteText = Corner(titleRect, template, TextAlignmentOptions.TopRight);
+        serialText = Corner(titleRect, template, TextAlignmentOptions.TopRight);
+        serialText.rectTransform.offsetMax = new Vector2(-Padding, -40f);
+        serialText.color = PaperList.StampRed;
+        serialText.fontStyle = FontStyles.Bold;
+        serialText.characterSpacing = 4f;
+
         viewport = NewRect("Viewport", panel);
         viewport.anchorMin = Vector2.zero;
         viewport.anchorMax = Vector2.one;
@@ -425,6 +542,18 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         {
             scroll.GlideTo(bottom - view + ListGap);
         }
+    }
+
+    private static TMP_Text Corner(RectTransform head, TMP_Text template, TextAlignmentOptions alignment)
+    {
+        RectTransform rect = NewRect("Corner", head);
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = new Vector2(Padding, 0f);
+        rect.offsetMax = new Vector2(-Padding, -14f);
+        TMP_Text text = PaperText.Make(rect.gameObject, template, PaperText.Note, alignment);
+        text.color = new Color(PaperText.Ink.r, PaperText.Ink.g, PaperText.Ink.b, 0.7f);
+        return text;
     }
 
     private static RectTransform NewRect(string name, Transform parent)

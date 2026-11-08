@@ -1,5 +1,6 @@
 #if DEBUG
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using BetterCoop.Core;
 using BetterCoop.Ui;
@@ -55,9 +56,12 @@ internal sealed class ZooPage : PaperPage
 
     protected override string Shape() => "zoo";
 
+    protected override string FormNumber() => T("Zoo 서식 제0호 · 견본", "Zoo Form No. 0 · Specimen");
+
+    protected override string FormNote() => T($"찍은 횟수 {presses}", $"Stamped {presses}");
+
     protected override void Fill(PaperList list)
     {
-        list.Masthead(() => T("Zoo 서식 제0호 · 견본", "Zoo Form No. 0 · Specimen"), () => T($"찍은 횟수 {presses}", $"Stamped {presses}"));
         list.Header(() => T("서식 컴포넌트", "Form components"));
         list.Note(() => T(
             "작은 글씨의 안내문입니다. 한 줄을 넘으면 다음 줄로 넘어가며, 항목은 그만큼 높아집니다.",
@@ -101,6 +105,12 @@ internal sealed class ZooPage : PaperPage
             () => CoopNotice.Info(T("Zoo: 지금은 쓸 수 없어 이유를 알립니다.", "Zoo: unavailable now, so this says why.")),
             available: () => false,
             about: () => T("흐리게 보이지만 누르면 이유를 알려 줍니다.", "Faint, but pressing it says why."));
+        list.Stamp(
+            () => T("우편 소인", "Postmark"),
+            () => T("통보", "Notified"),
+            () => presses++,
+            about: () => T("옛 우체국 소인처럼 찍히는 도장입니다. 도장의 얼굴만 바꿔 다른 도장을 만들 수 있습니다.", "A stamp that lands as an old post office's postmark; a stamp's face is all that makes it another kind."),
+            face: new PostmarkFace(() => T("ZOO 우체국", "ZOO P.O."), () => Strings.PostmarkDate(System.DateTime.Now)));
         list.Stamp(
             () => T("값과 도장", "Value and stamp"),
             () => T("교대", "Swap"),
@@ -150,32 +160,63 @@ internal sealed class ZooPage : PaperPage
 /// </summary>
 internal sealed class ZooPortraits : IPortraits
 {
+    private const int Wardrobe = 12;
+
+    private static List<int[]>? looks;
+
     private readonly int seed;
 
     public ZooPortraits(int seed) => this.seed = seed;
 
     public Texture? Photo(int actor) =>
-        Look(actor) is int[] look
-            ? PhotoStudio.Take("zoo:" + string.Join(",", look), model => Dress(model, look))
-            : null;
+        Look(actor) is int[] look ? PhotoStudio.Take(Key(look), model => Dress(model, look)) : null;
 
     public Color Skin(int actor) => PhotoStudio.SkinColour(Look(actor)?[0] ?? actor % 4);
 
-    /// <summary>Skin, outfit, hat, eyes, and mouth, or null when the game's lists are not there.</summary>
-    private int[]? Look(int actor)
+    /// <summary>Takes one photo of the Zoo's looks not yet taken; false when all are.</summary>
+    public static bool WarmOne()
     {
+        foreach (int[] look in Looks() ?? [])
+        {
+            if (!PhotoStudio.Has(Key(look)))
+            {
+                PhotoStudio.Take(Key(look), model => Dress(model, look));
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static string Key(int[] look) => "zoo:" + string.Join(",", look);
+
+    /// <summary>The look of a made-up scout: the same set of looks, handed out anew for each example.</summary>
+    private int[]? Look(int actor) =>
+        Looks() is { } all ? all[(((actor - 1) + (seed * 5)) % all.Count + all.Count) % all.Count] : null;
+
+    /// <summary>Skin, outfit, hat, eyes, and mouth for each look, or null when the game's lists are not there.</summary>
+    private static List<int[]>? Looks()
+    {
+        if (looks != null)
+        {
+            return looks;
+        }
+
         try
         {
             Customization options = Singleton<Customization>.Instance;
-            var random = new System.Random((seed * 397) ^ actor);
-            return
-            [
-                random.Next(options.skins.Length),
-                random.Next(options.fits.Length),
-                random.Next(-1, options.hats.Length),
-                random.Next(options.eyes.Length),
-                random.Next(options.mouths.Length),
-            ];
+            var random = new System.Random(7);
+            looks = Enumerable.Range(0, Wardrobe)
+                .Select(_ => new[]
+                {
+                    random.Next(options.skins.Length),
+                    random.Next(options.fits.Length),
+                    random.Next(-1, options.hats.Length),
+                    random.Next(options.eyes.Length),
+                    random.Next(options.mouths.Length),
+                })
+                .ToList();
+            return looks;
         }
         catch (Exception exception)
         {

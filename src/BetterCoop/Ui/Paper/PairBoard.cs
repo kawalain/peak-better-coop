@@ -11,28 +11,36 @@ using Zorro.ControllerSupport;
 namespace BetterCoop.Ui.Paper;
 
 /// <summary>
-/// The Pair Assignment board: a row per Pair with the Carrier's card and the
-/// Rider's card side by side, and the Unpaired Players' cards apart. Each
-/// card shows the scout's passport photo and name. The Troop Leader moves
-/// cards about a draft: held down and dragged, or pressed to pick up, so the
-/// card follows the pointer, and pressed again where it goes. A card dropped
-/// on another trades places with it. A right click or Back puts a held card
-/// back. On a gamepad, A picks up and drops, the directions choose where,
-/// and B puts it back. Everyone else sees the room's Pairs the same way.
+/// The Pair Assignment board, laid out as a yearbook's class page: the
+/// scouts' passport photos in even rows across the paper, each with the name
+/// printed under it. The two of a Pair stand side by side, the Carrier on
+/// the left, under the Pair's number; the Unpaired Players follow apart.
+/// The Troop Leader moves photos about a draft: held down and dragged, or
+/// pressed to pick up, so the photo follows the pointer, and pressed again
+/// where it goes. A photo dropped on another trades places with it. A right
+/// click or Back puts a held photo back. On a gamepad, A picks up and drops,
+/// the directions choose where, and B puts it back. Everyone else sees the
+/// room's Pairs the same way.
 /// </summary>
 internal sealed class PairBoard : MonoBehaviour
 {
-    public const float CardWidth = 300f;
+    public const float PhotoWidth = 116f;
 
-    public const float CardHeight = 104f;
+    public const float PhotoHeight = PhotoWidth * PhotoStudio.Height / PhotoStudio.Width;
 
-    private const float LabelWidth = 96f;
+    private const float CaptionHeight = 52f;
 
-    private const float LinkWidth = 44f;
+    private const float CellHeight = PhotoHeight + CaptionHeight;
 
-    private const float PhotoWidth = 68f;
+    private const float PairLabelHeight = 34f;
 
-    private const float PhotoHeight = 84f;
+    private const float PartnerGap = 8f;
+
+    private const float PairWidth = 2f * PhotoWidth + PartnerGap;
+
+    private const int PairsPerRow = 4;
+
+    private const int UnpairedPerRow = 8;
 
     private readonly List<SlotView> slots = new();
 
@@ -53,6 +61,9 @@ internal sealed class PairBoard : MonoBehaviour
     private RectTransform? ghost;
 
     private SlotView? marked;
+
+    /// <summary>The photo just dropped, and where it was let go, so it settles from the hand rather than from its old place.</summary>
+    private (int Actor, Vector3 At)? released;
 
     /// <summary>
     /// Lays the board out under <paramref name="root"/>. Each move changes
@@ -79,10 +90,10 @@ internal sealed class PairBoard : MonoBehaviour
         return board;
     }
 
-    /// <summary>The first card a gamepad selects.</summary>
+    /// <summary>The first photo a gamepad selects.</summary>
     public Selectable? First => slots.Select(s => s.Control).FirstOrDefault(c => c != null);
 
-    /// <summary>Puts a held card back; false when no card is held.</summary>
+    /// <summary>Puts a held photo back; false when none is held.</summary>
     public bool PutBack()
     {
         if (held == null)
@@ -94,7 +105,7 @@ internal sealed class PairBoard : MonoBehaviour
         return true;
     }
 
-    /// <summary>Selects the card of this player, as after moving it with a gamepad.</summary>
+    /// <summary>Selects the photo of this player, as after moving it with a gamepad.</summary>
     public void Select(int actor)
     {
         if (draft.Find(actor) is Slot slot
@@ -124,11 +135,48 @@ internal sealed class PairBoard : MonoBehaviour
         }
 
         int actor = draft.At(from)!.Value;
+        if (ghost != null)
+        {
+            released = (actor, ghost.position);
+        }
+
         Drop();
         if (draft.Move(from, view.Slot))
         {
             Plugin.Verbose($"Moved {actor} on the Pair Assignment board to {view.Slot}.");
             moved(actor);
+        }
+    }
+
+    /// <summary>Where each scout's photo is now, by actor, in world space.</summary>
+    public IReadOnlyDictionary<int, Vector3> Places()
+    {
+        var places = new Dictionary<int, Vector3>();
+        foreach (SlotView view in slots)
+        {
+            if (draft.At(view.Slot) is int actor && view.Content != null)
+            {
+                places[actor] = view.Content.transform.position;
+            }
+        }
+
+        if (released is (int dropped, Vector3 at))
+        {
+            places[dropped] = at;
+        }
+
+        return places;
+    }
+
+    /// <summary>Moves each photo from where it was on the board before; a scout new to the board fades in.</summary>
+    public void GlideFrom(IReadOnlyDictionary<int, Vector3> before)
+    {
+        foreach (SlotView view in slots)
+        {
+            if (draft.At(view.Slot) is int actor)
+            {
+                Glide.Start((RectTransform)view.Content.transform, before.TryGetValue(actor, out Vector3 at) ? at : null);
+            }
         }
     }
 
@@ -161,13 +209,22 @@ internal sealed class PairBoard : MonoBehaviour
     private void PickUp(SlotView view)
     {
         held = view.Slot;
-        view.CardAlpha = 0.3f;
-        ghost = Card(transform, draft.At(view.Slot)!.Value, lifted: true);
+        view.Faded = true;
+
+        // The photo lifts off the page as a print cut from it, with its own shadow.
+        ghost = PaperList.NewRect("Held", transform);
         ghost.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
         ghost.anchorMin = ghost.anchorMax = new Vector2(0.5f, 0.5f);
         ghost.pivot = new Vector2(0.5f, 0.5f);
-        ghost.sizeDelta = new Vector2(CardWidth, CardHeight);
+        ghost.sizeDelta = new Vector2(PhotoWidth + 16f, CellHeight + 12f);
         ghost.localRotation = Quaternion.Euler(0f, 0f, 3f);
+        VectorView.Add(ghost, s => FormDrawing.Card(s.x, s.y, lifted: true), Color.clear);
+        RectTransform inner = PaperList.NewRect("Print", ghost);
+        inner.anchorMin = Vector2.zero;
+        inner.anchorMax = Vector2.one;
+        inner.offsetMin = new Vector2(6f, 8f);
+        inner.offsetMax = new Vector2(-10f, -4f);
+        Portrait(inner, draft.At(view.Slot)!.Value, view.Slot.Kind);
         CanvasGroup group = ghost.gameObject.AddComponent<CanvasGroup>();
         group.blocksRaycasts = false;
         group.interactable = false;
@@ -180,7 +237,7 @@ internal sealed class PairBoard : MonoBehaviour
     {
         if (held is Slot slot && slots.FirstOrDefault(s => s.Slot == slot) is SlotView origin)
         {
-            origin.CardAlpha = 1f;
+            origin.Faded = false;
         }
 
         held = null;
@@ -215,7 +272,7 @@ internal sealed class PairBoard : MonoBehaviour
         }
     }
 
-    /// <summary>The held card hangs over the chosen place on a gamepad, else under the pointer.</summary>
+    /// <summary>The held photo hangs over the chosen place on a gamepad, else under the pointer.</summary>
     private void Follow()
     {
         if (ghost == null)
@@ -234,7 +291,7 @@ internal sealed class PairBoard : MonoBehaviour
         if (chosen != null)
         {
             Vector3 centre = chosen.Rect.TransformPoint(chosen.Rect.rect.center);
-            ghost.localPosition = (Vector2)root.InverseTransformPoint(centre) + new Vector2(16f, -16f);
+            ghost.localPosition = (Vector2)root.InverseTransformPoint(centre) + new Vector2(18f, -18f);
         }
         else if (UnityEngine.InputSystem.Mouse.current is { } mouse)
         {
@@ -273,12 +330,7 @@ internal sealed class PairBoard : MonoBehaviour
 
     private void LayOut(RectTransform root)
     {
-        HorizontalLayoutGroup heading = Line(root);
-        Fixed(heading.transform, "Gap", LabelWidth, 30f);
-        Text(Fixed(heading.transform, "Carrier", CardWidth, 30f), Strings.RoleOf(true), PaperText.Value, TextAlignmentOptions.Bottom).fontStyle = FontStyles.Bold;
-        Fixed(heading.transform, "Link", LinkWidth, 30f);
-        Text(Fixed(heading.transform, "Rider", CardWidth, 30f), Strings.RoleOf(false), PaperText.Value, TextAlignmentOptions.Bottom).fontStyle = FontStyles.Bold;
-
+        GridLayoutGroup pairs = Grid(root, "Pairs", new Vector2(PairWidth, PairLabelHeight + CellHeight), PairsPerRow, new Vector2(36f, 26f));
         int number = 0;
         for (int i = 0; i < draft.Rows.Count; i++)
         {
@@ -289,13 +341,17 @@ internal sealed class PairBoard : MonoBehaviour
                 continue;
             }
 
-            HorizontalLayoutGroup line = Line(root);
-            string label = empty ? Strings.MenuNewPair : Strings.MenuPairNumber(++number);
-            TMP_Text text = Text(Fixed(line.transform, "Number", LabelWidth, CardHeight), label, PaperText.Label, TextAlignmentOptions.Left);
-            text.color = empty ? PaperList.Faded(PaperText.Ink, 0.55f) : PaperText.Ink;
-            AddSlot(line.transform, new Slot(SlotKind.Carrier, i));
-            Text(Fixed(line.transform, "Link", LinkWidth, CardHeight), "⇄", PaperText.Label, TextAlignmentOptions.Center).color = PaperText.Blue;
-            AddSlot(line.transform, new Slot(SlotKind.Rider, i));
+            RectTransform pair = PaperList.NewRect("Pair", pairs.transform);
+            RectTransform label = PaperList.NewRect("Number", pair);
+            label.anchorMin = new Vector2(0f, 1f);
+            label.anchorMax = Vector2.one;
+            label.pivot = new Vector2(0.5f, 1f);
+            label.sizeDelta = new Vector2(0f, PairLabelHeight);
+            TMP_Text text = Text(label, empty ? Strings.MenuNewPair : Strings.MenuPairNumber(++number), PaperText.Value, TextAlignmentOptions.Top);
+            text.fontStyle = FontStyles.Bold;
+            text.color = empty ? PaperList.Faded(PaperText.Blue, 0.5f) : PaperText.Blue;
+            AddSlot(Cell(pair, 0f), new Slot(SlotKind.Carrier, i));
+            AddSlot(Cell(pair, PhotoWidth + PartnerGap), new Slot(SlotKind.Rider, i));
         }
 
         if (draft.Unpaired.Count == 0 && !editable)
@@ -303,50 +359,76 @@ internal sealed class PairBoard : MonoBehaviour
             return;
         }
 
-        RectTransform title = Fixed(root, "UnpairedTitle", CardWidth, 44f);
-        title.GetComponent<LayoutElement>().flexibleWidth = 1f;
-        Text(title, Strings.MenuUnpaired, PaperText.Label, TextAlignmentOptions.BottomLeft);
+        RectTransform title = PaperList.NewRect("UnpairedTitle", root);
+        LayoutElement titleSize = title.gameObject.AddComponent<LayoutElement>();
+        titleSize.minHeight = titleSize.preferredHeight = 56f;
+        Text(title, Strings.MenuUnpaired, PaperText.Value, TextAlignmentOptions.Bottom).fontStyle = FontStyles.Bold;
 
-        RectTransform grid = PaperList.NewRect("Unpaired", root);
-        GridLayoutGroup cells = grid.gameObject.AddComponent<GridLayoutGroup>();
-        cells.cellSize = new Vector2(CardWidth, CardHeight);
-        cells.spacing = new Vector2(16f, 12f);
-        cells.padding = new RectOffset((int)LabelWidth, 0, 0, 0);
-        cells.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
-        cells.constraintCount = 2;
+        GridLayoutGroup unpaired = Grid(root, "Unpaired", new Vector2(PhotoWidth, CellHeight), UnpairedPerRow, new Vector2(18f, 22f));
         int count = draft.Unpaired.Count + (editable ? 1 : 0);
         for (int i = 0; i < count; i++)
         {
-            AddSlot(grid, new Slot(SlotKind.Unpaired, i));
+            AddSlot(PaperList.NewRect("Cell", unpaired.transform), new Slot(SlotKind.Unpaired, i));
         }
     }
 
-    private void AddSlot(Transform parent, Slot slot)
+    /// <summary>One photo's place in a Pair: under the number, left or right.</summary>
+    private static RectTransform Cell(RectTransform pair, float x)
     {
-        RectTransform rect = PaperList.NewRect("Slot", parent);
-        LayoutElement size = rect.gameObject.AddComponent<LayoutElement>();
-        size.minWidth = size.preferredWidth = CardWidth;
-        size.minHeight = size.preferredHeight = CardHeight;
+        RectTransform cell = PaperList.NewRect("Cell", pair);
+        cell.anchorMin = cell.anchorMax = new Vector2(0f, 1f);
+        cell.pivot = new Vector2(0f, 1f);
+        cell.sizeDelta = new Vector2(PhotoWidth, CellHeight);
+        cell.anchoredPosition = new Vector2(x, -PairLabelHeight);
+        return cell;
+    }
+
+    private static GridLayoutGroup Grid(Transform root, string name, Vector2 cell, int columns, Vector2 spacing)
+    {
+        RectTransform rect = PaperList.NewRect(name, root);
+        GridLayoutGroup grid = rect.gameObject.AddComponent<GridLayoutGroup>();
+        grid.cellSize = cell;
+        grid.spacing = spacing;
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = columns;
+        grid.childAlignment = TextAnchor.UpperCenter;
+        return grid;
+    }
+
+    private void AddSlot(RectTransform rect, Slot slot)
+    {
         var view = new SlotView(slot, rect);
-        view.Outline = VectorView.Add(rect, s => FormDrawing.Slot(s.x, s.y, view.Marked), Color.clear);
         int? actor = draft.At(slot);
+        RectTransform content = PaperList.NewRect("Content", rect);
+        content.anchorMin = Vector2.zero;
+        content.anchorMax = Vector2.one;
+        content.offsetMin = content.offsetMax = Vector2.zero;
+        view.Content = content.gameObject.AddComponent<CanvasGroup>();
         if (actor is int who)
         {
-            RectTransform card = Card(rect, who, lifted: false);
-            view.CardGroup = card.gameObject.AddComponent<CanvasGroup>();
+            Portrait(content, who, slot.Kind);
         }
-        else if (slot.Kind == SlotKind.Unpaired)
+        else
         {
-            Text(rect, Strings.MenuDropHere, PaperText.Note, TextAlignmentOptions.Center).color = PaperList.Faded(PaperText.Ink, 0.5f);
+            RectTransform place = PhotoArea(content);
+            VectorView.Add(place, s => FormDrawing.Slot(s.x, s.y, marked: false), Color.clear);
+            TMP_Text empty = Text(Caption(content), slot.Kind == SlotKind.Unpaired ? Strings.MenuDropHere : Strings.MenuEmptyPlace, PaperText.Note, TextAlignmentOptions.Top);
+            empty.color = PaperList.Faded(PaperText.Ink, 0.45f);
         }
+
+        // Over the photo, where a held one would land.
+        RectTransform mark = PhotoArea(rect);
+        view.Mark = VectorView.Add(mark, s => FormDrawing.Slot(s.x, s.y, marked: true), Color.clear).GetComponent<RawImage>();
+        view.Mark.enabled = false;
 
         if (editable)
         {
-            // The whole slot takes the pointer, card or not.
-            view.Outline.GetComponent<RawImage>().raycastTarget = true;
+            // The whole place takes the pointer, photo and name alike.
+            rect.gameObject.AddComponent<Image>().color = Color.clear;
             SlotControl control = PaperControl.Add<SlotControl>(rect.gameObject);
             control.Board = this;
             control.View = view;
+            control.Visual = content;
             control.Pressed = () => Press(view);
             control.Back = () => PutBack();
             view.Control = control;
@@ -355,29 +437,14 @@ internal sealed class PairBoard : MonoBehaviour
         slots.Add(view);
     }
 
-    /// <summary>A scout's card: their passport photo in its frame, and their name.</summary>
-    private RectTransform Card(Transform parent, int actor, bool lifted)
+    /// <summary>A scout as the yearbook prints them: their photo, and their name and role under it.</summary>
+    private void Portrait(RectTransform parent, int actor, SlotKind kind)
     {
-        RectTransform card = PaperList.NewRect("Card", parent);
-        card.anchorMin = Vector2.zero;
-        card.anchorMax = Vector2.one;
-        card.offsetMin = card.offsetMax = Vector2.zero;
-        VectorView.Add(card, s => FormDrawing.Card(s.x, s.y, lifted), Color.clear);
-
-        RectTransform photo = PaperList.NewRect("Photo", card);
-        photo.anchorMin = photo.anchorMax = new Vector2(0f, 0.5f);
-        photo.pivot = new Vector2(0f, 0.5f);
-        photo.sizeDelta = new Vector2(PhotoWidth, PhotoHeight);
-        photo.anchoredPosition = new Vector2(12f, 1f);
-        RectTransform picture = PaperList.NewRect("Picture", photo);
-        picture.anchorMin = Vector2.zero;
-        picture.anchorMax = Vector2.one;
-        picture.offsetMin = new Vector2(4f, 4f);
-        picture.offsetMax = new Vector2(-4f, -4f);
+        RectTransform photo = PhotoArea(parent);
         Texture? taken = portraits.Photo(actor);
         if (taken != null)
         {
-            RawImage image = picture.gameObject.AddComponent<RawImage>();
+            RawImage image = photo.gameObject.AddComponent<RawImage>();
             image.texture = taken;
             image.raycastTarget = false;
         }
@@ -385,22 +452,51 @@ internal sealed class PairBoard : MonoBehaviour
         {
             Color skin = portraits.Skin(actor);
             var ink = new Ink(skin.r, skin.g, skin.b);
-            VectorView.Add(picture, s => FormDrawing.Silhouette(s.x, s.y, ink), skin);
+            VectorView.Add(photo, s => FormDrawing.Silhouette(s.x, s.y, ink), skin);
         }
 
-        RectTransform frame = PaperList.NewRect("Frame", photo);
-        frame.anchorMin = Vector2.zero;
-        frame.anchorMax = Vector2.one;
-        frame.offsetMin = frame.offsetMax = Vector2.zero;
-        VectorView.Add(frame, s => FormDrawing.PhotoFrame(s.x, s.y), Color.clear);
+        RectTransform edge = PaperList.NewRect("Edge", photo);
+        edge.anchorMin = Vector2.zero;
+        edge.anchorMax = Vector2.one;
+        edge.offsetMin = edge.offsetMax = Vector2.zero;
+        VectorView.Add(edge, s => FormDrawing.PhotoEdge(s.x, s.y), Color.clear);
 
-        RectTransform name = PaperList.NewRect("Name", card);
-        name.anchorMin = Vector2.zero;
-        name.anchorMax = Vector2.one;
-        name.offsetMin = new Vector2(12f + PhotoWidth + 14f, 8f);
-        name.offsetMax = new Vector2(-16f, -8f);
-        Text(name, nameOf(actor), PaperText.Label, TextAlignmentOptions.Left);
-        return card;
+        RectTransform caption = Caption(parent);
+        VerticalLayoutGroup lines = caption.gameObject.AddComponent<VerticalLayoutGroup>();
+        lines.childControlWidth = lines.childControlHeight = true;
+        lines.childForceExpandWidth = true;
+        lines.childForceExpandHeight = false;
+        lines.childAlignment = TextAnchor.UpperCenter;
+        lines.spacing = -2f;
+        TMP_Text name = PaperText.Make(PaperList.NewRect("Name", caption).gameObject, template, PaperText.Value, TextAlignmentOptions.Top);
+        name.text = nameOf(actor);
+        if (kind != SlotKind.Unpaired)
+        {
+            TMP_Text role = PaperText.Make(PaperList.NewRect("Role", caption).gameObject, template, PaperText.Note * 0.85f, TextAlignmentOptions.Top);
+            role.text = Strings.RoleOf(kind == SlotKind.Carrier);
+            role.color = PaperList.Faded(PaperText.Ink, 0.6f);
+        }
+    }
+
+    private static RectTransform PhotoArea(RectTransform parent)
+    {
+        RectTransform photo = PaperList.NewRect("Photo", parent);
+        photo.anchorMin = photo.anchorMax = new Vector2(0.5f, 1f);
+        photo.pivot = new Vector2(0.5f, 1f);
+        photo.sizeDelta = new Vector2(PhotoWidth, PhotoHeight);
+        photo.anchoredPosition = Vector2.zero;
+        return photo;
+    }
+
+    private static RectTransform Caption(RectTransform parent)
+    {
+        RectTransform caption = PaperList.NewRect("Caption", parent);
+        caption.anchorMin = Vector2.zero;
+        caption.anchorMax = new Vector2(1f, 0f);
+        caption.pivot = new Vector2(0.5f, 0f);
+        caption.sizeDelta = new Vector2(8f, CaptionHeight - 4f);
+        caption.anchoredPosition = Vector2.zero;
+        return caption;
     }
 
     private TMP_Text Text(RectTransform rect, string value, float size, TextAlignmentOptions alignment)
@@ -413,31 +509,9 @@ internal sealed class PairBoard : MonoBehaviour
         text.text = value;
         return text;
     }
-
-    private static HorizontalLayoutGroup Line(Transform parent)
-    {
-        RectTransform line = PaperList.NewRect("Line", parent);
-        HorizontalLayoutGroup layout = line.gameObject.AddComponent<HorizontalLayoutGroup>();
-        layout.childAlignment = TextAnchor.MiddleLeft;
-        layout.childControlWidth = true;
-        layout.childControlHeight = true;
-        layout.childForceExpandWidth = false;
-        layout.childForceExpandHeight = false;
-        layout.spacing = 0f;
-        return layout;
-    }
-
-    private static RectTransform Fixed(Transform parent, string name, float width, float height)
-    {
-        RectTransform rect = PaperList.NewRect(name, parent);
-        LayoutElement size = rect.gameObject.AddComponent<LayoutElement>();
-        size.minWidth = size.preferredWidth = width;
-        size.minHeight = size.preferredHeight = height;
-        return rect;
-    }
 }
 
-/// <summary>One place on the board, and the card in it.</summary>
+/// <summary>One place on the board, and the photo in it.</summary>
 internal sealed class SlotView
 {
     private bool marked;
@@ -452,39 +526,31 @@ internal sealed class SlotView
 
     public RectTransform Rect { get; }
 
-    public VectorView Outline { get; set; } = null!;
+    public CanvasGroup Content { get; set; } = null!;
 
-    public CanvasGroup? CardGroup { get; set; }
+    public RawImage Mark { get; set; } = null!;
 
     public PaperControl? Control { get; set; }
 
-    /// <summary>Whether a held card would land here.</summary>
+    /// <summary>Whether a held photo would land here.</summary>
     public bool Marked
     {
         get => marked;
         set
         {
-            if (marked != value)
-            {
-                marked = value;
-                Outline.Redraw();
-            }
+            marked = value;
+            Mark.enabled = value;
         }
     }
 
-    public float CardAlpha
+    /// <summary>Whether the photo has been picked up from here.</summary>
+    public bool Faded
     {
-        set
-        {
-            if (CardGroup != null)
-            {
-                CardGroup.alpha = value;
-            }
-        }
+        set => Content.alpha = value ? 0.3f : 1f;
     }
 }
 
-/// <summary>A place on the board a player can press, and drag a card from.</summary>
+/// <summary>A place on the board a player can press, and drag a photo from.</summary>
 internal sealed class SlotControl : PaperControl, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     public PairBoard Board { get; set; } = null!;
@@ -499,7 +565,7 @@ internal sealed class SlotControl : PaperControl, IBeginDragHandler, IDragHandle
         }
     }
 
-    // Needed for the drag to begin; the held card follows the pointer by itself.
+    // Needed for the drag to begin; the held photo follows the pointer by itself.
     public void OnDrag(PointerEventData eventData)
     {
     }

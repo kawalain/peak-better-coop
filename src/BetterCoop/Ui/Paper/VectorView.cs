@@ -152,6 +152,7 @@ internal sealed class VectorView : MonoBehaviour
     /// <summary>Tessellates the SVG and draws its triangles into the texture.</summary>
     private void Paint(RenderTexture target, string svg, Vector2 size)
     {
+        var clock = System.Diagnostics.Stopwatch.StartNew();
         SVGParser.SceneInfo scene = SVGParser.ImportSVG(new StringReader(svg));
         // Fine enough that curves stay round at any size the view is shown.
         var options = new VectorUtils.TessellationOptions
@@ -159,7 +160,7 @@ internal sealed class VectorView : MonoBehaviour
             StepDistance = float.MaxValue,
             MaxCordDeviation = 0.05f,
             MaxTanAngleDeviation = 0.05f,
-            SamplingStepSize = 0.01f,
+            SamplingStepSize = 0.05f,
         };
         List<VectorUtils.Geometry> shapes = VectorUtils.TessellateScene(scene.Scene, options);
 
@@ -193,7 +194,7 @@ internal sealed class VectorView : MonoBehaviour
             RenderTexture.active = previous;
         }
 
-        Plugin.Verbose($"Drew {name} at {target.width}x{target.height} from {shapes.Count} shapes.");
+        Plugin.Verbose($"Drew {name} at {target.width}x{target.height} from {shapes.Count} shapes in {clock.Elapsed.TotalMilliseconds:F1} ms.");
     }
 
     private static RenderTexture NewTexture(int width, int height)

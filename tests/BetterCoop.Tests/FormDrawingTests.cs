@@ -14,13 +14,13 @@ public class FormDrawingTests
     {
         string[] drawings =
         [
-            FormDrawing.CheckBox(46f, true),
-            FormDrawing.Ring(120f, 40f),
-            FormDrawing.Leader(300f, 10f),
+            FormDrawing.CheckBox(46f),
             FormDrawing.Line(300f, 4f),
             FormDrawing.Arrow(28f, 40f, true),
             FormDrawing.Stamp(150f, 56f),
-            FormDrawing.PhotoFrame(90f, 110f),
+            FormDrawing.PhotoEdge(116f, 145f),
+            FormDrawing.Postmark(220f, 104f, 104f),
+            FormDrawing.Doodle(132f, 112f, "Alder"),
             FormDrawing.Card(200f, 140f, lifted: false),
             FormDrawing.Slot(200f, 140f, marked: true),
             FormDrawing.Silhouette(90f, 110f, new Ink(0.9f, 0.7f, 0.5f)),
@@ -36,40 +36,25 @@ public class FormDrawingTests
     }
 
     [Fact]
-    public void A_check_box_gets_a_pen_tick_only_when_checked()
-    {
-        XElement empty = XElement.Parse(FormDrawing.CheckBox(46f, false));
-        XElement ticked = XElement.Parse(FormDrawing.CheckBox(46f, true));
+    public void A_check_box_is_only_printed_its_tick_is_written_by_hand() =>
+        Assert.Empty(XElement.Parse(FormDrawing.CheckBox(46f)).Descendants(Svg + "path"));
 
-        Assert.Empty(empty.Descendants(Svg + "path"));
-        Assert.Equal(FormDrawing.Pen.Hex, ticked.Descendants(Svg + "path").Single().Attribute("stroke")!.Value);
+    [Fact]
+    public void A_postmark_inks_a_double_ring_and_five_cancelling_lines_in_postmark_black()
+    {
+        XElement postmark = XElement.Parse(FormDrawing.Postmark(220f, 104f, 104f));
+
+        Assert.Equal(2, postmark.Descendants(Svg + "circle").Count());
+        Assert.Equal(5, postmark.Descendants(Svg + "path").Count());
+        Assert.All(postmark.Descendants(Svg + "path"), p => Assert.Equal(FormDrawing.PostmarkInk.Hex, p.Attribute("stroke")!.Value));
     }
 
     [Fact]
-    public void A_ring_stays_inside_its_box()
+    public void Each_signer_gets_the_same_doodle_every_time()
     {
-        string d = XElement.Parse(FormDrawing.Ring(120f, 40f)).Descendants(Svg + "path").Single().Attribute("d")!.Value;
-        var points = d.Split('M', 'L').Where(p => p.Length > 0)
-            .Select(p => p.Split(' ').Select(v => float.Parse(v, System.Globalization.CultureInfo.InvariantCulture)).ToArray())
-            .ToList();
-
-        Assert.All(points, p =>
-        {
-            Assert.InRange(p[0], 0f, 120f);
-            Assert.InRange(p[1], 0f, 40f);
-        });
-    }
-
-    [Fact]
-    public void Leader_dots_end_at_the_right_edge()
-    {
-        var dots = XElement.Parse(FormDrawing.Leader(300f, 10f)).Descendants(Svg + "circle").ToList();
-        float last = float.Parse(dots[^1].Attribute("cx")!.Value, System.Globalization.CultureInfo.InvariantCulture);
-        float radius = float.Parse(dots[^1].Attribute("r")!.Value, System.Globalization.CultureInfo.InvariantCulture);
-
-        Assert.True(dots.Count > 30);
-        Assert.Equal(300f - radius, last, 3);
-        Assert.Empty(XElement.Parse(FormDrawing.Leader(1f, 10f)).Descendants(Svg + "circle"));
+        Assert.Equal(FormDrawing.Doodle(132f, 112f, "Alder"), FormDrawing.Doodle(132f, 112f, "Alder"));
+        Assert.Equal(FormDrawing.DoodleFor("Alder"), FormDrawing.DoodleFor("Alder"));
+        Assert.Equal(3, new[] { "Alder", "Birch", "Cedar", "Dahlia", "Elm", "Fern", "Gorse" }.Select(FormDrawing.DoodleFor).Distinct().Count());
     }
 
     [Fact]
@@ -79,7 +64,7 @@ public class FormDrawingTests
 
         Assert.Equal(stamp, FormDrawing.Stamp(150f, 56f, seed: 3));
         Assert.All(
-            XElement.Parse(stamp).Descendants(Svg + "rect"),
+            XElement.Parse(stamp).Descendants(Svg + "rect").Where(r => r.Attribute("stroke") != null),
             r => Assert.Equal(FormDrawing.StampRed.Hex, r.Attribute("stroke")!.Value));
     }
 

@@ -70,6 +70,7 @@ internal static class PhotoStudio
         }
 
         RenderTexture? photo = null;
+        var clock = System.Diagnostics.Stopwatch.StartNew();
         try
         {
             model.gameObject.SetActive(true);
@@ -97,7 +98,7 @@ internal static class PhotoStudio
 
             camera.Render();
             Photos[look] = photo;
-            Plugin.Verbose($"Took a passport photo of {look}.");
+            Plugin.Verbose($"Took a passport photo of {look} in {clock.Elapsed.TotalMilliseconds:F1} ms.");
             return photo;
         }
         catch (Exception exception)
@@ -124,6 +125,26 @@ internal static class PhotoStudio
             model.gameObject.SetActive(false);
         }
     }
+
+    /// <summary>Whether a photo of this look is ready.</summary>
+    public static bool Has(string look) => Photos.TryGetValue(look, out RenderTexture? kept) && kept != null && kept.IsCreated();
+
+    /// <summary>Lets a photo go, as when its scout has changed how they look.</summary>
+    public static void Forget(string look)
+    {
+        if (Photos.TryGetValue(look, out RenderTexture? photo))
+        {
+            Photos.Remove(look);
+            if (photo != null)
+            {
+                photo.Release();
+                Object.Destroy(photo);
+            }
+        }
+    }
+
+    /// <summary>Whether photos can be taken here: the studio is set up, or can be from the passport now.</summary>
+    public static bool Working => Ready();
 
     /// <summary>The skin colour of a skin index, or a plain tan when the game's list is not there.</summary>
     public static Color SkinColour(int index)
@@ -247,21 +268,57 @@ internal static class PhotoStudio
     }
 }
 
-/// <summary>Photos of the players in the room, dressed as they dress.</summary>
+/// <summary>
+/// Photos of the players in the room, dressed as they dress. A player who
+/// changes how they look, as at the Airport's passport, gets a new photo and
+/// the old one is let go.
+/// </summary>
 internal sealed class LivePortraits : IPortraits
 {
-    public Texture? Photo(int actor)
+    /// <summary>The look each player was last photographed in.</summary>
+    private static readonly Dictionary<int, string> Taken = new();
+
+    public Texture? Photo(int actor) => Take(actor);
+
+    public Color Skin(int actor) => PhotoStudio.SkinColour(Data(actor)?.currentSkin ?? 0);
+
+    /// <summary>Takes one photo a player in the room still lacks; false when every player has theirs.</summary>
+    public static bool WarmOne()
+    {
+        foreach (Photon.Realtime.Player player in PhotonNetwork.PlayerList)
+        {
+            if (Look(player.ActorNumber) is string look && !PhotoStudio.Has(look))
+            {
+                Take(player.ActorNumber);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static Texture? Take(int actor)
     {
         if (PhotonNetwork.CurrentRoom?.GetPlayer(actor) is not Photon.Realtime.Player player
-            || Data(actor) is not CharacterCustomizationData look)
+            || Look(actor) is not string look)
         {
             return null;
         }
 
-        return PhotoStudio.Take($"{actor}:{look}", model => model.UpdateDummy(player));
+        if (Taken.TryGetValue(actor, out string? before) && before != look)
+        {
+            PhotoStudio.Forget(before);
+        }
+
+        Taken[actor] = look;
+        return PhotoStudio.Take(look, model => model.UpdateDummy(player));
     }
 
-    public Color Skin(int actor) => PhotoStudio.SkinColour(Data(actor)?.currentSkin ?? 0);
+    /// <summary>Everything that shows in a player's photo, apart from who they are.</summary>
+    private static string? Look(int actor) =>
+        Data(actor) is CharacterCustomizationData d
+            ? $"{actor}:{d.currentSkin}.{d.currentAccessory}.{d.currentEyes}.{d.currentMouth}.{d.currentOutfit}.{d.currentHat}.{d.currentSash}.{d.currentMedal}"
+            : null;
 
     private static CharacterCustomizationData? Data(int actor)
     {
@@ -273,6 +330,50 @@ internal sealed class LivePortraits : IPortraits
         {
             Plugin.Verbose($"No look for {actor}: {exception.Message}");
             return null;
+        }
+    }
+}
+
+/// <summary>
+/// Takes the photos the Roster will need before it is opened, one at a time
+/// and a few frames apart, so opening it costs no wait: everyone in the room,
+/// again whenever someone changes how they look.
+/// </summary>
+internal sealed class PhotoDarkroom : MonoBehaviour
+{
+    private const float Pause = 0.3f;
+
+    /// <summary>More photos to take ahead of time, as the Zoo's made-up scouts; false when none is left.</summary>
+    public static Func<bool>? More { get; set; }
+
+    private float next;
+
+    private void Update()
+    {
+        if (Time.unscaledTime < next)
+        {
+            return;
+        }
+
+        next = Time.unscaledTime + Pause;
+        try
+        {
+            if (!PhotoStudio.Working)
+            {
+                return;
+            }
+
+            if (PhotonNetwork.InRoom && LivePortraits.WarmOne())
+            {
+                return;
+            }
+
+            More?.Invoke();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PhotoDarkroom", exception);
+            enabled = false;
         }
     }
 }

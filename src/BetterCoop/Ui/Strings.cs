@@ -57,7 +57,7 @@ internal static class Strings
     };
 
     /// <summary>The Roster's printed head: what form it is.</summary>
-    public static string FormTitle => Korean ? "BetterCoop 서식 제1호 · 편성표" : "BetterCoop Form No. 1 · Roster";
+    public static string FormTitle => Korean ? "BetterCoop 서식 제1호" : "BetterCoop Form No. 1";
 
     public static string FormMembers(int count) => Korean ? $"대원 {count}명" : count == 1 ? "1 scout" : $"{count} scouts";
 
@@ -103,7 +103,34 @@ internal static class Strings
 
     public static string StampRestore => Korean ? "복구" : "Restore";
 
-    public static string StampApproved => Korean ? "확정" : "Approved";
+    /// <summary>The scouting motto, printed at the foot of the Roster.</summary>
+    public static string Motto => Korean ? "“준비”" : "“Be Prepared”";
+
+    public static string Serial(int number) => $"No. {number:D7}";
+
+    public static string StampNotify => Korean ? "통보" : "Notified";
+
+    /// <summary>The post office round a postmark's top.</summary>
+    public static string PostmarkOffice => Korean ? "섬 분대 우체국" : "ISLAND TROOP P.O.";
+
+    /// <summary>The date round a postmark's foot.</summary>
+    public static string PostmarkDate(System.DateTime day) => Korean
+        ? day.ToString("yyyy. M. d.", System.Globalization.CultureInfo.InvariantCulture)
+        : day.ToString("MMM d yyyy", System.Globalization.CultureInfo.InvariantCulture).ToUpperInvariant();
+
+    public static string StampDiscard => Korean ? "버리기" : "Discard";
+
+    public static string StampKeep => Korean ? "계속 쓰기" : "Keep";
+
+    public static string DiscardDraft => Korean ? "초안을 버리겠습니까?" : "Throw the draft away?";
+
+    public static string DiscardDraftNote => Korean
+        ? "통보하지 않은 짝 명단 초안이 있습니다. 버리면 지금의 짝 명단으로 돌아갑니다."
+        : "The Pairs you laid out have not been announced. Thrown away, the list goes back to the Pairs as they are.";
+
+    public static string MenuDraft => Korean
+        ? "초안입니다. 통보하기 전에는 아무도 바뀌지 않습니다."
+        : "This is a draft. Nobody changes until you announce it.";
 
     public static string StampAsk => Korean ? "요청" : "Request";
 
@@ -158,8 +185,8 @@ internal static class Strings
         : "Re-attaches every Pair's carry and wakes every Rider.";
 
     public static string AboutAssign => Korean
-        ? "짝 명단에 옮긴 그대로 짝이 됩니다. 짝 없는 사람은 짝 이어주기로 묶입니다."
-        : "The Pairs become as you laid them out; anyone left Unpaired pairs up by Late Pairing.";
+        ? "통보하면 모두에게 알린 뒤 3초 뒤에 옮긴 그대로 짝이 됩니다. 짝 없는 사람은 짝 이어주기로 묶입니다."
+        : "Announced, everyone is told and the Pairs become as you laid them out three seconds later; anyone left Unpaired pairs up by Late Pairing.";
 
     public static string MenuBoardHelp => Korean
         ? "카드를 끌어 옮기거나, 눌러서 든 다음 놓을 곳을 누릅니다. 카드 위에 놓으면 서로 자리를 바꿉니다. 오른쪽 클릭이나 ESC로 제자리에 둡니다."
@@ -168,6 +195,8 @@ internal static class Strings
     public static string MenuNewPair => Korean ? "새 짝" : "New";
 
     public static string MenuDropHere => Korean ? "여기에 놓기" : "Drop here";
+
+    public static string MenuEmptyPlace => Korean ? "빈자리" : "Empty";
 
     public static string MenuAssignReset => Korean ? "처음 편성으로" : "Start over";
 
@@ -209,7 +238,7 @@ internal static class Strings
         ? $"코옵: {seconds}초 뒤 분대장이 정한 짝이 됩니다."
         : $"Coop: the Troop Leader's Pairs take effect in {seconds}...";
 
-    public static string MenuAssign => Korean ? "짝 지정" : "Assign Pair";
+    public static string MenuAssign => Korean ? "짝 명단 통보" : "Announce the Pairs";
 
     public static string MenuAssignUnavailable => Korean
         ? "코옵: 지금은 이대로 짝을 지을 수 없습니다. 새로 업는 사람은 깨어 있어야 하고, 쓰러진 짝은 함께 있어야 하며, 모두 같은 버전의 모드가 있어야 합니다."

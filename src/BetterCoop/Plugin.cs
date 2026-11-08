@@ -76,6 +76,10 @@ public sealed class Plugin : BaseUnityPlugin
         runtime.AddComponent<RiderPreviewsKeeper>();
         runtime.AddComponent<SharedViewSoundsKeeper>();
         runtime.AddComponent<PairShuffleLink>();
+        runtime.AddComponent<Ui.Paper.PhotoDarkroom>();
+#if DEBUG
+        Ui.Paper.PhotoDarkroom.More = Features.ZooPortraits.WarmOne;
+#endif
 
         Log.LogInfo($"{MyPluginInfo.PLUGIN_NAME} {MyPluginInfo.PLUGIN_VERSION} loaded.");
     }
