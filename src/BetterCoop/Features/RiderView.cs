@@ -85,6 +85,13 @@ internal static class RiderView
         }
     }
 
+    /// <summary>
+    /// Whether the camera spectates; the game's own property throws while its
+    /// camera does not exist, as during a scene load.
+    /// </summary>
+    private static bool Spectating =>
+        Zorro.Core.Singleton<MainCameraMovement>.Instance != null && MainCameraMovement.IsSpectating;
+
     /// <summary>Renderers hidden for the Rider's screen, to give back when it ends.</summary>
     private static readonly HashSet<Renderer> Hidden = new();
 
@@ -128,7 +135,7 @@ internal static class RiderView
     [HarmonyPatch(typeof(CharacterBackpackHandler), "LateUpdate")]
     private static void HideCarrierBackItem(CharacterBackpackHandler __instance)
     {
-        if (MainCameraMovement.IsSpectating
+        if (Spectating
             || !TryGetCarrierOfLocalRider(out Character carrier)
             || __instance.character != carrier)
         {
@@ -176,7 +183,7 @@ internal static class RiderView
         nextSweep = Time.unscaledTime + 0.25f;
         WatchRiderCamera();
         Wanted.Clear();
-        if (!MainCameraMovement.IsSpectating && TryGetCarrierOfLocalRider(out Character carrier))
+        if (!Spectating && TryGetCarrierOfLocalRider(out Character carrier))
         {
             CollectRiderBody(Character.localCharacter, Wanted);
             CollectPockets(carrier, Wanted);
@@ -220,7 +227,7 @@ internal static class RiderView
         MainCameraMovement movement = Zorro.Core.Singleton<MainCameraMovement>.Instance;
         float offHead = Vector3.Distance(MainCamera.instance.transform.position, carrier.GetCameraPos(CameraForwardOffset));
         Character spectated = MainCameraMovement.specCharacter;
-        string state = $"spectating={MainCameraMovement.IsSpectating} ({(spectated != null ? spectated.characterName : "nobody")}), "
+        string state = $"spectating={Spectating} ({(spectated != null ? spectated.characterName : "nobody")}), "
             + $"carried={local.data.carrier == carrier}, passedOut={local.data.passedOut}, fullyPassedOut={local.data.fullyPassedOut}, "
             + $"dead={local.data.dead}, rocketing={movement != null && movement.isRocketing}, "
             + $"ragdollControl={(local.data.currentRagdollControll >= 0.95f ? "full" : "low")}, "
