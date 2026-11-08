@@ -1,0 +1,81 @@
+using System.Globalization;
+using System.Linq;
+using System.Xml.Linq;
+using BetterCoop.Core;
+using Xunit;
+
+namespace BetterCoop.Tests;
+
+public class PaperDrawingTests
+{
+    private static readonly XNamespace Svg = "http://www.w3.org/2000/svg";
+
+    private static XElement Draw(float width = 1000f, float height = 900f, int seed = 7) =>
+        XElement.Parse(PaperDrawing.Svg(width, height, 96f, 104f, seed));
+
+    [Fact]
+    public void The_view_box_holds_the_paper_and_its_margin()
+    {
+        XElement svg = Draw();
+
+        Assert.Equal("0 0 1032 932", svg.Attribute("viewBox")!.Value);
+        Assert.Equal((1032f, 932f), PaperDrawing.Canvas(1000f, 900f));
+    }
+
+    [Fact]
+    public void Draws_shadow_then_outline_then_paper_before_anything_on_it()
+    {
+        var fills = Draw().Descendants(Svg + "path").Take(3).Select(p => p.Attribute("fill")!.Value).ToList();
+
+        Assert.Equal(["#000000", PaperDrawing.InkBlack.Hex, PaperDrawing.Paper.Hex], fills);
+    }
+
+    [Fact]
+    public void Each_edge_cuts_four_notches_with_arcs()
+    {
+        string edge = Draw().Descendants(Svg + "path").Skip(1).First().Attribute("d")!.Value;
+
+        // Four corners and four notches.
+        Assert.Equal(8, edge.Count(c => c == 'A'));
+        Assert.EndsWith("Z", edge);
+    }
+
+    [Fact]
+    public void Both_perforations_run_across_the_paper()
+    {
+        int dashes = Draw().Descendants(Svg + "rect").Count();
+
+        Assert.Equal(2 * PaperDrawing.DashCount(1000f), dashes);
+        Assert.InRange(PaperDrawing.DashCount(1000f), 40, 50);
+    }
+
+    [Fact]
+    public void Only_the_shadow_lets_anything_show_through()
+    {
+        var translucent = Draw().Descendants()
+            .Where(e => e.Attribute("fill-opacity") != null || e.Attribute("opacity") != null || e.Attribute("stroke-opacity") != null)
+            .ToList();
+
+        XElement shadow = Assert.Single(translucent);
+        Assert.Equal(PaperDrawing.ShadowOpacity, float.Parse(shadow.Attribute("fill-opacity")!.Value, CultureInfo.InvariantCulture));
+    }
+
+    [Fact]
+    public void Numbers_are_written_the_same_in_every_culture()
+    {
+        CultureInfo before = CultureInfo.CurrentCulture;
+        try
+        {
+            CultureInfo.CurrentCulture = new CultureInfo("de-DE");
+            Assert.DoesNotContain(",5", PaperDrawing.Svg(1000.5f, 900f, 96f, 104f));
+        }
+        finally
+        {
+            CultureInfo.CurrentCulture = before;
+        }
+    }
+
+    [Fact]
+    public void The_same_seed_draws_the_same_paper() =>
+        Assert.Equal(PaperDrawing.Svg(800f, 600f, 96f, 104f, 3), PaperDrawing.Svg(800f, 600f, 96f, 104f, 3));
+}

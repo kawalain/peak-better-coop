@@ -113,10 +113,11 @@ internal static class CoopMenu
 }
 
 /// <summary>
-/// The Coop Menu page: a panel in the middle of the screen with the title,
-/// a scrolling list of rows, and Back. The rows are rebuilt when the room's
-/// Pairs or the Troop Leader change, and their texts refresh every frame
-/// while it is open.
+/// The Coop Menu page: a sheet of paper in the middle of the screen with the
+/// title, a scrolling list of rows, and Back. It rises like a ticket from the
+/// kiosk when it opens and drops away when it closes. The rows are rebuilt
+/// when the room's Pairs or the Troop Leader change, and their texts refresh
+/// every frame while it is open.
 /// </summary>
 internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
 {
@@ -136,11 +137,26 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
 
     private const float RightColumn = 240f;
 
+    /// <summary>Room between a perforation and the list, so rows never touch it.</summary>
+    private const float ListGap = 10f;
+
+    private const float WheelStep = 70f;
+
     private readonly List<MenuRow> rows = new();
 
     private readonly Vector3[] corners = new Vector3[4];
 
+    private readonly ScrollMotion scroll = new();
+
     private UIPageHandler handler = null!;
+
+    private RectTransform panel = null!;
+
+    private CanvasGroup group = null!;
+
+    private Motion motion;
+
+    private float motionSeconds;
 
     private RectTransform viewport = null!;
 
@@ -194,8 +210,37 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         return page;
     }
 
+    private enum Motion
+    {
+        Resting,
+        Rising,
+        Sinking,
+    }
+
     public (UIPage, PageTransistion) GetParentPage() =>
-        (handler.GetPage<PauseMenuMainPage>(), new SetActivePageTransistion());
+        (handler.GetPage<PauseMenuMainPage>(), new SinkTransistion());
+
+    public override void OnPageEnter()
+    {
+        base.OnPageEnter();
+        scroll.Reset();
+        lastSelected = null;
+        motion = Motion.Rising;
+        motionSeconds = 0f;
+        group.interactable = true;
+        group.blocksRaycasts = true;
+        Pose();
+    }
+
+    /// <summary>Drops the paper away; the page turns itself off once it is gone.</summary>
+    internal void SinkAway()
+    {
+        motion = Motion.Sinking;
+        motionSeconds = 0f;
+        group.interactable = false;
+        group.blocksRaycasts = false;
+        Pose();
+    }
 
     public GameObject GetFirstSelectedGameObject() =>
         rows.Select(r => r.Button).FirstOrDefault(b => b != null && b.gameObject.activeInHierarchy)?.gameObject
@@ -213,7 +258,7 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         rule.sizeDelta = new Vector2(0f, 2f);
         rule.anchoredPosition = Vector2.zero;
         Image line = rule.gameObject.AddComponent<Image>();
-        line.color = new Color(1f, 1f, 1f, 0.25f);
+        line.color = new Color(PaperView.Blue.r, PaperView.Blue.g, PaperView.Blue.b, 0.45f);
         line.raycastTarget = false;
         Add(new MenuRow(root, text, null, null, null, visible, null, header: true, textTemplate));
     }
@@ -263,7 +308,7 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
     {
         try
         {
-            handler.TransistionToPage(handler.GetPage<PauseMenuMainPage>(), new SetActivePageTransistion());
+            handler.TransistionToPage(handler.GetPage<PauseMenuMainPage>(), new SinkTransistion());
         }
         catch (Exception exception)
         {
@@ -271,10 +316,32 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         }
     }
 
+    private void OnDisable()
+    {
+        // The pause menu closed while the paper was still dropping: it is gone.
+        if (motion == Motion.Sinking)
+        {
+            motion = Motion.Resting;
+            group.alpha = 0f;
+        }
+    }
+
     private void LateUpdate()
     {
         try
         {
+            // Left behind by a drop the pause menu cut short.
+            if (handler.currentPage != this && motion != Motion.Sinking)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
+            if (!Animate())
+            {
+                return;
+            }
+
             string now = MenuShape.Of();
             if (now != shape)
             {
@@ -288,6 +355,9 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
             }
 
             KeepSelectionInView();
+            scroll.Max = content.rect.height - viewport.rect.height;
+            scroll.Step(Time.unscaledDeltaTime);
+            content.anchoredPosition = new Vector2(0f, scroll.Position);
         }
         catch (Exception exception)
         {
@@ -295,13 +365,75 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         }
     }
 
-    /// <summary>A dark panel in the middle of the screen: the title, a scrolling list of rows, and Back.</summary>
+    /// <summary>
+    /// Moves the paper along its rise or drop, on unscaled time as a lone
+    /// player's pause stops the clock. False once the drop has ended and the
+    /// page has turned off.
+    /// </summary>
+    private bool Animate()
+    {
+        if (motion == Motion.Resting)
+        {
+            return true;
+        }
+
+        motionSeconds += Time.unscaledDeltaTime;
+        if (motion == Motion.Rising && motionSeconds >= TicketMotion.RiseSeconds)
+        {
+            motion = Motion.Resting;
+        }
+        else if (motion == Motion.Sinking && motionSeconds >= TicketMotion.SinkSeconds)
+        {
+            motion = Motion.Resting;
+            gameObject.SetActive(false);
+            return false;
+        }
+
+        Pose();
+        return true;
+    }
+
+    /// <summary>Places the paper where its motion has it now.</summary>
+    private void Pose()
+    {
+        float offset = 0f;
+        float tilt = 0f;
+        float alpha = 1f;
+        if (motion == Motion.Rising)
+        {
+            offset = TicketMotion.RiseOffset(motionSeconds);
+            tilt = TicketMotion.RiseTilt(motionSeconds);
+            alpha = TicketMotion.RiseAlpha(motionSeconds);
+        }
+        else if (motion == Motion.Sinking)
+        {
+            offset = TicketMotion.SinkOffset(motionSeconds);
+            tilt = TicketMotion.SinkTilt(motionSeconds);
+            alpha = TicketMotion.SinkAlpha(motionSeconds);
+        }
+
+        // From the paper's resting place to wholly below the screen.
+        float travel = ((RectTransform)panel.parent).rect.height * 0.94f + PaperDrawing.Margin + PaperDrawing.ShadowDrop;
+        panel.anchoredPosition = new Vector2(0f, offset * travel);
+        panel.localRotation = Quaternion.Euler(0f, 0f, tilt);
+        group.alpha = alpha;
+    }
+
+    private void OnWheel(PointerEventData eventData)
+    {
+        float wheel = eventData.scrollDelta.y;
+        // Some input modules count a notch as 120, others as 1.
+        float notches = Mathf.Min(Mathf.Abs(wheel) >= 10f ? Mathf.Abs(wheel) / 120f : Mathf.Abs(wheel), 3f);
+        scroll.Push(-Mathf.Sign(wheel) * notches * WheelStep);
+    }
+
+    /// <summary>A sheet of paper in the middle of the screen: the title, a scrolling list of rows, and Back.</summary>
     private void LayOut(RectTransform root)
     {
         var backRect = (RectTransform)back.transform;
         Vector2 backSize = backRect.rect.size;
 
-        RectTransform panel = NewRect("BetterCoop.Panel", root);
+        panel = NewRect("BetterCoop.Panel", root);
         // The Controls page may lay out its children; the panel keeps its own anchors.
         panel.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
         panel.anchorMin = new Vector2(0.5f, 0.06f);
@@ -309,7 +441,19 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         panel.pivot = new Vector2(0.5f, 0.5f);
         panel.sizeDelta = new Vector2(PanelWidth, 0f);
         panel.anchoredPosition = Vector2.zero;
-        panel.gameObject.AddComponent<Image>().color = new Color(0.04f, 0.06f, 0.09f, 0.9f);
+        group = panel.gameObject.AddComponent<CanvasGroup>();
+
+        // The paper reaches past the panel by its shadow's margin, so its edge is the panel's.
+        RectTransform sheet = NewRect("Paper", panel);
+        sheet.anchorMin = Vector2.zero;
+        sheet.anchorMax = Vector2.one;
+        sheet.offsetMin = new Vector2(-PaperDrawing.Margin, -PaperDrawing.Margin);
+        sheet.offsetMax = new Vector2(PaperDrawing.Margin, PaperDrawing.Margin);
+        sheet.gameObject.AddComponent<RawImage>().color = PaperView.Paper;
+        PaperView paper = sheet.gameObject.AddComponent<PaperView>();
+        paper.Panel = panel;
+        paper.TopTear = TitleHeight;
+        paper.BottomTear = FooterHeight;
 
         RectTransform titleRect = NewRect("Title", panel);
         titleRect.anchorMin = new Vector2(0f, 1f);
@@ -319,16 +463,19 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         titleRect.anchoredPosition = Vector2.zero;
         TMP_Text title = Text(titleRect.gameObject, textTemplate.fontSize * 1.1f, TextAlignmentOptions.Center);
         title.fontStyle = FontStyles.Bold;
+        title.color = PaperView.Blue;
         title.text = Strings.CoopMenu;
 
         viewport = NewRect("Viewport", panel);
         viewport.anchorMin = Vector2.zero;
         viewport.anchorMax = Vector2.one;
-        viewport.offsetMin = new Vector2(Padding, FooterHeight);
-        viewport.offsetMax = new Vector2(-Padding, -TitleHeight);
+        viewport.offsetMin = new Vector2(Padding, FooterHeight + ListGap);
+        viewport.offsetMax = new Vector2(-Padding, -(TitleHeight + ListGap));
         // Catches the mouse wheel over the gaps between rows.
         viewport.gameObject.AddComponent<Image>().color = Color.clear;
-        viewport.gameObject.AddComponent<RectMask2D>();
+        // Rows fade out at the list's edges rather than being cut.
+        viewport.gameObject.AddComponent<RectMask2D>().softness = new Vector2Int(0, 18);
+        viewport.gameObject.AddComponent<WheelCatcher>().Wheel = OnWheel;
 
         content = NewRect("Content", viewport);
         content.anchorMin = new Vector2(0f, 1f);
@@ -342,17 +489,8 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         layout.childForceExpandWidth = true;
         layout.childForceExpandHeight = false;
         layout.spacing = 6f;
-        layout.padding = new RectOffset(0, 0, 0, 16);
+        layout.padding = new RectOffset(0, 0, 8, 16);
         content.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        ScrollRect scroll = viewport.gameObject.AddComponent<ScrollRect>();
-        scroll.viewport = viewport;
-        scroll.content = content;
-        scroll.horizontal = false;
-        scroll.vertical = true;
-        scroll.movementType = ScrollRect.MovementType.Clamped;
-        scroll.inertia = false;
-        scroll.scrollSensitivity = 40f;
 
         backRect.SetParent(panel, false);
         backRect.anchorMin = new Vector2(0.5f, 0f);
@@ -371,7 +509,7 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
         }
     }
 
-    /// <summary>Scrolls a row a gamepad moves to into view.</summary>
+    /// <summary>Glides a row a gamepad moves to into view.</summary>
     private void KeepSelectionInView()
     {
         GameObject? selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
@@ -386,14 +524,18 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
             return;
         }
 
+        // Measured down from the list's top, as the scroll position is.
         ((RectTransform)selected.transform).GetWorldCorners(corners);
-        float bottom = viewport.InverseTransformPoint(corners[0]).y;
-        float top = viewport.InverseTransformPoint(corners[1]).y;
-        Rect view = viewport.rect;
-        float shift = top > view.yMax ? top - view.yMax : bottom < view.yMin ? bottom - view.yMin : 0f;
-        if (shift != 0f)
+        float top = -content.InverseTransformPoint(corners[1]).y;
+        float bottom = -content.InverseTransformPoint(corners[0]).y;
+        float view = viewport.rect.height;
+        if (top < scroll.Position)
         {
-            content.anchoredPosition -= new Vector2(0f, shift);
+            scroll.GlideTo(top - ListGap);
+        }
+        else if (bottom > scroll.Position + view)
+        {
+            scroll.GlideTo(bottom - view + ListGap);
         }
     }
 
@@ -478,10 +620,11 @@ internal sealed class CoopMenuPage : UIPage, IHaveParentPage, INavigationPage
     private TMP_Text Text(GameObject holder, float fontSize, TextAlignmentOptions alignment)
     {
         TextMeshProUGUI text = holder.AddComponent<TextMeshProUGUI>();
+        // Ink on paper: the font's plain material, without the menu's glow or outline.
         text.font = textTemplate.font;
-        text.fontSharedMaterial = textTemplate.fontSharedMaterial;
+        text.fontSharedMaterial = textTemplate.font != null ? textTemplate.font.material : textTemplate.fontSharedMaterial;
         text.fontSize = fontSize;
-        text.color = textTemplate.color;
+        text.color = PaperView.Ink;
         text.alignment = alignment;
         text.textWrappingMode = TextWrappingModes.NoWrap;
         text.overflowMode = TextOverflowModes.Ellipsis;
@@ -827,5 +970,47 @@ internal static class TroopLeaderRows
         int now = ShuffleInterval.Clamp(CoopConfig.TimedShuffleInterval.Value);
         int next = Intervals.FirstOrDefault(m => m > now);
         CoopConfig.TimedShuffleInterval.Value = next == 0 ? Intervals[0] : next;
+    }
+}
+
+/// <summary>Hands the mouse wheel over the Coop Menu's list to the page.</summary>
+internal sealed class WheelCatcher : MonoBehaviour, IScrollHandler
+{
+    public Action<PointerEventData>? Wheel { get; set; }
+
+    public void OnScroll(PointerEventData eventData)
+    {
+        try
+        {
+            Wheel?.Invoke(eventData);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("WheelCatcher.OnScroll", exception);
+        }
+    }
+}
+
+/// <summary>
+/// Leaves the Coop Menu: the pause menu comes back at once while the paper
+/// drops away over it, so the menu's state never waits on the motion.
+/// </summary>
+internal sealed class SinkTransistion : PageTransistion
+{
+    public override void Transistion(PageBase oldSubPage, PageBase newSubPage)
+    {
+        oldSubPage.OnPageExit();
+        if (oldSubPage is CoopMenuPage menu)
+        {
+            menu.SinkAway();
+        }
+        else
+        {
+            oldSubPage.gameObject.SetActive(false);
+        }
+
+        newSubPage.gameObject.SetActive(true);
+        newSubPage.OnPageEnter();
+        newSubPage.OnPageEntered();
     }
 }
