@@ -50,10 +50,10 @@ internal static class ControlSplit
     private static readonly RelayedButton PrimaryIn = new();
     private static readonly RelayedButton SecondaryIn = new();
     private static readonly LookFollower LookIn = new();
-    private static ButtonCounters scrollForwardIn;
-    private static ButtonCounters scrollBackwardIn;
-    private static ushort scrollForwardApplied;
-    private static ushort scrollBackwardApplied;
+    private static readonly RelayedPresses ScrollForwardPresses = new();
+    private static readonly RelayedPresses ScrollBackwardPresses = new();
+    private static bool scrollForwardHeld;
+    private static bool scrollBackwardHeld;
     private static float scrollTotalIn;
     private static float scrollTotalApplied;
     private static bool receivedAny;
@@ -153,6 +153,8 @@ internal static class ControlSplit
         lastSent = null;
         PrimaryIn.Reset();
         SecondaryIn.Reset();
+        ScrollForwardPresses.Reset();
+        ScrollBackwardPresses.Reset();
         LookIn.Reset();
         SoloWire.Clear();
         receivedAny = false;
@@ -261,12 +263,10 @@ internal static class ControlSplit
         input.useSecondaryIsPressed = secondary.IsPressed;
         input.useSecondaryWasReleased = secondary.WasReleased;
 
-        input.scrollForwardWasPressed = scrollForwardIn.Presses != scrollForwardApplied;
-        input.scrollForwardIsPressed = scrollForwardIn.Down;
-        scrollForwardApplied = scrollForwardIn.Presses;
-        input.scrollBackwardWasPressed = scrollBackwardIn.Presses != scrollBackwardApplied;
-        input.scrollBackwardIsPressed = scrollBackwardIn.Down;
-        scrollBackwardApplied = scrollBackwardIn.Presses;
+        input.scrollForwardWasPressed = ScrollForwardPresses.Step();
+        input.scrollForwardIsPressed = scrollForwardHeld;
+        input.scrollBackwardWasPressed = ScrollBackwardPresses.Step();
+        input.scrollBackwardIsPressed = scrollBackwardHeld;
         input.scrollInput = scrollTotalIn - scrollTotalApplied;
         scrollTotalApplied = scrollTotalIn;
     }
@@ -378,18 +378,18 @@ internal static class ControlSplit
         lastSequenceIn = actions.Sequence;
         PrimaryIn.Receive(actions.Primary);
         SecondaryIn.Receive(actions.Secondary);
+        ScrollForwardPresses.Receive(actions.ScrollForward.Presses);
+        ScrollBackwardPresses.Receive(actions.ScrollBackward.Presses);
         LookIn.Receive(actions.Yaw, actions.Pitch);
         if (!receivedAny)
         {
-            scrollForwardApplied = actions.ScrollForward.Presses;
-            scrollBackwardApplied = actions.ScrollBackward.Presses;
             scrollTotalApplied = actions.ScrollTotal;
             receivedAny = true;
             Plugin.Verbose("First Rider snapshot received.");
         }
 
-        scrollForwardIn = actions.ScrollForward;
-        scrollBackwardIn = actions.ScrollBackward;
+        scrollForwardHeld = actions.ScrollForward.Down;
+        scrollBackwardHeld = actions.ScrollBackward.Down;
         scrollTotalIn = actions.ScrollTotal;
     }
 }
