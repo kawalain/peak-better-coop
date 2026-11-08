@@ -81,6 +81,7 @@ internal static class PairShuffle
         countdownId = Current?.Id ?? 0;
         emptiedHandsId = countdownId;
         hostClock = double.MinValue;
+        RoleSwap.OnJoinedRoom();
     }
 
     /// <summary>Called every frame on every client.</summary>
@@ -95,6 +96,7 @@ internal static class PairShuffle
         ShowCountdown(op);
         EmptyHandsBeforeRun(op);
         ApplyHandover();
+        RoleSwap.Tick();
         if (PhotonNetwork.IsMasterClient)
         {
             HostTick(op);
@@ -172,6 +174,7 @@ internal static class PairShuffle
             }
         }
 
+        RoleSwap.HostTick();
     }
 
     private static void Execute(Operation op)
@@ -491,10 +494,13 @@ internal static class PairShuffle
     private static bool IsAlive(int actor) => CharacterOf(actor) is Character character && !character.data.dead;
 }
 
-/// <summary>Drives Pair Shuffles.</summary>
+/// <summary>Drives Pair Shuffles and Role Swaps.</summary>
 internal sealed class PairShuffleLink : MonoBehaviourPunCallbacks
 {
     public override void OnJoinedRoom() => PairShuffle.OnJoinedRoom();
+
+    public override void OnPlayerPropertiesUpdate(PhotonPlayer targetPlayer, PhotonHashtable changedProps) =>
+        RoleSwap.OnRequestChanged(targetPlayer, changedProps);
 
     private void Update() => PairShuffle.Tick();
 }

@@ -37,6 +37,34 @@ internal static class Strings
         ? $"코옵: {seconds}초 뒤 자리를 바꿉니다."
         : $"Co-op: swapping places in {seconds}...";
 
+    public static string SwapPlaces => Korean ? "자리 바꾸기" : "Swap Places";
+
+    public static string CancelSwap => Korean ? "자리 바꾸기 취소" : "Cancel Swap";
+
+    public static string SwapAsked(string partner) => Korean
+        ? $"코옵: {partner} 님에게 자리 바꾸기를 청했습니다. 30초 안에 상대도 누르면 바꿉니다."
+        : $"Co-op: asked {partner} to swap places. It happens if they agree within 30 seconds.";
+
+    public static string SwapOffered(string partner) => Korean
+        ? $"코옵: {partner} 님이 자리를 바꾸고 싶어 합니다. ESC에서 자리 바꾸기를 누르면 바꿉니다."
+        : $"Co-op: {partner} wants to swap places. Press Swap Places in the ESC menu to agree.";
+
+    public static string SwapWithdrawn(string partner) => Korean
+        ? $"코옵: {partner} 님의 자리 바꾸기 요청이 취소되었습니다."
+        : $"Co-op: {partner} no longer asks to swap places.";
+
+    public static string SwapCancelled => Korean
+        ? "코옵: 자리 바꾸기 요청을 취소했습니다."
+        : "Co-op: your request to swap places is cancelled.";
+
+    public static string SwapExpired => Korean
+        ? "코옵: 30초 동안 답이 없어 자리 바꾸기 요청을 거두었습니다."
+        : "Co-op: no answer in 30 seconds, so your request to swap places lapsed.";
+
+    public static string SwapCancelledByShuffle => Korean
+        ? "코옵: 짝 섞기가 시작되어 자리 바꾸기 요청을 취소했습니다."
+        : "Co-op: a Pair Shuffle is starting, so your request to swap places is cancelled.";
+
     public static string RiderHandEmptied => Korean
         ? "코옵: 업힌 사람은 아이템을 손에 들 수 없어 바닥에 내려놓았습니다."
         : "Co-op: a Rider cannot hold items, so it was dropped.";

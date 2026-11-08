@@ -23,7 +23,8 @@ _Avoid_: host, 방장 (in player text)
 
 **Pair** (짝):
 Two players bound together, one as Carrier and one as Rider, from when Pairs
-are formed until a Pair Shuffle, a member leaving, or the end of the Run.
+are formed until a Pair Shuffle, a Role Swap, a member leaving, or the end of
+the Run.
 _Avoid_: partner, couple, team
 
 **Carrier** (업는 사람):
@@ -65,6 +66,11 @@ When Pairs change, each new Shared Body takes over one former Shared Body:
 its statuses always, and its place and items as the Troop Leader sets. Nothing
 is lost or copied: the items swap between the two bodies.
 _Avoid_: body swap, inheritance
+
+**Role Swap** (자리 바꾸기):
+The Carrier and Rider of a Pair trading roles when both ask for it, with a
+Body Handover to the new Carrier.
+_Avoid_: role switch, flip
 
 **Shared Life**:
 The rule that the Rider lives and dies with the Shared Body: the Rider dies

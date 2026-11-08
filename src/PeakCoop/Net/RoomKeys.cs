@@ -24,6 +24,9 @@ internal static class RoomKeys
     /// <summary>Room property: server time the Timed Shuffle interval counts from.</summary>
     public const string ShuffleClock = "PeakCoop.ShuffleClock";
 
+    /// <summary>Player property: the partner a player asks to swap places with, and when.</summary>
+    public const string SwapRequest = "PeakCoop.SwapRequest";
+
     /// <summary>Event: a Rider's actions, sent to their Carrier.</summary>
     public const byte RiderActionsEvent = 185;
 
