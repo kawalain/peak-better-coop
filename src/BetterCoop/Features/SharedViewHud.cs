@@ -14,6 +14,9 @@ namespace BetterCoop.Features;
 /// from the local character, which on the Rider's client is the Rider; the
 /// Carrier's client sends what its own HUD shows, and the Rider's draws it.
 /// A shooting crosshair depends on aim, so the Rider's client judges it.
+/// The slots' remaining uses count down on the Carrier's client only, so the
+/// Carrier sends them with their rate and the Rider's HUD draws them smoothly,
+/// over whatever the Rider's own copy of the items says.
 /// </summary>
 [HarmonyPatch]
 [HarmonyWrapSafe]
@@ -36,6 +39,23 @@ internal static class SharedViewHud
 
     private static Character? receivedFrom;
 
+    private static readonly UsesFeed UsesOut = new();
+
+    private static readonly float[] UsesNow = new float[SlotUses.Count];
+
+    private static readonly UsesSmoother[] UsesIn = [new(), new(), new(), new(), new()];
+
+    /// <summary>The item each HUD slot last drew uses for; another item waits for its first value.</summary>
+    private static readonly System.Guid[] UsesShownFor = new System.Guid[SlotUses.Count];
+
+    private static readonly bool[] UsesAwaitItem = new bool[SlotUses.Count];
+
+    private static Character? usesFrom;
+
+    private static bool usesSentNoted;
+
+    private static bool usesReceivedNoted;
+
     /// <summary>Called every frame on the Carrier's client, after its HUD has updated.</summary>
     private static void SendFromCarrier(GUIManager gui)
     {
@@ -45,6 +65,7 @@ internal static class SharedViewHud
             || !PairRoster.TryGetPartner(local, out Character rider))
         {
             Feed.Reset();
+            UsesOut.Reset();
             return;
         }
 
@@ -53,7 +74,11 @@ internal static class SharedViewHud
             // A new Rider gets the whole HUD.
             sentTo = PairRoster.ActorOf(rider);
             Feed.Reset();
+            UsesOut.Reset();
+            usesSentNoted = false;
         }
+
+        SendSlotUses(local.player, sentTo);
 
         int reticle = gui.lastReticle == null ? CarrierHud.NoReticle : gui.reticleList.IndexOf(gui.lastReticle);
         Item? item = local.data.currentItem;
@@ -64,8 +89,7 @@ internal static class SharedViewHud
             (sbyte)reticle,
             gui.reticleDefaultImage.color == gui.reticleColorHighlight,
             local.refs.items.throwChargeLevel,
-            rope,
-            ReadSlotUses(local.player));
+            rope);
         if (!Feed.ShouldSend(hud, Time.unscaledTime, out bool reliable))
         {
             return;
@@ -90,53 +114,157 @@ internal static class SharedViewHud
 
         received = hud;
         RiderThrow.Receive(hud.ThrowCharge, Time.unscaledTime);
-        ShowCarrierSlotUses(carrier);
     }
 
-    private static ItemSlot? SlotAt(global::Player player, int slot) =>
-        slot == SlotUses.BackSlot ? player.backpackSlot
-        : slot < player.itemSlots.Length ? player.itemSlots[slot]
-        : null;
-
-    private static FloatItemData? UsesOf(ItemSlot? slot) =>
-        slot != null
-        && !slot.IsEmpty()
-        && slot.data != null
-        && slot.data.TryGetDataEntry(DataEntryKey.UseRemainingPercentage, out FloatItemData uses)
-            ? uses
-            : null;
-
-    private static SlotUses ReadSlotUses(global::Player player)
+    private static ItemSlot? SlotAt(global::Player player, int slot) => slot switch
     {
-        var uses = new SlotUses(0);
-        for (int slot = 0; slot < SlotUses.Count; slot++)
+        SlotUses.BackSlot => player.backpackSlot,
+        SlotUses.TemporarySlot => player.GetItemSlot(250),
+        _ => slot < player.itemSlots.Length ? player.itemSlots[slot] : null,
+    };
+
+    /// <summary>What the slot's uses bar shows, from the same entry the game's HUD reads.</summary>
+    private static float UsesOf(ItemSlot? slot)
+    {
+        if (slot == null
+            || slot.IsEmpty()
+            || slot.data == null
+            || !slot.data.TryGetDataEntry(DataEntryKey.UseRemainingPercentage, out FloatItemData uses)
+            || float.IsNaN(uses.Value))
         {
-            uses = uses.With(slot, UsesOf(SlotAt(player, slot))?.Value);
+            return SlotUses.None;
         }
 
-        return uses;
+        return Mathf.Clamp01(uses.Value);
     }
 
-    /// <summary>
-    /// Writes the Carrier's slot uses into the Rider's copy of the Shared
-    /// Body's items, where the HUD reads them. Called on every HUD message
-    /// and again after the game resyncs the inventory with older values.
-    /// </summary>
-    internal static void ShowCarrierSlotUses(Character carrier)
+    private static void SendSlotUses(global::Player? player, int riderActor)
     {
-        if (carrier != receivedFrom || carrier.player == null)
+        if (player == null)
         {
             return;
         }
 
         for (int slot = 0; slot < SlotUses.Count; slot++)
         {
-            if (received.Uses[slot] is float fraction
-                && UsesOf(SlotAt(carrier.player, slot)) is FloatItemData uses
-                && !received.Uses.Shows(slot, uses.Value))
+            UsesNow[slot] = UsesOf(SlotAt(player, slot));
+        }
+
+        if (!UsesOut.ShouldSend(UsesNow, Time.unscaledTime, out SlotUses message))
+        {
+            return;
+        }
+
+        if (!usesSentNoted)
+        {
+            usesSentNoted = true;
+            Plugin.Verbose($"First slot uses sent to the Rider: {Describe(message)}.");
+        }
+
+        PhotonNetwork.RaiseEvent(
+            RoomKeys.SlotUsesEvent,
+            message.Encode(),
+            new RaiseEventOptions { TargetActors = [riderActor] },
+            SendOptions.SendReliable);
+    }
+
+    internal static void ReceiveSlotUses(EventData photonEvent)
+    {
+        if (photonEvent.Code != RoomKeys.SlotUsesEvent
+            || SlotUses.Decode(photonEvent.CustomData) is not SlotUses uses
+            || RiderHud.ObservedCarrier() is not Character carrier
+            || photonEvent.Sender != PairRoster.ActorOf(carrier))
+        {
+            return;
+        }
+
+        if (carrier != usesFrom)
+        {
+            usesFrom = carrier;
+            usesReceivedNoted = false;
+            for (int slot = 0; slot < SlotUses.Count; slot++)
             {
-                uses.Value = fraction;
+                UsesIn[slot].Reset();
+                UsesShownFor[slot] = System.Guid.Empty;
+                UsesAwaitItem[slot] = false;
             }
+        }
+
+        if (!usesReceivedNoted)
+        {
+            usesReceivedNoted = true;
+            Plugin.Verbose($"First slot uses received from the Carrier: {Describe(uses)}.");
+        }
+
+        float now = Time.unscaledTime;
+        for (int slot = 0; slot < SlotUses.Count; slot++)
+        {
+            float value = uses.Values[slot];
+            UsesIn[slot].Receive(value == SlotUses.None ? null : value, uses.Rates[slot], now);
+            if (UsesAwaitItem[slot])
+            {
+                UsesAwaitItem[slot] = false;
+                UsesIn[slot].Snap(now);
+            }
+        }
+    }
+
+    private static string Describe(SlotUses uses) =>
+        string.Join(", ", System.Linq.Enumerable.Select(uses.Values, value => value == SlotUses.None ? "-" : value.ToString("0.00")));
+
+    private static int HudSlotOf(InventoryItemUI ui)
+    {
+        GUIManager gui = GUIManager.instance;
+        if (ui == gui.backpack)
+        {
+            return SlotUses.BackSlot;
+        }
+
+        if (ui == gui.temporaryItem)
+        {
+            return SlotUses.TemporarySlot;
+        }
+
+        int index = System.Array.IndexOf(gui.items, ui);
+        return index is >= 0 and < SlotUses.BackSlot ? index : -1;
+    }
+
+    /// <summary>
+    /// After the game has set a slot's uses bar from the Rider's own copy of
+    /// the item, which items that burn or spool down never update there, the
+    /// Rider's HUD draws the Carrier's value instead. Only the drawing
+    /// changes; the item data stays the game's.
+    /// </summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(InventoryItemUI), nameof(InventoryItemUI.TrySetFuel))]
+    private static void ShowCarrierUses(InventoryItemUI __instance, ItemInstanceData data)
+    {
+        if (data == null
+            || GUIManager.instance == null
+            || RiderHud.ObservedCarrier() is not Character carrier
+            || carrier != usesFrom
+            || __instance.fuelBar == null
+            || !__instance.fuelBar.activeSelf)
+        {
+            return;
+        }
+
+        int slot = HudSlotOf(__instance);
+        if (slot < 0)
+        {
+            return;
+        }
+
+        if (UsesShownFor[slot] != data.guid)
+        {
+            // Another item: draw the game's value until the Carrier's arrives.
+            UsesShownFor[slot] = data.guid;
+            UsesAwaitItem[slot] = true;
+        }
+
+        if (!UsesAwaitItem[slot] && UsesIn[slot].Display(Time.unscaledTime) is float shown)
+        {
+            __instance.fuelBarFill.fillAmount = shown;
         }
     }
 

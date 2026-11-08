@@ -545,6 +545,14 @@ internal sealed class ControlSplitLink : MonoBehaviourPunCallbacks, IOnEventCall
         }
         try
         {
+            SharedViewHud.ReceiveSlotUses(photonEvent);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("SharedViewHud.ReceiveSlotUses", exception);
+        }
+        try
+        {
             SharedViewHud.Receive(photonEvent);
         }
         catch (Exception exception)

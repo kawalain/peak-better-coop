@@ -111,10 +111,6 @@ internal sealed class RiderHudRefresher : MonoBehaviour
                 GUIManager.instance.UpdateItemSelections();
             }
 
-            // Burning and spooling items count down on the Carrier's client
-            // only, and an inventory resync brings back older values.
-            SharedViewHud.ShowCarrierSlotUses(carrier);
-
             // The game refreshes item prompts when the local item changes;
             // the Rider holds none, so follow the Carrier's.
             GUIManager.instance.UpdateItemPrompts();

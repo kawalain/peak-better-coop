@@ -44,4 +44,7 @@ internal static class RoomKeys
 
     /// <summary>Event: the backpack wheel's opening and closing (Carrier to Rider) and the Rider's pick (back).</summary>
     public const byte BackpackWheelEvent = 190;
+
+    /// <summary>Event: the remaining uses of the Shared Body's slots, sent by the Carrier to their Rider.</summary>
+    public const byte SlotUsesEvent = 191;
 }
