@@ -51,6 +51,7 @@ public sealed class Plugin : BaseUnityPlugin
         runtime.AddComponent<RunRules>();
         runtime.AddComponent<PairingDirector>();
         runtime.AddComponent<CarryKeeper>();
+        runtime.AddComponent<ControlSplitLink>();
 
         Log.LogInfo($"{MyPluginInfo.PLUGIN_NAME} {MyPluginInfo.PLUGIN_VERSION} loaded.");
     }
