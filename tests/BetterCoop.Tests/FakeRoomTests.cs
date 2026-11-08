@@ -1,0 +1,110 @@
+using System.Linq;
+using BetterCoop.Core;
+using Xunit;
+
+namespace BetterCoop.Tests;
+
+public class FakeRoomTests
+{
+    private static bool EveryoneOnce(FakeRoom room) =>
+        room.Pairs.SelectMany(p => new[] { p.Carrier, p.Rider }).Concat(room.Unpaired())
+            .OrderBy(a => a)
+            .SequenceEqual(room.Players);
+
+    [Fact]
+    public void Before_Pair_Formation_everyone_is_unpaired()
+    {
+        var room = new FakeRoom(6, troopLeader: true, formed: false);
+
+        Assert.False(room.Formed);
+        Assert.Empty(room.Pairs);
+        Assert.Equal(6, room.Unpaired().Count());
+        Assert.False(room.Shuffle());
+    }
+
+    [Fact]
+    public void Pair_Formation_pairs_everyone_and_an_odd_party_leaves_one_out()
+    {
+        var even = new FakeRoom(8, troopLeader: true, formed: true);
+        var odd = new FakeRoom(7, troopLeader: true, formed: true);
+
+        Assert.Equal(4, even.Pairs.Count);
+        Assert.True(EveryoneOnce(even));
+        Assert.Equal(3, odd.Pairs.Count);
+        Assert.Single(odd.Unpaired());
+        Assert.True(odd.Rule(RunRule.AllowOddPlayerCount));
+    }
+
+    [Fact]
+    public void A_shuffle_changes_every_partner()
+    {
+        var room = new FakeRoom(8, troopLeader: true, formed: true);
+        var before = room.Pairs.Select(p => (p.Carrier, p.Rider)).ToList();
+
+        Assert.True(room.Shuffle());
+
+        Assert.True(EveryoneOnce(room));
+        Assert.DoesNotContain(room.Pairs, p => before.Any(b =>
+            (b.Carrier == p.Carrier && b.Rider == p.Rider) || (b.Carrier == p.Rider && b.Rider == p.Carrier)));
+    }
+
+    [Fact]
+    public void An_assignment_pairs_the_two_and_their_former_partners_pair_up()
+    {
+        var room = new FakeRoom(8, troopLeader: true, formed: true);
+        Pair first = room.Pairs[0];
+        Pair second = room.Pairs[1];
+
+        Assert.True(room.Assign(first.Carrier, second.Carrier));
+
+        Assert.Contains(room.Pairs, p => p.Carrier == first.Carrier && p.Rider == second.Carrier);
+        Assert.Contains(room.Pairs, p => p.Contains(first.Rider) && p.Contains(second.Rider));
+        Assert.Empty(room.Unpaired());
+        Assert.True(EveryoneOnce(room));
+    }
+
+    [Fact]
+    public void An_assignment_needs_two_different_players_after_Pair_Formation()
+    {
+        Assert.False(new FakeRoom(4, troopLeader: true, formed: true).Assign(2, 2));
+        Assert.False(new FakeRoom(4, troopLeader: true, formed: false).Assign(1, 2));
+    }
+
+    [Fact]
+    public void A_role_swap_trades_the_two_roles()
+    {
+        var room = new FakeRoom(4, troopLeader: false, formed: true);
+        Pair mine = room.PairOf(room.Me)!;
+
+        room.ToggleSwap();
+
+        Pair after = room.PairOf(room.Me)!;
+        Assert.Equal((mine.Rider, mine.Carrier), (after.Carrier, after.Rider));
+    }
+
+    [Fact]
+    public void A_Timed_Shuffle_comes_when_its_interval_runs_out()
+    {
+        var room = new FakeRoom(4, troopLeader: true, formed: true);
+        Assert.Null(room.SecondsToTimedShuffle);
+
+        room.SetRule(RunRule.TimedShuffle, true);
+        room.ShuffleMinutes = 1;
+        var before = room.Pairs.Select(p => (p.Carrier, p.Rider)).ToList();
+        room.Tick(61f);
+
+        Assert.NotEqual(before, room.Pairs.Select(p => (p.Carrier, p.Rider)).ToList());
+        Assert.True(room.SecondsToTimedShuffle > 59);
+    }
+
+    [Fact]
+    public void The_menu_shape_changes_with_the_Pairs()
+    {
+        var room = new FakeRoom(4, troopLeader: true, formed: true);
+        string before = room.Shape();
+
+        room.Shuffle();
+
+        Assert.NotEqual(before, room.Shape());
+    }
+}

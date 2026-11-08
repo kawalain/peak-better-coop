@@ -15,7 +15,8 @@ namespace BetterCoop.Features;
 
 /// <summary>
 /// The Coop Menu: one "Coop" button in the pause menu opening a paper page
-/// that keeps the game's own Back button and menu button style.
+/// that keeps the game's own Back button and menu button style. Debug builds
+/// also get the Zoo next to it.
 /// </summary>
 [HarmonyPatch]
 [HarmonyWrapSafe]
@@ -35,7 +36,11 @@ internal static class CoopMenu
 
         Button template = __instance.m_settingsButton;
         CoopMenuPage page = PaperPage.Create<CoopMenuPage>(handler, controls, template, __instance, () => Strings.CoopMenu);
-        AddButton(__instance, Strings.CoopMenu, page.Open, after: __instance.m_resumeButton);
+        Button coop = AddButton(__instance, Strings.CoopMenu, page.Open, after: __instance.m_resumeButton);
+#if DEBUG
+        ZooPage zoo = ZooPage.Build(handler, controls, template, __instance);
+        AddButton(__instance, "Zoo", zoo.Open, after: coop);
+#endif
     }
 
     /// <summary>Adds a button to the pause menu, after <paramref name="after"/>.</summary>

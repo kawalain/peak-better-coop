@@ -7,7 +7,7 @@ namespace BetterCoop.Ui;
 /// </summary>
 internal static class Strings
 {
-    private static bool Korean => LocalizedText.CURRENT_LANGUAGE == LocalizedText.Language.Korean;
+    internal static bool Korean => LocalizedText.CURRENT_LANGUAGE == LocalizedText.Language.Korean;
 
     public static string ModDisabled => Korean
         ? "코옵: 지금 게임 버전과 맞지 않아 모드를 껐습니다."

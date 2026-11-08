@@ -58,6 +58,13 @@ Run may depart. With `[Debug] Verbose Log` on (off by default), diagnostics
 land in the profile's `BepInEx/LogOutput.log`; players turn it on and send
 theirs from their own Gale profile.
 
+Debug builds (`#if DEBUG`, never in a test build or on Thunderstore) add a
+Zoo button to the pause menu. The Zoo shows every paper component in
+`Ui/Paper/` in its states. It also opens the Coop Menu on a `FakeRoom` of any
+size, led by you or not, which changes its Pairs by the real rules without
+touching the config, the room, or the network. Add a new paper component to
+the Zoo along with it.
+
 ## Test builds and versions
 
 Players must run the exact same version to depart, so bump `<Version>` in
