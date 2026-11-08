@@ -31,7 +31,7 @@ public class PhotonWireTests
 
     [Fact]
     public void The_carrier_hud_is_sendable() =>
-        AssertSendable(new CarrierHud(CarrierHud.NoReticle, true, 0.5f, 3).Encode());
+        AssertSendable(new CarrierHud(CarrierHud.NoReticle, true, 0.5f, 3, new SlotUses(0).With(SlotUses.BackSlot, 1f)).Encode());
 
     [Fact]
     public void Rider_actions_are_sendable() =>

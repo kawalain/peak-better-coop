@@ -63,7 +63,8 @@ internal static class SharedViewHud
             (sbyte)reticle,
             gui.reticleDefaultImage.color == gui.reticleColorHighlight,
             local.refs.items.throwChargeLevel,
-            rope);
+            rope,
+            ReadSlotUses(local.player));
         if (!Feed.ShouldSend(hud, Time.unscaledTime, out bool reliable))
         {
             return;
@@ -88,6 +89,54 @@ internal static class SharedViewHud
 
         received = hud;
         RiderThrow.Receive(hud.ThrowCharge, Time.unscaledTime);
+        ShowCarrierSlotUses(carrier);
+    }
+
+    private static ItemSlot? SlotAt(global::Player player, int slot) =>
+        slot == SlotUses.BackSlot ? player.backpackSlot
+        : slot < player.itemSlots.Length ? player.itemSlots[slot]
+        : null;
+
+    private static FloatItemData? UsesOf(ItemSlot? slot) =>
+        slot != null
+        && !slot.IsEmpty()
+        && slot.data != null
+        && slot.data.TryGetDataEntry(DataEntryKey.UseRemainingPercentage, out FloatItemData uses)
+            ? uses
+            : null;
+
+    private static SlotUses ReadSlotUses(global::Player player)
+    {
+        var uses = new SlotUses(0);
+        for (int slot = 0; slot < SlotUses.Count; slot++)
+        {
+            uses = uses.With(slot, UsesOf(SlotAt(player, slot))?.Value);
+        }
+
+        return uses;
+    }
+
+    /// <summary>
+    /// Writes the Carrier's slot uses into the Rider's copy of the Shared
+    /// Body's items, where the HUD reads them. Called on every HUD message
+    /// and again after the game resyncs the inventory with older values.
+    /// </summary>
+    internal static void ShowCarrierSlotUses(Character carrier)
+    {
+        if (carrier != receivedFrom || carrier.player == null)
+        {
+            return;
+        }
+
+        for (int slot = 0; slot < SlotUses.Count; slot++)
+        {
+            if (received.Uses[slot] is float fraction
+                && UsesOf(SlotAt(carrier.player, slot)) is FloatItemData uses
+                && !received.Uses.Shows(slot, uses.Value))
+            {
+                uses.Value = fraction;
+            }
+        }
     }
 
     /// <summary>The Carrier's client sends; the Rider's draws the Carrier's crosshair instead of the Rider's own.</summary>
