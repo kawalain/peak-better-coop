@@ -146,7 +146,7 @@ internal static class PhotoStudio
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PassportManager), nameof(PassportManager.Awake))]
-    private static void PrepareWithPassport(PassportManager __instance) => Prepare(__instance);
+    private static void PrepareWithPassport(PassportManager __instance) => SetUp(__instance);
 
     private static bool Ready()
     {
@@ -157,13 +157,13 @@ internal static class PhotoStudio
 
         if (!broken && PassportManager.instance is PassportManager passport)
         {
-            Prepare(passport);
+            SetUp(passport);
         }
 
         return studio != null;
     }
 
-    private static void Prepare(PassportManager passport)
+    private static void SetUp(PassportManager passport)
     {
         if (studio != null || broken || passport.dummy == null || passport.dummyCamera == null)
         {
@@ -183,7 +183,7 @@ internal static class PhotoStudio
                 studio = null;
             }
 
-            Guard.Report("PhotoStudio.Prepare", exception);
+            Guard.Report("PhotoStudio.SetUp", exception);
         }
     }
 
