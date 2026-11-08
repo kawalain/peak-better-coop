@@ -24,6 +24,12 @@ key never moves an action to the other player.
   passed-out passenger, so the carry is held by the mod for the whole Run.
 - PEAK moves a body relative to where it looks, so the Rider steers and the
   Carrier only throttles; the Carrier cannot turn on their own.
+- PEAK grips a wall with an empty-handed primary use and lets go on release,
+  so the Rider holds the grip and the Carrier climbs. The Rider's held actions
+  are sent reliably and stay held through packet gaps, so lag never drops the
+  climb.
+- Carries never nest: while paired, a Carrier starts no other carry and a
+  passed-out Carrier cannot be carried; others help them where they lie.
 - The Shared Body has one set of statuses, the Carrier's. The Rider's own
   statuses are cleared at pairing and kept clear, and the Rider lives or dies
   only through shared death and revival.
