@@ -78,7 +78,7 @@ python -I tools/publish.py publish
 ```
 
 `check` uploads nothing: it confirms the zip matches `<Version>`, the version is
-not on Thunderstore yet, and a token is present. `publish` uploads with the tcli
+newer than Thunderstore's latest, and a token is present. `publish` uploads with the tcli
 pinned in `.config/dotnet-tools.json`; Thunderstore takes the team from
 `thunderstore.toml` and everything else from the zip's `manifest.json`. The
 token is the team's service account token, in `TCLI_AUTH_TOKEN` or the

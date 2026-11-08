@@ -6,9 +6,10 @@ Usage:
 
 check verifies, without uploading, that artifacts/BetterCoop-<version>.zip
 exists for BetterCoop.csproj's <Version>, that its manifest.json matches,
-that thunderstore.toml names a team, that Thunderstore has no such version
-yet, and that a token is available. publish runs the same checks, then
-uploads the zip with the repository's pinned tcli (.config/dotnet-tools.json).
+that thunderstore.toml names a team, that the version is newer than
+Thunderstore's latest, and that a token is available. publish runs the same
+checks, then uploads the zip with the repository's pinned tcli
+(.config/dotnet-tools.json).
 A version cannot be uploaded twice, so publish only on purpose.
 
 The token is a Thunderstore service account token (tss_...), read from the
@@ -65,16 +66,22 @@ def check_zip(archive: Path, name: str, version: str) -> None:
         )
 
 
-def published(namespace: str, name: str, version: str) -> bool:
-    url = f"https://thunderstore.io/api/experimental/package/{namespace}/{name}/{version}/"
+def latest_version(namespace: str, name: str) -> str | None:
+    # The per-version endpoint answers 404 for a freshly published, unreviewed
+    # version, so read the package's latest version instead.
+    url = f"https://thunderstore.io/api/experimental/package/{namespace}/{name}/"
     request = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
-        with urllib.request.urlopen(request):
-            return True
+        with urllib.request.urlopen(request) as response:
+            return json.load(response)["latest"]["version_number"]
     except urllib.error.HTTPError as error:
         if error.code == 404:
-            return False
+            return None
         raise
+
+
+def semver(version: str) -> tuple[int, ...]:
+    return tuple(int(part) for part in version.split("."))
 
 
 def read_token() -> str:
@@ -98,8 +105,9 @@ def check() -> tuple[Path, str]:
     archive = ROOT / "artifacts" / f"{name}-{version}.zip"
     check_zip(archive, name, version)
     full_name = f"{namespace}-{name}-{version}"
-    if published(namespace, name, version):
-        raise CheckFailed(f"{full_name} is already on Thunderstore; bump <Version>")
+    latest = latest_version(namespace, name)
+    if latest is not None and semver(version) <= semver(latest):
+        raise CheckFailed(f"Thunderstore already has {latest}; bump <Version> past it")
     token = read_token()
     communities = ", ".join(config["publish"]["communities"])
     print(f"ready: {full_name} from {archive.relative_to(ROOT)} to {communities}", flush=True)
