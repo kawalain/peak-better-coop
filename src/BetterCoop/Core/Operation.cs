@@ -55,7 +55,7 @@ internal sealed class Operation
     public bool Involves(int actor) => IsShuffle || actor == SwapCarrier || actor == SwapRider;
 
     /// <summary>Whether hands stay empty now: from just before the run until it is done.</summary>
-    public bool Locks(double now) => !Done && now >= At - LockLeadSeconds;
+    public bool Locks(double now) => !Done && ServerClock.Since(now, At) >= -LockLeadSeconds;
 
     public Operation Finished() => new(Id, Kind, At, SwapCarrier, SwapRider, true);
 
@@ -70,6 +70,7 @@ internal sealed class Operation
             || parts[3] is not int swapCarrier
             || parts[4] is not int swapRider
             || parts[5] is not bool done
+            || !ServerClock.IsTime(at)
             || !Enum.IsDefined(typeof(OperationKind), kind))
         {
             return null;
@@ -81,7 +82,7 @@ internal sealed class Operation
     /// <summary>The whole seconds left to announce in the countdown, or 0 outside it.</summary>
     public int SecondsLeft(double now)
     {
-        double left = At - now;
+        double left = -ServerClock.Since(now, At);
         return Done || left <= 0 || left > CountdownSeconds ? 0 : (int)Math.Ceiling(left);
     }
 }

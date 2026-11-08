@@ -102,7 +102,7 @@ internal static class RoleSwap
         {
             Withdraw(Strings.SwapCancelledByShuffle);
         }
-        else if (PhotonNetwork.Time - at > RequestSeconds)
+        else if (ServerClock.Since(PhotonNetwork.Time, at) > RequestSeconds)
         {
             Withdraw(Strings.SwapExpired);
         }
@@ -146,13 +146,14 @@ internal static class RoleSwap
     }
 
     private static bool Asks(PhotonPlayer player, int partner, double now) =>
-        ReadRequest(player) is (int asked, double at) && asked == partner && now - at <= RequestSeconds;
+        ReadRequest(player) is (int asked, double at) && asked == partner && ServerClock.Since(now, at) <= RequestSeconds;
 
     private static (int Partner, double At)? ReadRequest(PhotonPlayer player) =>
         player.CustomProperties.TryGetValue(RoomKeys.SwapRequest, out object value)
             && value is object[] { Length: 2 } parts
             && parts[0] is int partner
             && parts[1] is double at
+            && ServerClock.IsTime(at)
                 ? (partner, at)
                 : null;
 
@@ -183,7 +184,7 @@ internal static class RoleSwap
         }
 
         int me = PairRoster.ActorOf(local);
-        if (ReadRequest(player) is (int asked, double at) && asked == me && PhotonNetwork.Time - at <= RequestSeconds)
+        if (ReadRequest(player) is (int asked, double at) && asked == me && ServerClock.Since(PhotonNetwork.Time, at) <= RequestSeconds)
         {
             partnerOffered = true;
             if (pending == null)
@@ -199,7 +200,7 @@ internal static class RoleSwap
             partnerOffered = false;
             bool swapping = PairShuffle.Current is { Kind: OperationKind.RoleSwap } op
                 && op.Involves(me)
-                && PhotonNetwork.Time - op.At < Operation.CountdownSeconds + 2;
+                && ServerClock.Since(PhotonNetwork.Time, op.At) < Operation.CountdownSeconds + 2;
             if (!swapping)
             {
                 CoopNotice.Info(Strings.SwapWithdrawn(player.NickName));

@@ -64,7 +64,7 @@ internal static class PairShuffle
 
     /// <summary>Whether an operation on this player ran in the last few seconds, so its Body Handover may still be arriving.</summary>
     internal static bool HandingOver(int actor) =>
-        Current is { Done: true } op && op.Involves(actor) && PhotonNetwork.Time - op.At < LockTimeoutSeconds;
+        Current is { Done: true } op && op.Involves(actor) && ServerClock.Since(PhotonNetwork.Time, op.At) < LockTimeoutSeconds;
 
     /// <summary>Whether the local player's hands stay empty for an operation now.</summary>
     internal static bool LocalLocked
@@ -84,7 +84,7 @@ internal static class PairShuffle
         appliedHandoverId = ReadHandover()?.Id ?? 0;
         countdownId = Current?.Id ?? 0;
         emptiedHandsId = countdownId;
-        hostClock = double.MinValue;
+        hostClock = null;
         RoleSwap.OnJoinedRoom();
     }
 
@@ -148,7 +148,7 @@ internal static class PairShuffle
         if (!GameHandler.IsOnIsland)
         {
             Queue.Clear();
-            hostClock = double.MinValue;
+            hostClock = null;
             if (op is { Done: false })
             {
                 // Pairs end at the Airport; so does an operation on them.
@@ -160,7 +160,7 @@ internal static class PairShuffle
         }
 
         double now = PhotonNetwork.Time;
-        if (op is { Done: false } && now >= op.At && op.Id > executedId)
+        if (op is { Done: false } && ServerClock.Since(now, op.At) >= 0 && op.Id > executedId)
         {
             Execute(op);
             return;
@@ -172,7 +172,7 @@ internal static class PairShuffle
             {
                 StartClock();
             }
-            else if (now >= clock + RunRules.TimedShuffleSeconds - Operation.CountdownSeconds)
+            else if (ServerClock.Since(now, clock) >= RunRules.TimedShuffleSeconds - Operation.CountdownSeconds)
             {
                 Request(OperationKind.TimedShuffle);
             }
@@ -344,7 +344,7 @@ internal static class PairShuffle
         op != null
         && op.Involves(actor)
         && op.Locks(now)
-        && now < op.At + LockTimeoutSeconds
+        && ServerClock.Since(now, op.At) < LockTimeoutSeconds
         && op.Id > appliedHandoverId;
 
     /// <summary>No item comes to hand while an operation moves inventories.</summary>
@@ -419,12 +419,13 @@ internal static class PairShuffle
     {
         double? room = PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.ShuffleClock, out object value)
             && value is double clock
+            && ServerClock.IsTime(clock)
                 ? clock
                 : null;
-        return room == null && hostClock == double.MinValue ? null : System.Math.Max(room ?? double.MinValue, hostClock);
+        return ServerClock.Later(room, hostClock);
     }
 
-    private static double hostClock = double.MinValue;
+    private static double? hostClock;
 
     /// <summary>Starts the Timed Shuffle interval now.</summary>
     private static void StartClock()
