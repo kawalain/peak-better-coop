@@ -113,6 +113,17 @@ internal static class PairShuffle
         }
     }
 
+    /// <summary>Seconds until the next Timed Shuffle, or null when none is coming.</summary>
+    internal static double? SecondsToTimedShuffle()
+    {
+        if (!PhotonNetwork.InRoom || !RunRules.TimedShuffle || !PairRoster.Formed || ReadClock() is not double clock)
+        {
+            return null;
+        }
+
+        return Math.Max(0, RunRules.TimedShuffleSeconds - ServerClock.Since(PhotonNetwork.Time, clock));
+    }
+
     /// <summary>The Troop Leader asks for a Pair Shuffle, Role Swap, or Late Pairing.</summary>
     internal static bool Request(OperationKind kind, int swapCarrier = -1, int swapRider = -1)
     {

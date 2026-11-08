@@ -101,6 +101,20 @@ until a Late Pairing or a Pair Shuffle gives them a partner. A player joining
 during a Run starts as one.
 _Avoid_: solo player, odd player
 
+### Controls
+
+**Coop Menu** (코옵 메뉴):
+The page of the pause menu for the mod: every player sees the Pairs and the
+Unpaired Players, sets their Role Preference, and asks for a Role Swap; the
+Troop Leader also changes the Pairs and the Run Rules there.
+_Avoid_: coop panel, admin menu
+
+**Run Rules** (원정 규칙):
+The Troop Leader's settings that hold for everyone in the room: shuffles,
+Body Handover, carry weight, odd player counts, and who picks from the
+backpack wheel.
+_Avoid_: host settings, room settings
+
 **Solo Pair** (1인 짝 테스트):
 A debug mode in which a player alone in the room plays both Carrier and Rider
 of one Shared Body, with the Rider's actions held back as if sent over the

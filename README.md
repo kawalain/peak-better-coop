@@ -21,8 +21,10 @@ and come back together.
 - Tap the back-slot key to bring the back item to hand; hold it to open your
   own backpack, then the Rider clicks the item.
 - Pairs change when a campfire is lit, and optionally on a timer. A Pair can
-  also trade roles with **Swap Places** in the ESC menu. Items and statuses
-  carry over; nothing is lost.
+  also trade roles with **Swap Places**. Items and statuses carry over;
+  nothing is lost.
+- **Coop** in the ESC menu lists the Pairs and the time to the next shuffle,
+  and is where you swap places and set the role you would like.
 
 ## Installing
 

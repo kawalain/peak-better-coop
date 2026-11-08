@@ -45,6 +45,43 @@ internal static class Strings
         ? $"코옵: {seconds}초 뒤 짝을 이어 줍니다."
         : $"Coop: pairing you up in {seconds}...";
 
+    public static string CoopMenu => Korean ? "코옵" : "Coop";
+
+    public static string MenuRolePreference => Korean ? "원하는 역할" : "Role Preference";
+
+    public static string RoleName(Core.RolePreference preference) => preference switch
+    {
+        Core.RolePreference.Carrier => Korean ? "업는 사람" : "Carrier",
+        Core.RolePreference.Rider => Korean ? "업힌 사람" : "Rider",
+        _ => Korean ? "무작위" : "Random",
+    };
+
+    public static string MenuPartner(string partner, bool carrying) => Korean
+        ? carrying ? $"짝: {partner} 님을 업고 있습니다" : $"짝: {partner} 님에게 업혀 있습니다"
+        : carrying ? $"Partner: you carry {partner}" : $"Partner: {partner} carries you";
+
+    public static string MenuNoPartner => Korean ? "지금은 짝이 없습니다" : "You have no partner for now";
+
+    public static string MenuNextShuffle => Korean ? "다음 짝 섞기" : "Next shuffle";
+
+    public static string MenuShuffleNow => Korean ? "진행 중" : "Now";
+
+    public static string MenuShuffleOff => Korean ? "꺼짐" : "Off";
+
+    public static string Clock(double seconds)
+    {
+        int whole = (int)System.Math.Ceiling(seconds);
+        return $"{whole / 60}:{whole % 60:00}";
+    }
+
+    public static string MenuPairsForm => Korean ? "짝은 섬에 도착하면 정해집니다" : "Pairs form on the island";
+
+    public static string MenuPairs => Korean ? "짝 (업는 사람 ⇄ 업힌 사람)" : "Pairs (Carrier ⇄ Rider)";
+
+    public static string MenuPair(string carrier, string rider) => $"{carrier} ⇄ {rider}";
+
+    public static string MenuUnpaired => Korean ? "짝 없는 사람" : "Unpaired";
+
     public static string SwapPlaces => Korean ? "자리 바꾸기" : "Swap Places";
 
     public static string CancelSwap => Korean ? "자리 바꾸기 취소" : "Cancel Swap";
