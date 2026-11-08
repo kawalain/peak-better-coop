@@ -414,7 +414,15 @@ internal static class ControlSplit
 /// <summary>Drives the Control Split's network side.</summary>
 internal sealed class ControlSplitLink : MonoBehaviourPunCallbacks, IOnEventCallback
 {
-    private void LateUpdate() => ControlSplit.SendFromRider();
+    private void LateUpdate()
+    {
+        ControlSplit.SendFromRider();
+        UseFeedback.SendFromCarrier();
+    }
 
-    public void OnEvent(EventData photonEvent) => ControlSplit.Receive(photonEvent);
+    public void OnEvent(EventData photonEvent)
+    {
+        ControlSplit.Receive(photonEvent);
+        UseFeedback.Receive(photonEvent);
+    }
 }

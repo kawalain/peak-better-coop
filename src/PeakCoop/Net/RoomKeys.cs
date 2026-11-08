@@ -20,4 +20,7 @@ internal static class RoomKeys
 
     /// <summary>Event: the host asks every client to repair its Pair.</summary>
     public const byte RecoveryEvent = 186;
+
+    /// <summary>Event: the progress of the Rider's action, sent back by their Carrier.</summary>
+    public const byte UseProgressEvent = 187;
 }

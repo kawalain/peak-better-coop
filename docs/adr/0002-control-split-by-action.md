@@ -19,9 +19,13 @@ key never moves an action to the other player.
 - The Rider's screen renders from the Carrier's head with the Rider's own,
   locally applied look, so the person aiming sees no network delay; the
   Carrier's view trails by one network trip.
-- The Rider stays conscious while carried, so the Rider's client shows the same
-  interaction prompts without delay. The game's carry otherwise requires a
+- The Rider stays conscious while carried, so the Rider's client names what
+  the Rider looks at without delay. The game's carry otherwise requires a
   passed-out passenger, so the carry is held by the mod for the whole Run.
+- Each screen prompts only its owner's actions: the Rider's shows the held
+  item's use, secondary-use, and scroll prompts and the use progress (sent
+  back from the Carrier's client, where the use runs); the Carrier's shows the
+  interaction, drop, and throw prompts. Names show on both.
 - PEAK moves a body relative to where it looks, so the Rider steers and the
   Carrier only throttles; the Carrier cannot turn on their own.
 - PEAK grips a wall with an empty-handed primary use and lets go on release,

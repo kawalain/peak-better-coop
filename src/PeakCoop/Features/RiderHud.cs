@@ -60,6 +60,10 @@ internal sealed class RiderHudRefresher : MonoBehaviour
         if (RiderHud.ObservedCarrier() != null)
         {
             GUIManager.instance.UpdateItemSelections();
+
+            // The game refreshes item prompts when the local item changes;
+            // the Rider holds none, so follow the Carrier's.
+            GUIManager.instance.UpdateItemPrompts();
         }
     }
 }
