@@ -52,9 +52,6 @@ internal interface ICoopRoom
     /// <summary>Seconds to the next Timed Shuffle, or null when none is coming.</summary>
     double? SecondsToTimedShuffle { get; }
 
-    /// <summary>Players the Troop Leader may name in a Pair Assignment.</summary>
-    IReadOnlyList<int> Pickable { get; }
-
     int ShuffleMinutes { get; set; }
 
     string NameOf(int actor);
@@ -64,9 +61,6 @@ internal interface ICoopRoom
 
     /// <summary>Orders a Pair Shuffle; false when it cannot start now.</summary>
     bool Shuffle();
-
-    /// <summary>Orders the Role Swap of a Pair; false when it cannot start now.</summary>
-    bool SwapRoles(Pair pair);
 
     /// <summary>Re-attaches every Pair's carry and wakes every Rider.</summary>
     void Recover();

@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using BetterCoop.Core;
+using HarmonyLib;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -119,6 +120,9 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
 
     public GameObject GetFirstSelectedGameObject() =>
         List.FirstSelectable()?.gameObject ?? back.gameObject;
+
+    /// <summary>Gives Back to the form first, as to put a held card back; false to leave the page.</summary>
+    internal bool TakeBack() => List.Back();
 
     /// <summary>Opens this page from the current one, which gives way at once while the paper rises.</summary>
     public void Open()
@@ -428,6 +432,31 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         var holder = new GameObject(name, typeof(RectTransform));
         holder.transform.SetParent(parent, false);
         return (RectTransform)holder.transform;
+    }
+}
+
+/// <summary>Back on a paper page goes to its form first, so a held card goes back instead of the page closing.</summary>
+[HarmonyPatch]
+[HarmonyWrapSafe]
+internal static class PaperBack
+{
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(PauseMenuHandler), "Update")]
+    private static bool GiveBackToForm(PauseMenuHandler __instance)
+    {
+        if (__instance.currentPage is not PaperPage page || Character.localCharacter is not Character local)
+        {
+            return true;
+        }
+
+        bool back = local.input.pauseWasPressed || (__instance.backButton?.action?.WasPressedThisFrame() ?? false);
+        if (!back || !page.TakeBack())
+        {
+            return true;
+        }
+
+        local.input.pauseWasPressed = false;
+        return false;
     }
 }
 

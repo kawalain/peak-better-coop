@@ -1,9 +1,12 @@
 #if DEBUG
+using System;
 using System.Linq;
 using BetterCoop.Core;
 using BetterCoop.Ui;
 using BetterCoop.Ui.Paper;
+using UnityEngine;
 using UnityEngine.UI;
+using Zorro.Core;
 using Zorro.UI;
 
 namespace BetterCoop.Features;
@@ -136,8 +139,63 @@ internal sealed class ZooPage : PaperPage
 
     private void OpenExample()
     {
-        example.Show(new FakeRoom(players, leader, formed, seed++));
+        example.Show(new FakeRoom(players, leader, formed, seed), new ZooPortraits(seed));
+        seed++;
         example.Open();
+    }
+}
+/// <summary>
+/// Photos of made-up scouts, each dressed at random from the game's own
+/// skins, outfits, hats, eyes, and mouths, the same way for the same seed.
+/// </summary>
+internal sealed class ZooPortraits : IPortraits
+{
+    private readonly int seed;
+
+    public ZooPortraits(int seed) => this.seed = seed;
+
+    public Texture? Photo(int actor) =>
+        Look(actor) is int[] look
+            ? PhotoStudio.Take("zoo:" + string.Join(",", look), model => Dress(model, look))
+            : null;
+
+    public Color Skin(int actor) => PhotoStudio.SkinColour(Look(actor)?[0] ?? actor % 4);
+
+    /// <summary>Skin, outfit, hat, eyes, and mouth, or null when the game's lists are not there.</summary>
+    private int[]? Look(int actor)
+    {
+        try
+        {
+            Customization options = Singleton<Customization>.Instance;
+            var random = new System.Random((seed * 397) ^ actor);
+            return
+            [
+                random.Next(options.skins.Length),
+                random.Next(options.fits.Length),
+                random.Next(-1, options.hats.Length),
+                random.Next(options.eyes.Length),
+                random.Next(options.mouths.Length),
+            ];
+        }
+        catch (Exception exception)
+        {
+            Plugin.Verbose($"No cosmetics for the Zoo: {exception.Message}");
+            return null;
+        }
+    }
+
+    private static void Dress(PlayerCustomizationDummy model, int[] look)
+    {
+        Customization options = Singleton<Customization>.Instance;
+        model.SetPlayerColor(look[0]);
+        model.SetPlayerCostume(look[1]);
+        model.SetPlayerHat(look[2]);
+        foreach (Renderer eye in model.refs.EyeRenderers)
+        {
+            eye.material.SetTexture("_MainTex", options.eyes[look[3]].texture);
+        }
+
+        model.refs.mouthRenderer.material.SetTexture("_MainTex", options.mouths[look[4]].texture);
     }
 }
 #endif

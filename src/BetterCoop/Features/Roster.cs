@@ -100,14 +100,19 @@ internal sealed class RosterPage : PaperPage
 {
     private ICoopRoom room = new LiveRoom();
 
-    /// <summary>The players picked for a Pair Assignment.</summary>
-    private AssignPicks picks = new();
+    private IPortraits portraits = new LivePortraits();
 
-    /// <summary>Shows another room, its rows filled anew at once.</summary>
-    public void Show(ICoopRoom shown)
+    /// <summary>The Troop Leader's draft of a Pair Assignment, kept while the room's Pairs hold.</summary>
+    private PairDraft? draft;
+
+    private PairBoard? board;
+
+    /// <summary>Shows another room, with its scouts' photos, its rows filled anew at once.</summary>
+    public void Show(ICoopRoom shown, IPortraits faces)
     {
         room = shown;
-        picks = new AssignPicks();
+        portraits = faces;
+        draft = null;
         Refill();
     }
 
@@ -115,24 +120,108 @@ internal sealed class RosterPage : PaperPage
 
     protected override void Fill(PaperList list)
     {
+        bool leads = room.InRoom && room.IsTroopLeader;
         PlayerRows.Add(list, room);
-        if (room.InRoom && room.IsTroopLeader)
+        board = null;
+        if (room.Formed)
         {
-            TroopLeaderRows.Add(list, room, picks);
+            PairDraft shown;
+            if (leads)
+            {
+                draft ??= new PairDraft(room.Pairs, room.Players);
+                draft.Follow(room.Pairs, room.Players);
+                shown = draft;
+            }
+            else
+            {
+                shown = new PairDraft(room.Pairs, room.Players);
+            }
+
+            board = PairRows.Add(list, room, shown, portraits, leads, Moved, StartOver);
+        }
+
+        if (leads)
+        {
+            TroopLeaderRows.Add(list, room);
         }
 
         PlayerRows.Sign(list, room);
     }
 
     protected override void Tick() => room.Tick(Time.unscaledDeltaTime);
+
+    /// <summary>Draws the board again after a card moved, its card still chosen on a gamepad.</summary>
+    private void Moved(int actor)
+    {
+        Refill();
+        if (Zorro.ControllerSupport.InputHandler.GetCurrentUsedInputScheme() == Zorro.ControllerSupport.InputScheme.Gamepad)
+        {
+            board?.Select(actor);
+        }
+    }
+
+    private void StartOver()
+    {
+        draft?.Reset(room.Pairs, room.Players);
+        Refill();
+    }
 }
 
-/// <summary>The players the Troop Leader has picked for a Pair Assignment, by actor; -1 for none yet.</summary>
-internal sealed class AssignPicks
+/// <summary>The room's Pairs as a board of scout cards, which the Troop Leader rearranges and approves.</summary>
+internal static class PairRows
 {
-    public int Carrier { get; set; } = -1;
+    public static PairBoard Add(
+        PaperList list,
+        ICoopRoom room,
+        PairDraft draft,
+        IPortraits portraits,
+        bool leads,
+        Action<int> moved,
+        Action startOver)
+    {
+        list.Header(() => Strings.MenuPairs);
+        if (leads)
+        {
+            list.Note(() => Strings.MenuBoardHelp);
+        }
 
-    public int Rider { get; set; } = -1;
+        PairBoard? board = null;
+        RectTransform holder = list.Custom("Board", () => { }, () => board?.First);
+        board = PairBoard.Build(holder, list.Template, draft, portraits, room.NameOf, leads, moved);
+        list.OnBack(board.PutBack);
+        if (leads)
+        {
+            list.Stamp(
+                () => Strings.MenuAssign,
+                () => Strings.StampApproved,
+                () => Approve(room, draft),
+                available: () => draft.Changed && !room.Busy && room.CanArrange(draft.Pairs),
+                about: () => Strings.AboutAssign);
+            list.Stamp(
+                () => Strings.MenuAssignReset,
+                () => Strings.StampCancel,
+                startOver,
+                visible: () => draft.Changed);
+        }
+
+        return board;
+    }
+
+    private static void Approve(ICoopRoom room, PairDraft draft)
+    {
+        if (!draft.Changed)
+        {
+            return;
+        }
+
+        if (!room.CanArrange(draft.Pairs))
+        {
+            CoopNotice.Info(Strings.MenuAssignUnavailable);
+            return;
+        }
+
+        TroopLeaderRows.Order(room.Arrange(draft.Pairs));
+    }
 }
 
 /// <summary>The parts of the Roster every player fills in: their own Pair and Role Preference, and the room's Pairs.</summary>
@@ -173,38 +262,6 @@ internal static class PlayerRows
             about: () => Strings.AboutNextShuffle,
             visible: () => room.Formed);
         list.Note(() => Strings.MenuPairsForm, visible: () => !room.Formed);
-
-        if (!room.Formed)
-        {
-            return;
-        }
-
-        list.Header(() => Strings.MenuPairs);
-        int number = 0;
-        foreach (Pair pair in room.Pairs)
-        {
-            int shown = ++number;
-            Func<string> names = () => Strings.MenuPair(room.NameOf(pair.Carrier), room.NameOf(pair.Rider));
-            if (room.IsTroopLeader)
-            {
-                // The Troop Leader turns any Pair round without waiting for both to ask.
-                list.Stamp(
-                    () => Strings.MenuPairNumber(shown),
-                    () => Strings.StampSwap,
-                    () => TroopLeaderRows.Order(room.SwapRoles(pair)),
-                    available: () => !room.Busy,
-                    value: names);
-            }
-            else
-            {
-                list.Field(() => Strings.MenuPairNumber(shown), names);
-            }
-        }
-
-        list.Field(
-            () => Strings.MenuUnpaired,
-            () => string.Join(", ", room.Unpaired().Select(room.NameOf)),
-            visible: () => room.Unpaired().Any());
     }
 
     /// <summary>The line at the foot of the form, signed by the Troop Leader.</summary>
@@ -235,7 +292,7 @@ internal static class TroopLeaderRows
     /// <summary>Timed Shuffle intervals the form steps through, in minutes.</summary>
     private static readonly int[] Intervals = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60];
 
-    public static void Add(PaperList list, ICoopRoom room, AssignPicks picks)
+    public static void Add(PaperList list, ICoopRoom room)
     {
         list.Header(() => Strings.MenuTroopLeader);
         list.Stamp(
@@ -250,29 +307,6 @@ internal static class TroopLeaderRows
             () => Strings.StampRestore,
             room.Recover,
             about: () => Strings.AboutRecover,
-            visible: () => room.Formed);
-        list.Choice(
-            () => Strings.MenuAssignCarrier,
-            () => picks.Carrier,
-            actor => picks.Carrier = actor,
-            () => room.Pickable,
-            actor => PickName(room, actor),
-            about: () => Strings.AboutAssignCarrier,
-            visible: () => room.Formed);
-        list.Choice(
-            () => Strings.MenuAssignRider,
-            () => picks.Rider,
-            actor => picks.Rider = actor,
-            () => room.Pickable,
-            actor => PickName(room, actor),
-            about: () => Strings.AboutAssignRider,
-            visible: () => room.Formed);
-        list.Stamp(
-            () => Strings.MenuAssign,
-            () => Strings.StampApproved,
-            () => Assign(room, picks),
-            available: () => !room.Busy && room.CanArrange(Arrangement.WithPair(room.Pairs, picks.Carrier, picks.Rider)),
-            about: () => Strings.AboutAssign,
             visible: () => room.Formed);
 
         list.Header(() => Strings.MenuRunRules);
@@ -304,20 +338,6 @@ internal static class TroopLeaderRows
     private static void Rule(PaperList list, ICoopRoom room, RunRule rule, Func<string> label, Func<string> about) =>
         list.Check(label, () => room.Rule(rule), on => room.SetRule(rule, on), about);
 
-    private static void Assign(ICoopRoom room, AssignPicks picks)
-    {
-        IReadOnlyList<Pair> pairs = Arrangement.WithPair(room.Pairs, picks.Carrier, picks.Rider);
-        if (picks.Carrier == picks.Rider || !room.CanArrange(pairs))
-        {
-            CoopNotice.Info(Strings.MenuAssignUnavailable);
-            return;
-        }
-
-        Order(room.Arrange(pairs));
-    }
-
-    private static string PickName(ICoopRoom room, int actor) =>
-        actor >= 0 && room.Pickable.Contains(actor) ? room.NameOf(actor) : "-";
 }
 
 /// <summary>
@@ -357,14 +377,6 @@ internal sealed class LiveRoom : ICoopRoom
 
     public double? SecondsToTimedShuffle => PairShuffle.SecondsToTimedShuffle();
 
-    /// <summary>Players in the room with this version.</summary>
-    public IReadOnlyList<int> Pickable =>
-        PhotonNetwork.PlayerList
-            .Where(p => !p.IsInactive && Net.ModPresence.VersionOf(p) == MyPluginInfo.PLUGIN_VERSION)
-            .Select(p => p.ActorNumber)
-            .OrderBy(a => a)
-            .ToList();
-
     public int ShuffleMinutes
     {
         get => ShuffleInterval.Clamp(CoopConfig.TimedShuffleInterval.Value);
@@ -377,8 +389,6 @@ internal sealed class LiveRoom : ICoopRoom
     public void ToggleSwap() => RoleSwap.Toggle();
 
     public bool Shuffle() => PairShuffle.Request(OperationKind.OrderedShuffle);
-
-    public bool SwapRoles(Pair pair) => PairShuffle.Request(OperationKind.RoleSwap, pair.Carrier, pair.Rider);
 
     public void Recover() => CarryKeeper.RequestRecovery();
 

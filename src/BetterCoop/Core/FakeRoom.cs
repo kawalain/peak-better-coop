@@ -95,8 +95,6 @@ internal sealed class FakeRoom : ICoopRoom
 
     public double? SecondsToTimedShuffle => Formed && rules[RunRule.TimedShuffle] ? untilShuffle : null;
 
-    public IReadOnlyList<int> Pickable => players;
-
     public int ShuffleMinutes
     {
         get => shuffleMinutes;
@@ -138,6 +136,7 @@ internal sealed class FakeRoom : ICoopRoom
         return true;
     }
 
+    /// <summary>Turns a Pair round at once.</summary>
     public bool SwapRoles(Pair pair)
     {
         int index = pairs.FindIndex(p => p.Carrier == pair.Carrier && p.Rider == pair.Rider);

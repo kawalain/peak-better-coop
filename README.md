@@ -23,8 +23,9 @@ and come back together.
 - Pairs change when a campfire is lit, and optionally on a timer. A Pair can
   also trade roles with **Swap Places**. Items and statuses carry over;
   nothing is lost.
-- **Roster** in the ESC menu lists the Pairs and the time to the next shuffle,
-  and is where you swap places and set the role you would like.
+- **Roster** in the ESC menu is a paper form: the Pairs as cards with each
+  scout's passport photo, the time to the next shuffle, and where you swap
+  places and set the role you would like.
 
 ## Installing
 
@@ -38,8 +39,8 @@ the Troop Leader (host) allows an odd one.
 In the **Roster** of the ESC menu, or in your mod manager's config editor
 under `in.kawala.bettercoop`. The Troop Leader's values apply to the room,
 except your own Role Preference and the Debug settings. The Troop Leader's
-Roster can also shuffle the Pairs at once, swap any Pair's roles, pair two
-chosen players, and re-carry every Pair.
+Roster can also shuffle the Pairs at once, re-carry every Pair, and lay the
+Pairs out as they like by moving the cards about, then stamp them approved.
 
 | Setting | Default | |
 | --- | --- | --- |

@@ -87,11 +87,9 @@ internal static class Strings
 
     public static string MenuPairsForm => Korean ? "짝은 섬에 도착하면 편성됩니다" : "Pairs form on the island";
 
-    public static string MenuPairs => Korean ? "짝 명단 (업는 사람 ⇄ 업힌 사람)" : "Pairs (Carrier ⇄ Rider)";
+    public static string MenuPairs => Korean ? "짝 명단" : "Pairs";
 
     public static string MenuPairNumber(int number) => Korean ? $"{number}조" : $"Pair {number}";
-
-    public static string MenuPair(string carrier, string rider) => $"{carrier} ⇄ {rider}";
 
     public static string MenuTroopLeader => Korean ? "분대장 지시" : "Troop Leader's orders";
 
@@ -110,8 +108,6 @@ internal static class Strings
     public static string StampAsk => Korean ? "요청" : "Request";
 
     public static string StampCancel => Korean ? "취소" : "Cancel";
-
-    public static string StampSwap => Korean ? "교대" : "Swap";
 
     public static string MenuBusy => Korean
         ? "코옵: 다른 짝 변경이 진행 중이라 지금은 할 수 없습니다."
@@ -161,17 +157,19 @@ internal static class Strings
         ? "업기가 풀렸을 때 모든 짝을 다시 업히고 업힌 사람을 깨웁니다."
         : "Re-attaches every Pair's carry and wakes every Rider.";
 
-    public static string AboutAssignCarrier => Korean
-        ? "짝으로 묶을 사람 중 업을 사람을 고릅니다."
-        : "Picks who carries in the Pair you assign.";
-
-    public static string AboutAssignRider => Korean
-        ? "짝으로 묶을 사람 중 업힐 사람을 고릅니다."
-        : "Picks who rides in the Pair you assign.";
-
     public static string AboutAssign => Korean
-        ? "고른 두 사람을 짝으로 묶습니다. 원래 짝은 남은 사람끼리 다시 묶입니다."
-        : "Pairs the two you picked; their former partners pair up with each other.";
+        ? "짝 명단에 옮긴 그대로 짝이 됩니다. 짝 없는 사람은 짝 이어주기로 묶입니다."
+        : "The Pairs become as you laid them out; anyone left Unpaired pairs up by Late Pairing.";
+
+    public static string MenuBoardHelp => Korean
+        ? "카드를 끌어 옮기거나, 눌러서 든 다음 놓을 곳을 누릅니다. 카드 위에 놓으면 서로 자리를 바꿉니다. 오른쪽 클릭이나 ESC로 제자리에 둡니다."
+        : "Drag a card, or press it to pick it up and press where it goes. Dropped on a card, the two trade places. A right click or Esc puts it back.";
+
+    public static string MenuNewPair => Korean ? "새 짝" : "New";
+
+    public static string MenuDropHere => Korean ? "여기에 놓기" : "Drop here";
+
+    public static string MenuAssignReset => Korean ? "처음 편성으로" : "Start over";
 
     public static string AboutCampfireShuffle => Korean
         ? "모닥불을 피워 다음 구간으로 갈 때 짝을 새로 정합니다."
@@ -211,15 +209,11 @@ internal static class Strings
         ? $"코옵: {seconds}초 뒤 분대장이 정한 짝이 됩니다."
         : $"Coop: the Troop Leader's Pairs take effect in {seconds}...";
 
-    public static string MenuAssignCarrier => Korean ? "짝 지정: 업는 사람" : "Assign: Carrier";
-
-    public static string MenuAssignRider => Korean ? "짝 지정: 업힐 사람" : "Assign: Rider";
-
     public static string MenuAssign => Korean ? "짝 지정" : "Assign Pair";
 
     public static string MenuAssignUnavailable => Korean
-        ? "코옵: 두 사람이 서로 달라야 하고, 업는 사람은 깨어 있어야 하며, 둘 다 같은 버전의 모드가 있어야 합니다."
-        : "Coop: pick two different players with this version; the Carrier must be awake.";
+        ? "코옵: 지금은 이대로 짝을 지을 수 없습니다. 새로 업는 사람은 깨어 있어야 하고, 쓰러진 짝은 함께 있어야 하며, 모두 같은 버전의 모드가 있어야 합니다."
+        : "Coop: these Pairs cannot be set now. A new Carrier must be awake, a fallen Pair stays together, and everyone needs this version.";
 
     public static string SwapPlaces => Korean ? "자리 바꾸기" : "Swap Places";
 

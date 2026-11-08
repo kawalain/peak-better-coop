@@ -29,14 +29,4 @@ public class ArrangementTests
     [Fact]
     public void An_empty_arrangement_ends_every_pair() =>
         Assert.Empty(Arrangement.Decode(Arrangement.Encode(2, []), 2)!);
-
-    [Fact]
-    public void A_new_pair_ends_the_pairs_its_members_were_in()
-    {
-        Pair[] pairs = [new Pair(1, 2), new Pair(3, 4), new Pair(5, 6)];
-
-        var after = Arrangement.WithPair(pairs, 1, 4);
-
-        Assert.Equal([(5, 6), (1, 4)], after.Select(p => (p.Carrier, p.Rider)));
-    }
 }

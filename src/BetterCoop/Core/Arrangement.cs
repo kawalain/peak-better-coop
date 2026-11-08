@@ -37,8 +37,4 @@ internal static class Arrangement
 
         return pairs;
     }
-
-    /// <summary>The Pairs with these two made one, the Pairs they were in ended.</summary>
-    public static IReadOnlyList<Pair> WithPair(IReadOnlyList<Pair> pairs, int carrier, int rider) =>
-        pairs.Where(p => !p.Contains(carrier) && !p.Contains(rider)).Append(new Pair(carrier, rider)).ToList();
 }

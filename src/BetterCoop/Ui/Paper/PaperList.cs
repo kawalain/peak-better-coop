@@ -37,6 +37,8 @@ internal sealed class PaperList
 
     private readonly List<PaperRow> rows = new();
 
+    private readonly List<Func<bool>> backs = new();
+
     private readonly RectTransform content;
 
     private readonly TMP_Text template;
@@ -51,6 +53,9 @@ internal sealed class PaperList
     }
 
     public IReadOnlyList<PaperRow> Rows => rows;
+
+    /// <summary>The game's menu text, to set new text in.</summary>
+    public TMP_Text Template => template;
 
     public static Color Pen => ToColor(FormDrawing.Pen);
 
@@ -265,6 +270,12 @@ internal sealed class PaperList
         return (RectTransform)row.Root.transform;
     }
 
+    /// <summary>Something on the form that takes Back before the page does, as a held card goes back to its place.</summary>
+    public void OnBack(Func<bool> back) => backs.Add(back);
+
+    /// <summary>Gives Back to the form; false when nothing on it took it.</summary>
+    public bool Back() => backs.Any(back => back());
+
     /// <summary>A rubber stamp anywhere on the form, such as beside a signature.</summary>
     public StampMark AddStamp(Transform parent, Func<string> word, Action press) =>
         new(parent, template, word, press);
@@ -279,6 +290,7 @@ internal sealed class PaperList
         }
 
         rows.Clear();
+        backs.Clear();
         section = 0;
     }
 

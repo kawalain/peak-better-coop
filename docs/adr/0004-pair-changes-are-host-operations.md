@@ -46,8 +46,8 @@ not done and runs it.
   concerns every player, as a Pair Shuffle does. It moves no items or places:
   each new Carrier keeps their body and their Rider comes to it, while a Pair
   only turned round hands its body over as a Role Swap does. Players it leaves
-  out are Unpaired for a Late Pairing. A Pair Shuffle or Role Swap the Troop
-  Leader orders there runs as the usual operation. It moves no items and leaves
+  out are Unpaired for a Late Pairing. A Pair Shuffle the Troop Leader orders
+  there runs as the usual operation. It moves no items and leaves
   the new Rider's statuses to be cleared as at any pairing; its plan only takes
   the Shared Body to the higher member's place. A lone Unpaired Player waits
   rather than breaking up another Pair.
