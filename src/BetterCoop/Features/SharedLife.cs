@@ -183,6 +183,16 @@ internal static class TroopLeaderRevive
             return;
         }
 
+        // A request that crossed a revive already sent (the member's next
+        // check asks again if this client's view of the target lags).
+        bool needed = atPosition
+            ? target.data.dead
+            : !target.data.dead && (target.data.passedOut || target.data.fullyPassedOut);
+        if (!needed)
+        {
+            return;
+        }
+
         Send(target, atPosition, position, applyStatus, statueSegment);
     }
 
