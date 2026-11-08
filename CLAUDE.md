@@ -34,17 +34,22 @@ only and must not touch Unity, Photon, or game types.
 
 ## Deploy and feedback
 
-Setting `PeakCoopDeployDir` in `Directory.Build.user.props` makes every build
-copy the DLL into that folder. Point it only at the Gale development profile's
-`BepInEx/plugins/PeakCoop` folder; the game folder itself stays untouched.
-Play-test feedback comes back as the profile's `BepInEx/LogOutput.log`.
+The development profile is a plain folder outside `%APPDATA%`: a packaged host
+(such as the Claude desktop app) virtualises `%APPDATA%` for the tools it
+starts, so a Gale profile created from here is invisible to the game that Steam
+starts. `tools/dev_profile.py` builds and launches that folder profile:
 
-To set the profile up without the GUI, `gale --game peak --no-gui` creates the
-`Default` profile, and `gale --game peak --profile Default --install <zip> --no-gui`
-installs a local Thunderstore zip. Gale installs a zip as the mod loader only
-when the manifest `name` is the full name `BepInEx-BepInExPack_PEAK`, so rewrite
-that field in the downloaded BepInExPack_PEAK zip first; otherwise it lands in
-`BepInEx/plugins` and the loader never starts.
+```bash
+python -I tools/dev_profile.py install <profile_dir> <cache_dir> PEAKModding-ModConfig
+python -I tools/dev_profile.py launch <profile_dir> <PeakGameDir>
+```
+
+`install` adds BepInExPack_PEAK and ModConfig (in-game config editing) with
+their dependencies. Setting `PeakCoopDeployDir` in `Directory.Build.user.props`
+to `<profile_dir>/BepInEx/plugins/PeakCoop` makes every build deploy there.
+`launch` copies the doorstop proxy into the game folder, the only change made
+there. Diagnostics land in `<profile_dir>/BepInEx/LogOutput.log`; players use
+Gale and send theirs from their own profile.
 
 ## Test builds and versions
 
