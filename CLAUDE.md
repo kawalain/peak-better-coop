@@ -52,12 +52,11 @@ Players must run the exact same version to depart, so bump `<Version>` in
 `PeakCoop.csproj` only when a test build goes to players: minor for a build with
 new features, patch for a build of fixes. Commits in between keep the version.
 
-## Rewrite in progress
+## Code layout
 
-Files under `src/PeakCoop/Features/` that are listed as `<Compile Remove>` in
-`PeakCoop.csproj` are the previous version, kept for history. Rewrite one
-feature at a time against the current game, in place, in this order: party gate,
-pairing, carry lock and camera, Control Split, shared death and revival, Rider
-HUD. Remove its `<Compile Remove>` line in the same commit. The design for each
-is in `docs/adr/`; there is no shared stamina feature, because the Shared Body
-has only the Carrier's stamina.
+`src/PeakCoop/Core/` holds game-independent rules (pairing, the Control Split's
+button replay and look smoothing, the Rider snapshot format) and is the only
+code the tests reach. `Features/` holds one Harmony feature per file, named
+after its glossary term; `Net/` holds Photon keys and presence; `Ui/` holds
+notices and their Korean/English text. Every feature looks up Pairs through
+`PairRoster` (ADR 0001), never through the game's carry state.

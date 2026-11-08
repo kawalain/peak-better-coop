@@ -52,6 +52,7 @@ public sealed class Plugin : BaseUnityPlugin
         runtime.AddComponent<PairingDirector>();
         runtime.AddComponent<CarryKeeper>();
         runtime.AddComponent<ControlSplitLink>();
+        runtime.AddComponent<RiderHudRefresher>();
 
         Log.LogInfo($"{MyPluginInfo.PLUGIN_NAME} {MyPluginInfo.PLUGIN_VERSION} loaded.");
     }
