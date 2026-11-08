@@ -54,8 +54,9 @@ there. Without Gale, `dev_profile.py install` lays out an equivalent folder
 profile from Thunderstore. To test the Control Split alone, turn on `[Debug]
 Solo Pair`: alone in a room, your mouse takes the Rider's path (encoded,
 delayed by the set latency, replayed) before it reaches your body, and a solo
-Run may depart. Diagnostics land in the profile's `BepInEx/LogOutput.log`;
-players send theirs from their own Gale profile.
+Run may depart. With `[Debug] Verbose Log` on (off by default), diagnostics
+land in the profile's `BepInEx/LogOutput.log`; players turn it on and send
+theirs from their own Gale profile.
 
 ## Test builds and versions
 

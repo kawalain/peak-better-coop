@@ -99,7 +99,7 @@ internal static class CoopConfig
         VerboseLog = config.Bind(
             "Debug",
             "Verbose Log",
-            true,
+            false,
             "Write detailed pairing, carry, and Control Split diagnostics to LogOutput.log.");
 
         SoloPair = config.Bind(
