@@ -6,7 +6,9 @@ using PeakCoop.Ui;
 using Photon.Pun;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using Zorro.ControllerSupport;
 using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
 using PhotonPlayer = Photon.Realtime.Player;
 
@@ -204,6 +206,20 @@ internal static class RoleSwap
         }
     }
 
+    /// <summary>
+    /// The other menu buttons open another page; this one stays, so after a
+    /// mouse click it would keep the selected look. A gamepad keeps its
+    /// selection to navigate.
+    /// </summary>
+    private static void OnClicked()
+    {
+        Toggle();
+        if (InputHandler.GetCurrentUsedInputScheme() != InputScheme.Gamepad && EventSystem.current != null)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
+    }
+
     /// <summary>Adds Swap Places to the pause menu, after Resume.</summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(PauseMenuMainPage), "Start")]
@@ -221,8 +237,12 @@ internal static class RoleSwap
 
         Button button = clone.GetComponent<Button>();
         button.onClick = new Button.ButtonClickedEvent();
-        button.onClick.AddListener(Toggle);
+        button.onClick.AddListener(OnClicked);
         button.navigation = new Navigation { mode = Navigation.Mode.Automatic };
+        ColorBlock colors = button.colors;
+        Plugin.Verbose(
+            $"Swap Places colours: normal {colors.normalColor}, highlighted {colors.highlightedColor}, "
+            + $"selected {colors.selectedColor}, disabled {colors.disabledColor}; transition {button.transition}.");
         clone.AddComponent<SwapPlacesButton>().Bind(button, clone.GetComponentInChildren<TMP_Text>(true));
 
         if (parent.GetComponent<LayoutGroup>() != null)
