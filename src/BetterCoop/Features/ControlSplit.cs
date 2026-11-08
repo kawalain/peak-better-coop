@@ -350,6 +350,52 @@ internal static class ControlSplit
         }
     }
 
+    private static RopeSpool? latchedSpool;
+
+    private static float latchedScroll;
+
+    /// <summary>
+    /// A rope spool reads the scroll in its update and uses it in the next
+    /// physics step. The Rider's scroll arrives as one frame's worth per
+    /// network message, and a frame with no physics step after it loses that
+    /// scroll, so unspooling worked only some of the time. On the Carrier's
+    /// client the spool keeps the Rider's scroll until a physics step has
+    /// used it. Only the spool is held this way: other items scroll once per
+    /// frame and would count a held scroll again.
+    /// </summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RopeSpool), "Update")]
+    private static void HoldRiderScrollForSpool(RopeSpool __instance)
+    {
+        if (!LocalCarrier(out _, out _)
+            || __instance.item.holderCharacter != Character.localCharacter
+            || !__instance.photonView.IsMine)
+        {
+            latchedSpool = null;
+            return;
+        }
+
+        if (__instance.scroll != 0f || __instance.ropeTier.LookingToPlaceAnchor)
+        {
+            latchedSpool = __instance.scroll != 0f ? __instance : null;
+            latchedScroll = __instance.scroll;
+        }
+        else if (latchedSpool == __instance)
+        {
+            __instance.scroll = latchedScroll;
+        }
+    }
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(RopeSpool), "FixedUpdate")]
+    private static void SpoolUsedScroll(RopeSpool __instance)
+    {
+        if (latchedSpool == __instance)
+        {
+            latchedSpool = null;
+        }
+    }
+
     /// <summary>The Rider's hotbar keys belong to the Carrier.</summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(CharacterItems), "DoSwitching")]
