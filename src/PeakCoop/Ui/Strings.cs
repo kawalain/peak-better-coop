@@ -25,6 +25,14 @@ internal static class Strings
         ? $"코옵: {carrier} 님과 {rider} 님의 Pair가 해체되었습니다."
         : $"Co-op: the Pair of {carrier} and {rider} has ended.";
 
+    public static string NoBackpack => Korean
+        ? "코옵: 사람을 업은 상태에서는 가방을 멜 수 없습니다."
+        : "Co-op: you cannot wear a backpack while carrying your Rider.";
+
+    public static string Recovered => Korean
+        ? "코옵: 방장이 Pair 업기 상태를 복구했습니다."
+        : "Co-op: the host repaired every Pair's carry.";
+
     public static string OddPlayerCount(int count) => Korean
         ? $"코옵: 출발하려면 짝수 인원이 필요합니다. (현재 {count}명)"
         : $"Co-op: an even number of players is needed to depart. ({count} in the room)";

@@ -33,6 +33,7 @@
     <Reference Include="$(PeakManagedDir)\Unity.TextMeshPro.dll" Private="false" />
     <Reference Include="$(PeakManagedDir)\Unity.InputSystem.dll" Private="false" />
     <Reference Include="$(PeakManagedDir)\Photon*.dll" Private="false" />
+    <Reference Include="$(PeakManagedDir)\Zorro.Core.Runtime.dll" Private="false" />
   </ItemGroup>
 
   <ItemGroup>

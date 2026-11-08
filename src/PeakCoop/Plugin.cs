@@ -50,6 +50,7 @@ public sealed class Plugin : BaseUnityPlugin
         runtime.AddComponent<ModPresence>();
         runtime.AddComponent<RunRules>();
         runtime.AddComponent<PairingDirector>();
+        runtime.AddComponent<CarryKeeper>();
 
         Log.LogInfo($"{MyPluginInfo.PLUGIN_NAME} {MyPluginInfo.PLUGIN_VERSION} loaded.");
     }
