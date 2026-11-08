@@ -175,6 +175,7 @@ internal static class ControlSplit
         {
             case Mode.Rider:
                 CaptureRiderActions(__instance);
+                RiderBinoculars.Zoom(__instance);
                 DropCarrierActions(__instance);
                 break;
             case Mode.Carrier:
