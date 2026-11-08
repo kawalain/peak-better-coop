@@ -51,5 +51,7 @@ that field in the downloaded BepInExPack_PEAK zip first; otherwise it lands in
 Files under `src/PeakCoop/Features/` that are listed as `<Compile Remove>` in
 `PeakCoop.csproj` are the previous version, kept for history. Rewrite one
 feature at a time against the current game, in place, in this order: party gate,
-pairing, carry lock and camera, input relay, shared stamina/death/revival, Rider
-HUD. Remove its `<Compile Remove>` line in the same commit.
+pairing, carry lock and camera, Control Split, shared death and revival, Rider
+HUD. Remove its `<Compile Remove>` line in the same commit. The design for each
+is in `docs/adr/`; there is no shared stamina feature, because the Shared Body
+has only the Carrier's stamina.
