@@ -53,11 +53,22 @@ internal static class LatePairingRules
 {
     /// <summary>
     /// The two Unpaired Players to pair next, or null when no two can be:
-    /// someone who is down goes first with someone awake, so nobody waits
-    /// dead longer than needed; two who are down wait for one to wake.
+    /// former partners first (one of them reconnected), then someone who is
+    /// down with someone awake, so nobody waits dead longer than needed;
+    /// two who are down wait for one to wake.
     /// </summary>
-    public static (int First, int Second)? PickTwo(IReadOnlyList<LateCandidate> candidates)
+    public static (int First, int Second)? PickTwo(IReadOnlyList<LateCandidate> candidates, IReadOnlyList<Pair>? former = null)
     {
+        foreach (Pair pair in former ?? [])
+        {
+            LateCandidate? carrier = candidates.FirstOrDefault(c => c.Actor == pair.Carrier);
+            LateCandidate? rider = candidates.FirstOrDefault(c => c.Actor == pair.Rider);
+            if (carrier != null && rider != null && (carrier.Awake || rider.Awake))
+            {
+                return (pair.Carrier, pair.Rider);
+            }
+        }
+
         var awake = candidates.Where(c => c.Awake).OrderBy(c => c.Actor).ToList();
         var down = candidates.Where(c => !c.Awake).OrderBy(c => c.Actor).ToList();
         if (awake.Count == 0)
@@ -75,11 +86,13 @@ internal static class LatePairingRules
 
     /// <summary>
     /// Pairs two Unpaired Players: one who is down rides and comes back on
-    /// the Carrier's back; otherwise Role Preferences decide, and the Shared
-    /// Body starts where the higher of the two stands. Null when both are down.
+    /// the Carrier's back; otherwise former partners take their former roles,
+    /// and anyone else's Role Preferences decide. The Shared Body starts
+    /// where the higher of the two stands. Null when both are down.
     /// </summary>
-    public static LatePairing? Form(LateCandidate first, LateCandidate second, Random random)
+    public static LatePairing? Form(LateCandidate first, LateCandidate second, Random random, IReadOnlyList<Pair>? former = null)
     {
+        Pair? before = (former ?? []).FirstOrDefault(p => p.Contains(first.Actor) && p.Contains(second.Actor));
         if (!first.Awake && !second.Awake)
         {
             return null;
@@ -87,6 +100,8 @@ internal static class LatePairingRules
 
         bool firstCarries = first.Awake != second.Awake
             ? first.Awake
+            : before != null
+                ? before.Carrier == first.Actor
             : CarrierWish(first) != CarrierWish(second)
                 ? CarrierWish(first) > CarrierWish(second)
                 : random.Next(2) == 0;

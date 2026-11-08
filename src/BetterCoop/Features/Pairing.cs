@@ -135,6 +135,29 @@ internal static class PairRoster
 }
 
 /// <summary>
+/// Pairs that ended because a member left (<see cref="PartedPairs"/>), as
+/// the Troop Leader keeps them: its own copy is ahead of the room's echo,
+/// so two Pairs parting in quick succession are both kept.
+/// </summary>
+internal static class FormerPairs
+{
+    private static PartedPairs? hostCopy;
+
+    /// <summary>The Troop Leader's copy, loaded from the room the first time.</summary>
+    public static PartedPairs HostCopy() => hostCopy ??= PartedPairs.Decode(
+        PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Parted, out object value)
+            ? value
+            : null);
+
+    /// <summary>Drops the copy; a client that becomes Troop Leader later reloads it from the room.</summary>
+    public static void Forget() => hostCopy = null;
+
+    /// <summary>The former Pairs whose two players are both in the room now.</summary>
+    public static IReadOnlyList<Pair> InRoom() => HostCopy().Resolve(userId =>
+        PhotonNetwork.PlayerList.FirstOrDefault(p => !p.IsInactive && p.UserId == userId)?.ActorNumber);
+}
+
+/// <summary>
 /// Forms the Pairs once per Run on the host, dissolves a Pair when a member
 /// leaves, clears them back at the Airport, and announces changes on every client.
 /// </summary>
@@ -158,6 +181,11 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         try
         {
             PairRoster.Reload();
+            FormerPairs.Forget();
+            foreach (PhotonPlayer player in PhotonNetwork.PlayerList)
+            {
+                KnownPlayers.Remember(player);
+            }
         }
         catch (Exception exception)
         {
@@ -170,10 +198,24 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         try
         {
             PairRoster.Reload();
+            FormerPairs.Forget();
+            KnownPlayers.Clear();
         }
         catch (Exception exception)
         {
             Guard.Report("PairingDirector.OnLeftRoom", exception);
+        }
+    }
+
+    public override void OnPlayerEnteredRoom(PhotonPlayer newPlayer)
+    {
+        try
+        {
+            KnownPlayers.Remember(newPlayer);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PairingDirector.OnPlayerEnteredRoom", exception);
         }
     }
 
@@ -214,6 +256,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
 
     private static void PlayerLeft(PhotonPlayer otherPlayer)
     {
+        KnownPlayers.Remember(otherPlayer);
         if (PhotonNetwork.IsMasterClient && PairRoster.Read() is PairingResult current)
         {
             DissolveAbsent(current, otherPlayer.ActorNumber);
@@ -238,7 +281,20 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         }
 
         Plugin.Verbose($"Dissolving {current.Pairs.Count - reconciled.Pairs.Count} Pair(s) with a member gone.");
-        PairRoster.Write(reconciled);
+        PartedPairs parted = FormerPairs.HostCopy();
+        foreach (Pair gone in current.Pairs.Except(reconciled.Pairs))
+        {
+            if (KnownPlayers.UserIdOf(gone.Carrier) is string carrier && KnownPlayers.UserIdOf(gone.Rider) is string rider)
+            {
+                parted.Add(carrier, rider);
+            }
+        }
+
+        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable
+        {
+            [RoomKeys.Pairs] = PairRoster.Encode(reconciled),
+            [RoomKeys.Parted] = parted.Encode(),
+        });
     }
 
     private void Update()
@@ -265,6 +321,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         {
             windowOpenedAt = null;
             formedOnThisIsland = false;
+            FormerPairs.Forget();
             return;
         }
 
@@ -273,7 +330,11 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
             windowOpenedAt = null;
             formedOnThisIsland = false;
             PhotonHashtable room = PhotonNetwork.CurrentRoom.CustomProperties;
-            if (PairRoster.Read() != null || room.ContainsKey(RoomKeys.ShuffleClock) || room.ContainsKey(RoomKeys.Handover))
+            FormerPairs.Forget();
+            if (PairRoster.Read() != null
+                || room.ContainsKey(RoomKeys.ShuffleClock)
+                || room.ContainsKey(RoomKeys.Handover)
+                || room.ContainsKey(RoomKeys.Parted))
             {
                 Plugin.Verbose("Back at the Airport; clearing Pairs.");
                 PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable
@@ -281,6 +342,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
                     [RoomKeys.Pairs] = null,
                     [RoomKeys.ShuffleClock] = null,
                     [RoomKeys.Handover] = null,
+                    [RoomKeys.Parted] = null,
                 });
             }
 

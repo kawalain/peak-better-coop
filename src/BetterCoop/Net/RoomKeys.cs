@@ -21,6 +21,9 @@ internal static class RoomKeys
     /// <summary>Room property: the Body Handover of the latest operation, written with its Pairs.</summary>
     public const string Handover = "BetterCoop.Handover";
 
+    /// <summary>Room property: Pairs that ended because a member left, by user id, for a Late Pairing to restore.</summary>
+    public const string Parted = "BetterCoop.Parted";
+
     /// <summary>Room property: server time the Timed Shuffle interval counts from.</summary>
     public const string ShuffleClock = "BetterCoop.ShuffleClock";
 

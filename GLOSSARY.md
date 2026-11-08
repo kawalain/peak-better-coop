@@ -66,9 +66,10 @@ _Avoid_: re-pairing, reshuffle
 
 **Late Pairing** (짝 이어주기):
 Forming a Pair in the middle of a Run from two Unpaired Players, leaving every
-other Pair as it is. A member who is dead or passed out becomes the Rider and
-comes back on the Carrier's back; otherwise Role Preferences decide. The
-Shared Body starts where the higher of the two is.
+other Pair as it is. Two whose Pair ended when one of them left pair again
+first, in their former roles. A member who is dead or passed out becomes the
+Rider and comes back on the Carrier's back; otherwise Role Preferences decide.
+The Shared Body starts where the higher of the two is.
 _Avoid_: re-pairing, late join pairing
 
 **Campfire Shuffle**:

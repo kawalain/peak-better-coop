@@ -35,7 +35,10 @@ not done and runs it.
   them awake, and no other operation is running. A character counts only five
   seconds after it spawns: mods that let players join during a Run move and
   revive the newcomer in those first seconds, and would pull a Rider off the
-  Carrier's back. It moves no items and leaves
+  Carrier's back. A Pair that ends because a member left is kept in the room
+  by the players' user ids, since a reconnecting player gets a new actor
+  number; when both are Unpaired again they pair first, in their former roles,
+  and the left-behind member does not wait for them otherwise. It moves no items and leaves
   the new Rider's statuses to be cleared as at any pairing; its plan only takes
   the Shared Body to the higher member's place. A lone Unpaired Player waits
   rather than breaking up another Pair.

@@ -198,7 +198,7 @@ internal static class PairShuffle
     {
         if (PairRoster.Formed
             && PairRoster.Read() is PairingResult current
-            && LatePairingRules.PickTwo(LateCandidates(current)) is (int first, int second))
+            && LatePairingRules.PickTwo(LateCandidates(current), FormerPairs.InRoom()) is (int first, int second))
         {
             Request(OperationKind.LatePairing, first, second);
         }
@@ -256,6 +256,11 @@ internal static class PairShuffle
         {
             properties[RoomKeys.Pairs] = PairRoster.Encode(after);
             properties[RoomKeys.Handover] = plan.Encode();
+            if (op.Kind == OperationKind.LatePairing)
+            {
+                properties[RoomKeys.Parted] = FormerPairs.HostCopy().Encode();
+            }
+
             Plugin.Verbose(
                 $"{op.Kind} #{op.Id}: " + string.Join(", ", after.Pairs.Select(p => $"{p.Carrier}>{p.Rider}"))
                 + $"; {plan.Entries.Count} handover(s).");
@@ -308,11 +313,20 @@ internal static class PairShuffle
         List<LateCandidate> candidates = LateCandidates(before);
         LateCandidate? first = candidates.FirstOrDefault(c => c.Actor == op.SwapCarrier);
         LateCandidate? second = candidates.FirstOrDefault(c => c.Actor == op.SwapRider);
+        IReadOnlyList<Pair> former = FormerPairs.InRoom();
         if (first == null
             || second == null
-            || LatePairingRules.Form(first, second, new System.Random()) is not LatePairing pairing)
+            || LatePairingRules.Form(first, second, new System.Random(), former) is not LatePairing pairing)
         {
             return null;
+        }
+
+        if (former.Any(p => p.Contains(first.Actor) && p.Contains(second.Actor))
+            && KnownPlayers.UserIdOf(first.Actor) is string firstId
+            && KnownPlayers.UserIdOf(second.Actor) is string secondId)
+        {
+            Plugin.Verbose($"Late Pairing reunites {first.Actor} and {second.Actor}.");
+            FormerPairs.HostCopy().Remove(firstId, secondId);
         }
 
         Pair pair = pairing.Pair;

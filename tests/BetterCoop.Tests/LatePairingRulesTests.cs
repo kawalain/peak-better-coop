@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BetterCoop.Core;
 using Xunit;
 
@@ -101,6 +102,70 @@ public class LatePairingRulesTests
 
         Assert.True(higherRider.CarrierMovesToRider);
         Assert.False(higherCarrier.CarrierMovesToRider);
+    }
+
+    [Fact]
+    public void Former_partners_pair_up_before_anyone_else() =>
+        Assert.Equal((4, 2), LatePairingRules.PickTwo([Awake(1), Awake(2), Down(3), Awake(4)], [new Pair(4, 2)]));
+
+    [Fact]
+    public void Former_partners_who_are_both_down_do_not_hold_up_others() =>
+        Assert.Equal((3, 1), LatePairingRules.PickTwo([Awake(1), Awake(2), Down(3), Down(4)], [new Pair(3, 4)]));
+
+    [Fact]
+    public void Former_partners_take_their_former_roles_over_their_wishes()
+    {
+        LatePairing pairing = LatePairingRules.Form(
+            Awake(1, RolePreference.Carrier),
+            Awake(2, RolePreference.Rider),
+            new Random(0),
+            [new Pair(2, 1)])!;
+
+        Assert.Equal(2, pairing.Pair.Carrier);
+        Assert.Equal(1, pairing.Pair.Rider);
+    }
+
+    [Fact]
+    public void A_former_carrier_who_is_down_rides_this_time()
+    {
+        LatePairing pairing = LatePairingRules.Form(Down(1), Awake(2), new Random(0), [new Pair(1, 2)])!;
+
+        Assert.Equal(2, pairing.Pair.Carrier);
+    }
+
+    [Fact]
+    public void A_parted_pair_is_found_again_by_user_id()
+    {
+        PartedPairs parted = PartedPairs.Empty;
+        parted.Add("carrier-id", "rider-id");
+
+        PartedPairs decoded = PartedPairs.Decode(parted.Encode());
+        IReadOnlyList<Pair> resolved = decoded.Resolve(id => id == "carrier-id" ? 9 : id == "rider-id" ? 3 : null);
+
+        Pair pair = Assert.Single(resolved);
+        Assert.Equal((9, 3), (pair.Carrier, pair.Rider));
+    }
+
+    [Fact]
+    public void A_player_keeps_only_their_latest_former_partner()
+    {
+        PartedPairs parted = PartedPairs.Empty;
+        parted.Add("a", "b");
+        parted.Add("c", "a");
+
+        Assert.Equal([("c", "a")], parted.Entries);
+        Assert.True(parted.Remove("a", "c"));
+        Assert.Empty(parted.Entries);
+    }
+
+    [Fact]
+    public void A_parted_pair_with_someone_absent_is_not_resolved()
+    {
+        PartedPairs parted = PartedPairs.Empty;
+        parted.Add("a", "b");
+
+        Assert.Empty(parted.Resolve(id => id == "a" ? 1 : null));
+        Assert.Empty(PartedPairs.Decode("junk").Entries);
     }
 
     [Fact]
