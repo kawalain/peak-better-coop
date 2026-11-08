@@ -34,12 +34,19 @@ internal static class CoopMenu
             return;
         }
 
+        // Pages are built on first use, after the pause menu has started: its
+        // handler registers the pages under it by type, one each, and would
+        // fail on two of a type (the Coop Menu and the Zoo's example of it).
         Button template = __instance.m_settingsButton;
-        CoopMenuPage page = PaperPage.Create<CoopMenuPage>(handler, controls, template, __instance, () => Strings.CoopMenu);
-        Button coop = AddButton(__instance, Strings.CoopMenu, page.Open, after: __instance.m_resumeButton);
+        CoopMenuPage? page = null;
+        Button coop = AddButton(
+            __instance,
+            Strings.CoopMenu,
+            () => (page ??= PaperPage.Create<CoopMenuPage>(handler, controls, template, __instance, () => Strings.CoopMenu)).Open(),
+            after: __instance.m_resumeButton);
 #if DEBUG
-        ZooPage zoo = ZooPage.Build(handler, controls, template, __instance);
-        AddButton(__instance, "Zoo", zoo.Open, after: coop);
+        ZooPage? zoo = null;
+        AddButton(__instance, "Zoo", () => (zoo ??= ZooPage.Build(handler, controls, template, __instance)).Open(), after: coop);
 #endif
     }
 
