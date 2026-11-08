@@ -71,6 +71,7 @@ public sealed class Plugin : BaseUnityPlugin
         runtime.AddComponent<CarryKeeper>();
         runtime.AddComponent<ControlSplitLink>();
         runtime.AddComponent<RiderHudRefresher>();
+        runtime.AddComponent<RiderBarsKeeper>();
         runtime.AddComponent<RiderEffectsKeeper>();
         runtime.AddComponent<RiderPreviewsKeeper>();
         runtime.AddComponent<SharedViewSoundsKeeper>();

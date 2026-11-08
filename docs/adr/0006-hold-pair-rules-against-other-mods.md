@@ -17,6 +17,12 @@ depends on, whatever produced the change:
   stays with the Shared Body instead of falling to the ground.
 - Drops of a live Pair and carries of a Pair member by anyone else stay
   refused, as before.
+- Status bars that another mod draws for other players are hidden for every
+  Rider, whose own statuses are kept clear and say nothing, and on a Rider's
+  screen also for their Carrier, whose bar is already the Rider's own HUD
+  (Shared View). BetterCoop finds the HUD components that point at such a
+  character and makes them invisible, leaving the other mod's lists and logic
+  alone.
 - Revives are sent by the Troop Leader, as the game's own revives are (ADR
   0007), so a mod that flags revives from anyone else sees nothing amiss.
 
@@ -31,3 +37,7 @@ its own rules, which cannot be held alongside.
 - Two mods that both insist on a later patch order can still meet; the
   Rider's camera log records when another patch turns the Rider to
   spectating.
+- A mod that shows only the nearest few players still counts a hidden bar, so
+  it shows one fewer. Taking Riders out of the character list other mods read
+  would avoid that, but would also hide them from those mods' other decisions,
+  and on a Rider's client would hide the Carrier too.
