@@ -162,7 +162,7 @@ internal static class BackpackWheelSplit
     {
         slotCount = 0;
         type = BackpackSlot.BackpackType.None;
-        if (!local.data.fullyConscious || local.data.isClimbingAnything || !local.CanDoInput())
+        if (folded || !local.data.fullyConscious || local.data.isClimbingAnything || !local.CanDoInput())
         {
             return false;
         }
@@ -211,30 +211,46 @@ internal static class BackpackWheelSplit
         return localWheelOnBackSlot ? input.HotbarKeyIsPressed(BackSlot) : input.interactIsPressed;
     }
 
+    /// <summary>
+    /// Set when the wheel's key check could not be rewritten after the mod
+    /// loaded: the wheel then works as in the unmodded game, for the Carrier.
+    /// </summary>
+    private static bool folded;
+
+    /// <summary>
+    /// Harmony runs this again whenever any mod patches the wheel's update.
+    /// At the mod's own load a changed wheel throws (ADR 0003); on a later
+    /// patch by another mod it must not break that mod's patching, so the
+    /// code stays as it is and the shared wheel folds.
+    /// </summary>
     [HarmonyTranspiler]
     [HarmonyPatch(typeof(BackpackWheel), "Update")]
     private static IEnumerable<CodeInstruction> AskWhichKeyHolds(IEnumerable<CodeInstruction> instructions)
     {
         FieldInfo interact = AccessTools.Field(typeof(CharacterInput), nameof(CharacterInput.interactIsPressed));
         MethodInfo keyHeld = AccessTools.Method(typeof(BackpackWheelSplit), nameof(WheelHeld));
-        int replaced = 0;
-        foreach (CodeInstruction instruction in instructions)
+        List<CodeInstruction> original = instructions.ToList();
+        if (original.Count(instruction => instruction.LoadsField(interact)) == 1)
         {
-            if (instruction.LoadsField(interact))
-            {
-                replaced++;
-                yield return new CodeInstruction(OpCodes.Call, keyHeld).MoveLabelsFrom(instruction);
-                continue;
-            }
-
-            yield return instruction;
+            return original.Select(instruction => instruction.LoadsField(interact)
+                ? new CodeInstruction(OpCodes.Call, keyHeld).MoveLabelsFrom(instruction).MoveBlocksFrom(instruction)
+                : instruction);
         }
 
-        if (replaced != 1)
+        string problem = $"BackpackWheel.Update reads interact {original.Count(instruction => instruction.LoadsField(interact))} times; expected once.";
+        if (!Plugin.Patched)
         {
             // ADR 0003: a changed wheel disables the mod rather than half-patching it.
-            throw new InvalidOperationException($"BackpackWheel.Update reads interact {replaced} times; expected once.");
+            throw new InvalidOperationException(problem);
         }
+
+        if (!folded)
+        {
+            folded = true;
+            Plugin.Log.LogWarning($"Another mod changed the backpack wheel ({problem}). The wheel now works as in the unmodded game, for the Carrier only.");
+        }
+
+        return original;
     }
 
     // ---- Carrier side: share the open wheel with the Rider ----
@@ -255,6 +271,7 @@ internal static class BackpackWheelSplit
         bool __state)
     {
         if (__state
+            || folded
             || showing
             || held != null
             || !__instance.backpackWheel.gameObject.activeSelf
@@ -333,7 +350,9 @@ internal static class BackpackWheelSplit
     {
         CloseShown();
         PhotonView view = PhotonView.Find(open.ViewId);
-        if (view == null)
+
+        // A folded wheel would read this client's own interact key and close at once.
+        if (folded || view == null)
         {
             return;
         }

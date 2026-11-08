@@ -20,6 +20,9 @@ public sealed class Plugin : BaseUnityPlugin
 
     internal static ManualLogSource Log { get; private set; } = null!;
 
+    /// <summary>Whether the mod's own patching is done; later re-patches come from other mods.</summary>
+    internal static bool Patched { get; private set; }
+
     internal static void Verbose(string message)
     {
         if (CoopConfig.VerboseLog.Value)
@@ -51,6 +54,7 @@ public sealed class Plugin : BaseUnityPlugin
         try
         {
             harmony.PatchAll(typeof(Plugin).Assembly);
+            Patched = true;
         }
         catch (Exception exception)
         {

@@ -13,3 +13,9 @@ exactly the hard-to-diagnose bugs of the previous version after the last update.
 - The same holds when Co-op Mod, the mod BetterCoop grew from, is loaded too:
   both patch the carry and shared stamina, so the mod turns itself off and asks
   the player to remove Co-op Mod.
+- The rule covers the mod's own load only. Harmony reruns every rewrite of a
+  game method whenever any mod patches that method again; a rewrite that no
+  longer fits then leaves the method as it is and turns off just its own
+  feature, rather than failing the other mod's patching. The backpack wheel's
+  key check is the one rewrite that can stop fitting; without it the wheel
+  works as in the unmodded game, for the Carrier only.
