@@ -1,5 +1,6 @@
 using HarmonyLib;
 using UnityEngine;
+using Zorro.Core;
 
 namespace BetterCoop.Features;
 
@@ -68,6 +69,10 @@ internal sealed class RiderHudRefresher : MonoBehaviour
 {
     private float nextRefresh;
 
+    private Character? selectionOf;
+
+    private int shownSelection = int.MinValue;
+
     private void Update()
     {
         RiderBinoculars.Keep();
@@ -78,9 +83,19 @@ internal sealed class RiderHudRefresher : MonoBehaviour
         }
 
         nextRefresh = Time.unscaledTime + 0.1f;
-        if (RiderHud.ObservedCarrier() != null)
+        if (RiderHud.ObservedCarrier() is Character carrier)
         {
-            GUIManager.instance.UpdateItemSelections();
+            // The game highlights a slot when the local player switches; the
+            // Carrier switches on another client. Each highlight replays the
+            // slot's grow animation, so it runs only when the slot changes.
+            Optionable<byte> selected = carrier.refs.items.currentSelectedSlot;
+            int selection = selected.IsSome ? selected.Value : -1;
+            if (carrier != selectionOf || selection != shownSelection)
+            {
+                selectionOf = carrier;
+                shownSelection = selection;
+                GUIManager.instance.UpdateItemSelections();
+            }
 
             // The game refreshes item prompts when the local item changes;
             // the Rider holds none, so follow the Carrier's.
