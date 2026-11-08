@@ -5,7 +5,7 @@
     <AssemblyName>PeakCoop</AssemblyName>
     <RootNamespace>PeakCoop</RootNamespace>
     <Product>PEAK Co-op</Product>
-    <Version>0.1.0</Version>
+    <Version>0.2.0</Version>
     <BepInExPluginGuid>com.peak.coop</BepInExPluginGuid>
     <BepInExPluginName>PEAK Co-op</BepInExPluginName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
