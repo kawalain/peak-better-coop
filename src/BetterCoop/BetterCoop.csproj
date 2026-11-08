@@ -61,7 +61,7 @@
 }]]></ManifestJson>
     </PropertyGroup>
     <RemoveDir Directories="$(PackageStageDir)" />
-    <Copy SourceFiles="$(TargetPath);$(MSBuildThisFileDirectory)..\..\README.md;$(MSBuildThisFileDirectory)..\..\icon.png" DestinationFolder="$(PackageStageDir)" />
+    <Copy SourceFiles="$(TargetPath);$(MSBuildThisFileDirectory)..\..\README.md;$(MSBuildThisFileDirectory)..\..\LICENSE;$(MSBuildThisFileDirectory)..\..\icon.png" DestinationFolder="$(PackageStageDir)" />
     <WriteLinesToFile File="$(PackageStageDir)manifest.json" Lines="$(ManifestJson)" Overwrite="true" />
     <MakeDir Directories="$(MSBuildThisFileDirectory)..\..\artifacts" />
     <ZipDirectory SourceDirectory="$(PackageStageDir)" DestinationFile="$(PackageZip)" Overwrite="true" />

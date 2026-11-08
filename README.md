@@ -67,8 +67,13 @@ positive and restore it, or reinstall.
 ## Credits
 
 - [Sappheiros009](https://github.com/Sappheiros009/CoopMod): the original
-  idea, from Co-op Mod.
+  idea, from Co-op Mod. BetterCoop began as a fork of Co-op Mod and has since
+  been rewritten; none of Co-op Mod's code remains.
 - [Puro](https://steamcommunity.com/profiles/76561198105109754): ideas and
   testing.
 - [kawalain](https://steamcommunity.com/profiles/76561198436496102):
   maintainer.
+
+## License
+
+[MIT](https://github.com/kawalain/peak-better-coop/blob/main/LICENSE)
