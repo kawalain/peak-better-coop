@@ -5,8 +5,9 @@ namespace PeakCoop.Features;
 
 /// <summary>
 /// The Rider's HUD shows the Shared Body: the Carrier's hand slots, stamina,
-/// and statuses. The game draws its HUD for the observed character, so while
-/// the carry holds the Rider observes their Carrier.
+/// and statuses. The game draws its HUD for the observed character, so a
+/// living Rider observes their Carrier, also while the carry is briefly
+/// broken (after a revival, before the Carrier picks the Rider up again).
 /// </summary>
 [HarmonyPatch]
 internal static class RiderHud
@@ -20,7 +21,13 @@ internal static class RiderHud
         if (cachedFrame != Time.frameCount)
         {
             cachedFrame = Time.frameCount;
-            cachedCarrier = RiderView.TryGetCarrierOfLocalRider(out Character carrier) ? carrier : null;
+            Character local = Character.localCharacter;
+            cachedCarrier = local != null
+                && !local.data.dead
+                && PairRoster.RoleOf(local) == PairRole.Rider
+                && PairRoster.TryGetPartner(local, out Character carrier)
+                    ? carrier
+                    : null;
         }
 
         return cachedCarrier;
