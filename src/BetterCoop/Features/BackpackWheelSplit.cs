@@ -10,6 +10,7 @@ using BetterCoop.Net;
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using Zorro.Core;
 
@@ -17,10 +18,11 @@ namespace BetterCoop.Features;
 
 /// <summary>
 /// The Control Split in the backpack wheel (ADR 0005). The Carrier opens a
-/// wheel and holds it open with the keyboard; the Rider's screen shows it and
-/// the Rider's click picks a slice, which the Carrier's client carries out,
-/// since only the owner of the Shared Body can move its items. A Run rule
-/// hands the pick back to the Carrier, with the wheel on the Carrier's screen.
+/// wheel and holds it open with the keyboard, and both screens show it. One
+/// side picks with the mouse and the other watches it point: the Rider by
+/// default, or the Carrier when the Run rule says so. A pick always runs on
+/// the Carrier's client, since only the owner of the Shared Body can move its
+/// items.
 /// </summary>
 /// <remarks>
 /// The game has no way to open the backpack you wear; the Carrier opens their
@@ -33,9 +35,6 @@ internal static class BackpackWheelSplit
 {
     private const byte BackSlot = Player.BACKPACKSLOTINDEX;
 
-    /// <summary>The game closes a wheel whose backpack is farther than this.</summary>
-    private const float Reach = 6f;
-
     private const int SoloRider = -2;
 
     private static readonly BackSlotHold Hold = new();
@@ -47,39 +46,32 @@ internal static class BackpackWheelSplit
     /// <summary>Whether the back-slot key, not interact, holds the local wheel open.</summary>
     private static bool localWheelOnBackSlot;
 
-    /// <summary>Set while the back-slot key opens a wheel, so the opening knows its key.</summary>
-    private static bool openingOnBackSlot;
-
-    // Carrier side: the wheel the Carrier holds open for the Rider.
+    // Carrier side: the Carrier's open wheel, shared with the Rider.
     private static CarrierWheel? held;
     private static int lastSession;
+    private static bool carrierPicking;
 
     // Rider side: the Carrier's wheel as the Rider's screen shows it.
     private static Character? shownFor;
     private static int shownSession = -1;
     private static int shownFromActor = -1;
+    private static bool shownRiderPicks;
     private static bool showing;
     private static bool swallowPrimary;
 
-    private sealed class CarrierWheel(
-        int session,
-        BackpackReference backpack,
-        int slotCount,
-        BackpackSlot.BackpackType type,
-        bool onBackSlot,
-        int riderActor)
+    private static int lastHoverSent = int.MinValue;
+
+    private sealed class CarrierWheel(int session, int slotCount, bool riderPicks, int riderActor)
     {
         public int Session { get; } = session;
 
-        public BackpackReference Backpack { get; } = backpack;
-
         public int SlotCount { get; } = slotCount;
 
-        public BackpackSlot.BackpackType Type { get; } = type;
-
-        public bool OnBackSlot { get; } = onBackSlot;
+        public bool RiderPicks { get; } = riderPicks;
 
         public int RiderActor { get; } = riderActor;
+
+        public bool Solo => RiderActor == SoloRider;
     }
 
     /// <summary>
@@ -88,24 +80,19 @@ internal static class BackpackWheelSplit
     /// </summary>
     internal static Character WheelCharacter() => shownFor != null ? shownFor : Character.localCharacter;
 
+    /// <summary>Whether this screen's wheel only shows where the other side points.</summary>
+    private static bool LocalWatches =>
+        (showing && !shownRiderPicks) || (held != null && !held.Solo && held.RiderPicks);
+
+    /// <summary>Whether this screen's wheel picks by click and sends the pick to the Carrier's side.</summary>
+    private static bool LocalPicksForCarrier =>
+        (showing && shownRiderPicks) || (held != null && held.Solo && held.RiderPicks);
+
     // ---- Back-slot key: tap or hold ----
 
     [HarmonyPostfix]
     [HarmonyPatch(typeof(CharacterInput), nameof(CharacterInput.Sample))]
-    private static void TrackBackSlotKey(CharacterInput __instance)
-    {
-        TrackBackSlot(__instance);
-        if (held != null && Character.localCharacter != null && Character.localCharacter.input == __instance)
-        {
-            // The game freezes whoever holds a wheel open; the Carrier holds it with no wheel on screen.
-            __instance.movementInput = Vector2.zero;
-            __instance.jumpWasPressed = __instance.jumpIsPressed = false;
-            __instance.sprintIsPressed = __instance.sprintWasPressed = false;
-            __instance.sprintToggleIsPressed = __instance.sprintToggleWasPressed = false;
-            __instance.crouchIsPressed = __instance.crouchWasPressed = __instance.crouchToggleWasPressed = false;
-            __instance.dropWasPressed = __instance.dropIsPressed = __instance.dropWasReleased = false;
-        }
-    }
+    private static void TrackBackSlotKey(CharacterInput __instance) => TrackBackSlot(__instance);
 
     /// <summary>
     /// Holds back the back-slot key's press while it may still become a hold,
@@ -175,13 +162,13 @@ internal static class BackpackWheelSplit
     {
         slotCount = 0;
         type = BackpackSlot.BackpackType.None;
-        if (held != null || !local.data.fullyConscious || local.data.isClimbingAnything || !local.CanDoInput())
+        if (!local.data.fullyConscious || local.data.isClimbingAnything || !local.CanDoInput())
         {
             return false;
         }
 
         // Opened from the hand, the backpack itself would be the item to stash.
-        if (InHand(local))
+        if (local.refs.items.currentSelectedSlot.IsSome && local.refs.items.currentSelectedSlot.Value == BackSlot)
         {
             return false;
         }
@@ -197,9 +184,6 @@ internal static class BackpackWheelSplit
         return true;
     }
 
-    private static bool InHand(Character local) =>
-        local.refs.items.currentSelectedSlot.IsSome && local.refs.items.currentSelectedSlot.Value == BackSlot;
-
     private static void OpenOwnBackpack(Character local)
     {
         if (!CanOpenOwnBackpack(local, out int slotCount, out BackpackSlot.BackpackType type))
@@ -207,22 +191,12 @@ internal static class BackpackWheelSplit
             return;
         }
 
-        openingOnBackSlot = true;
-        try
-        {
-            GUIManager.instance.OpenBackpackWheel(BackpackReference.GetFromEquippedBackpack(local), slotCount, type);
-        }
-        finally
-        {
-            openingOnBackSlot = false;
-        }
-
-        if (held == null && GUIManager.instance.backpackWheel.gameObject.activeSelf)
+        GUIManager.instance.OpenBackpackWheel(BackpackReference.GetFromEquippedBackpack(local), slotCount, type);
+        if (GUIManager.instance.backpackWheel.gameObject.activeSelf)
         {
             localWheelOnBackSlot = true;
+            Plugin.Verbose("Opened the Carrier's own backpack from the back-slot key.");
         }
-
-        Plugin.Verbose("Opened the Carrier's own backpack from the back-slot key.");
     }
 
     /// <summary>Whether the key that opened the wheel is still held; the game asks only for interact.</summary>
@@ -263,132 +237,97 @@ internal static class BackpackWheelSplit
         }
     }
 
-    // ---- Carrier side: hold the wheel open for the Rider ----
+    // ---- Carrier side: share the open wheel with the Rider ----
 
-    /// <summary>On the Carrier's client, a wheel opening goes to the Rider's screen instead.</summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(GUIManager), nameof(GUIManager.OpenBackpackWheel))]
-    private static bool HandWheelToRider(
+    private static void NoteWheelBlocked(GUIManager __instance, out bool __state) =>
+        __state = __instance.wheelActive || __instance.windowBlockingInput;
+
+    /// <summary>A wheel the Carrier opened goes to the Rider's screen too.</summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(GUIManager), nameof(GUIManager.OpenBackpackWheel))]
+    private static void ShareWheelWithRider(
         GUIManager __instance,
         BackpackReference backpackReference,
         int slotCount,
-        BackpackSlot.BackpackType backpackType)
+        BackpackSlot.BackpackType backpackType,
+        bool __state)
     {
-        if (showing
-            || !RunRules.RiderPicksFromBackpack
+        if (__state
+            || showing
+            || held != null
+            || !__instance.backpackWheel.gameObject.activeSelf
+            || !backpackReference.exists
             || !ControlSplit.LocalCarrier(out Character rider, out bool solo))
         {
-            return true;
-        }
-
-        if (held != null || __instance.wheelActive || __instance.windowBlockingInput || !backpackReference.exists)
-        {
-            return false;
-        }
-
-        held = new CarrierWheel(
-            ++lastSession,
-            backpackReference,
-            slotCount,
-            backpackType,
-            openingOnBackSlot,
-            solo ? SoloRider : PairRoster.ActorOf(rider));
-        Plugin.Verbose($"Holding backpack wheel #{held.Session} open for the Rider.");
-        SendToRider(WheelSignal.Open(
-            held.Session,
-            backpackReference.type == BackpackReference.BackpackType.Equipped,
-            backpackReference.view.ViewID,
-            slotCount,
-            (byte)backpackType));
-        return false;
-    }
-
-    /// <summary>The Carrier switches no hotbar slot while holding a wheel open, as the game's wheel blocks it.</summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(CharacterItems), "DoSwitching")]
-    private static bool HoldingWheelDoesNotSwitch(CharacterItems __instance) =>
-        !(held != null && __instance.character.IsLocal);
-
-    /// <summary>Called every frame: closes the held wheel when its key is let go or the backpack is out of reach.</summary>
-    internal static void Tick()
-    {
-        TickRider();
-        if (held == null)
-        {
             return;
         }
 
-        Character local = Character.localCharacter;
-        bool samePair = local != null
-            && ControlSplit.LocalCarrier(out Character rider, out bool solo)
-            && (solo ? held.RiderActor == SoloRider : PairRoster.ActorOf(rider) == held.RiderActor);
-        bool keyHeld = samePair && (held.OnBackSlot ? local!.input.HotbarKeyIsPressed(BackSlot) : local!.input.interactIsPressed);
-        bool inReach = keyHeld
-            && held.Backpack.exists
-            && held.Backpack.locationTransform != null
-            && Vector3.Distance(held.Backpack.locationTransform.position, local!.Center) <= Reach;
-        if (!inReach)
+        held = new CarrierWheel(++lastSession, slotCount, RunRules.RiderPicksFromBackpack, solo ? SoloRider : PairRoster.ActorOf(rider));
+        lastHoverSent = int.MinValue;
+        Plugin.Verbose($"Backpack wheel #{held.Session} open; {(held.RiderPicks ? "the Rider" : "the Carrier")} picks.");
+        if (!held.Solo)
         {
-            CloseHeld();
+            Send(held.RiderActor, WheelSignal.Open(
+                held.Session,
+                backpackReference.type == BackpackReference.BackpackType.Equipped,
+                held.RiderPicks,
+                backpackReference.view.ViewID,
+                slotCount,
+                (byte)backpackType));
         }
-    }
-
-    private static void CloseHeld()
-    {
-        if (held == null)
-        {
-            return;
-        }
-
-        CarrierWheel closing = held;
-        held = null;
-        Plugin.Verbose($"Backpack wheel #{closing.Session} closed.");
-        SendTo(closing.RiderActor, WheelSignal.Close(closing.Session));
     }
 
     /// <summary>Carries out the Rider's pick as the game's wheel would, judging it here first.</summary>
     private static void CarrierPick(WheelSignal pick)
     {
-        if (held == null || pick.Session != held.Session)
+        BackpackWheel wheel = GUIManager.instance.backpackWheel;
+        if (held == null || !held.RiderPicks || pick.Session != held.Session || !wheel.gameObject.activeSelf)
         {
             return;
         }
 
-        CarrierWheel wheelState = held;
-        Character local = Character.localCharacter;
-        BackpackWheel wheel = GUIManager.instance.backpackWheel;
-        bool ownInHand = wheelState.Backpack.IsOnMyBack() && local != null && InHand(local);
-        if (local != null && wheelState.Backpack.exists && !wheel.gameObject.activeSelf && !ownInHand && SlotExists(wheelState, pick))
+        if (wheel.backpack.exists && SlotExists(wheel, held, pick))
         {
-            wheel.backpack = wheelState.Backpack;
-            wheel.backpackType = wheelState.Type;
             wheel.chosenSlice = Optionable<BackpackWheelSlice.SliceData>.None;
             wheel.Hover(new BackpackWheelSlice.SliceData
             {
                 isBackpackWear = pick.Slice == WheelSlice.Wear,
                 isStashSlice = pick.Slice == WheelSlice.Stash,
                 isJetpackFuelSlice = pick.Slice == WheelSlice.Fuel,
-                backpackReference = wheelState.Backpack,
+                backpackReference = wheel.backpack,
                 slotID = pick.Slice == WheelSlice.Wear ? byte.MaxValue : pick.SlotId,
             });
             if (wheel.chosenSlice.IsSome)
             {
                 Plugin.Verbose($"Rider picked {pick.Slice} {pick.SlotId} from backpack wheel #{pick.Session}.");
-                wheel.Choose();
+                carrierPicking = true;
+                try
+                {
+                    wheel.Choose();
+                }
+                finally
+                {
+                    carrierPicking = false;
+                }
             }
-
-            wheel.chosenSlice = Optionable<BackpackWheelSlice.SliceData>.None;
-            wheel.chosenItemText.text = "";
         }
 
-        CloseHeld();
+        GUIManager.instance.CloseBackpackWheel();
     }
 
-    private static bool SlotExists(CarrierWheel wheelState, WheelSignal pick) =>
+    private static bool SlotExists(BackpackWheel wheel, CarrierWheel wheelState, WheelSignal pick) =>
         pick.Slice != WheelSlice.Slot
-        || (pick.SlotId < wheelState.SlotCount && pick.SlotId < wheelState.Backpack.GetData().itemSlots.Length);
+        || (pick.SlotId < wheelState.SlotCount && pick.SlotId < wheel.backpack.GetData().itemSlots.Length);
 
-    // ---- Rider side: show the Carrier's wheel and pick from it ----
+    /// <summary>A picking Rider decides; the Carrier's release only closes the wheel.</summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(BackpackWheel), nameof(BackpackWheel.Choose))]
+    private static bool ChooseOnlyForPicker() =>
+        carrierPicking || (!showing && (held == null || !held.RiderPicks));
+
+    // ---- Rider side: show the Carrier's wheel ----
 
     private static void RiderOpen(WheelSignal open, Character carrier, int fromActor)
     {
@@ -416,20 +355,14 @@ internal static class BackpackWheelSplit
         shownFor = carrier;
         shownSession = open.Session;
         shownFromActor = fromActor;
+        shownRiderPicks = open.RiderPicks;
         showing = true;
+        lastHoverSent = int.MinValue;
         GUIManager.instance.OpenBackpackWheel(backpack, open.SlotCount, (BackpackSlot.BackpackType)open.BackpackType);
         if (!GUIManager.instance.backpackWheel.gameObject.activeSelf)
         {
             // Another wheel or a menu is open on the Rider's screen.
             ForgetShown();
-        }
-    }
-
-    private static void RiderClose(WheelSignal close)
-    {
-        if (showing && close.Session == shownSession)
-        {
-            CloseShown();
         }
     }
 
@@ -447,45 +380,36 @@ internal static class BackpackWheelSplit
         shownFor = null;
         shownSession = -1;
         shownFromActor = -1;
+        shownRiderPicks = false;
     }
 
+    /// <summary>Whichever side's wheel closes, the Carrier's closing ends it for the Rider too.</summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(GUIManager), nameof(GUIManager.CloseBackpackWheel))]
-    private static void ForgetWheel()
+    private static void EndWheel()
     {
         localWheelOnBackSlot = false;
         ForgetShown();
-    }
-
-    /// <summary>The Rider's screen closes the wheel when the Pair it showed for is gone.</summary>
-    private static void TickRider()
-    {
-        if (!showing)
+        if (held == null)
         {
             return;
         }
 
-        bool solo = shownFromActor == SoloRider;
-        bool samePair = solo
-            ? ControlSplit.LocalCarrier(out _, out bool stillSolo) && stillSolo
-            : RiderHud.ObservedCarrier() is Character carrier && carrier == shownFor;
-        if (!samePair)
+        CarrierWheel closing = held;
+        held = null;
+        Plugin.Verbose($"Backpack wheel #{closing.Session} closed.");
+        if (!closing.Solo)
         {
-            CloseShown();
+            Send(closing.RiderActor, WheelSignal.Close(closing.Session));
         }
     }
 
-    /// <summary>The Rider's own wheel never picks by itself; the pick goes to the Carrier.</summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(BackpackWheel), nameof(BackpackWheel.Choose))]
-    private static bool OnlyCarrierChooses() => !showing;
-
-    /// <summary>The Rider's click on a slice picks it.</summary>
+    /// <summary>The picker's click on a slice picks it.</summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(BackpackWheel), "Update")]
     private static void PickForCarrier(BackpackWheel __instance)
     {
-        if (!showing
+        if (!LocalPicksForCarrier
             || !__instance.gameObject.activeSelf
             || !__instance.chosenSlice.IsSome
             || CharacterInput.action_usePrimary == null
@@ -495,22 +419,21 @@ internal static class BackpackWheelSplit
         }
 
         BackpackWheelSlice.SliceData chosen = __instance.chosenSlice.Value;
-        WheelSlice slice = chosen.isBackpackWear ? WheelSlice.Wear
-            : chosen.isStashSlice ? WheelSlice.Stash
-            : chosen.isJetpackFuelSlice ? WheelSlice.Fuel
-            : WheelSlice.Slot;
-        WheelSignal pick = WheelSignal.Pick(shownSession, slice, chosen.isBackpackWear ? (byte)0 : chosen.slotID);
-        int carrierActor = shownFromActor;
+        WheelSlice slice = SliceOf(chosen);
+        int session = held != null ? held.Session : shownSession;
+        WheelSignal pick = WheelSignal.Pick(session, slice, slice == WheelSlice.Wear ? (byte)0 : chosen.slotID);
 
         // The click that picked must not reach the Shared Body as a use.
         swallowPrimary = true;
-        CloseShown();
-        if (carrierActor == SoloRider)
+        if (held != null)
         {
+            // Solo Pair: the Carrier's side is this client.
             CarrierPick(pick);
             return;
         }
 
+        int carrierActor = shownFromActor;
+        CloseShown();
         PhotonNetwork.RaiseEvent(
             RoomKeys.BackpackWheelEvent,
             pick.Encode(),
@@ -520,12 +443,12 @@ internal static class BackpackWheelSplit
     }
 
     /// <summary>
-    /// Whether the Rider's use buttons stay as they were: while the wheel is on
+    /// Whether the Rider's use buttons stay as they were: while a wheel is on
     /// the Rider's screen, and until the click that picked is let go.
     /// </summary>
     internal static bool HoldsRiderButtons()
     {
-        if (showing)
+        if (showing || (held != null && held.Solo))
         {
             return true;
         }
@@ -539,32 +462,153 @@ internal static class BackpackWheelSplit
         return false;
     }
 
-    // ---- Network ----
+    // ---- Both sides: the watching screen follows the picker's pointer ----
 
-    private static void SendToRider(WheelSignal signal) => SendTo(held!.RiderActor, signal);
+    /// <summary>The watching side's mouse and stick point at nothing; the picker's pointer shows instead.</summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(BackpackWheelSlice), nameof(BackpackWheelSlice.OnPointerEnter))]
+    private static bool WatcherDoesNotHover() => !LocalWatches;
 
-    private static void SendTo(int riderActor, WheelSignal signal)
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(BackpackWheelSlice), nameof(BackpackWheelSlice.OnPointerExit))]
+    private static bool WatcherDoesNotDehover() => !LocalWatches;
+
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(BackpackWheel), "TestSelectSliceGamepad")]
+    private static bool WatcherDoesNotSteer() => !LocalWatches;
+
+    private static WheelSlice SliceOf(BackpackWheelSlice.SliceData data) =>
+        data.isBackpackWear ? WheelSlice.Wear
+        : data.isStashSlice ? WheelSlice.Stash
+        : data.isJetpackFuelSlice ? WheelSlice.Fuel
+        : WheelSlice.Slot;
+
+    /// <summary>The picker sends where it points whenever that changes.</summary>
+    private static void SendHover()
     {
-        if (riderActor == SoloRider)
+        BackpackWheel wheel = GUIManager.instance.backpackWheel;
+        int to;
+        int session;
+        if (showing && shownRiderPicks)
         {
-            if (signal.Kind == WheelSignalKind.Open && Character.localCharacter is Character local)
+            to = shownFromActor;
+            session = shownSession;
+        }
+        else if (held != null && !held.Solo && !held.RiderPicks)
+        {
+            to = held.RiderActor;
+            session = held.Session;
+        }
+        else
+        {
+            return;
+        }
+
+        if (!wheel.gameObject.activeSelf)
+        {
+            return;
+        }
+
+        bool pointing = wheel.chosenSlice.IsSome;
+        WheelSlice slice = pointing ? SliceOf(wheel.chosenSlice.Value) : WheelSlice.Slot;
+        byte slot = pointing && slice == WheelSlice.Slot ? wheel.chosenSlice.Value.slotID : (byte)0;
+        int key = WheelSignal.HoverKey(pointing ? slice : null, slot);
+        if (key == lastHoverSent)
+        {
+            return;
+        }
+
+        lastHoverSent = key;
+        Send(to, pointing ? WheelSignal.Hover(session, slice, slot) : WheelSignal.NoHover(session));
+    }
+
+    /// <summary>Shows on this wheel the slice the picker points at, as the game shows a stick's choice.</summary>
+    private static void ShowHover(WheelSignal hover)
+    {
+        BackpackWheel wheel = GUIManager.instance.backpackWheel;
+        if (!wheel.gameObject.activeSelf)
+        {
+            return;
+        }
+
+        BackpackWheelSlice? target = hover.HasSlice
+            ? wheel.slices.Append(wheel.jetpackSlice).FirstOrDefault(slice => Matches(slice, hover))
+            : null;
+        wheel.chosenSlice = Optionable<BackpackWheelSlice.SliceData>.None;
+        wheel.chosenItemText.text = "";
+        EventSystem events = EventSystem.current;
+        if (target == null)
+        {
+            if (events != null)
             {
-                RiderOpen(signal, local, SoloRider);
-            }
-            else if (signal.Kind == WheelSignalKind.Close)
-            {
-                RiderClose(signal);
+                events.SetSelectedGameObject(null);
             }
 
             return;
         }
 
+        if (events != null)
+        {
+            events.SetSelectedGameObject(target.button.gameObject);
+        }
+
+        target.Hover();
+    }
+
+    private static bool Matches(BackpackWheelSlice slice, WheelSignal hover)
+    {
+        if (slice == null || !slice.gameObject.activeSelf)
+        {
+            return false;
+        }
+
+        return hover.Slice switch
+        {
+            WheelSlice.Wear => slice.isBackpackWear && !slice.stashSlice && !slice.jetpackFuelSlice,
+            WheelSlice.Stash => slice.stashSlice,
+            WheelSlice.Fuel => slice.jetpackFuelSlice,
+            _ => !slice.stashSlice && !slice.jetpackFuelSlice && !slice.isBackpackWear && slice.backpackSlot == hover.SlotId,
+        };
+    }
+
+    // ---- Every frame and the network ----
+
+    /// <summary>Called every frame: sends the picker's pointer, and closes a wheel whose Pair is gone.</summary>
+    internal static void Tick()
+    {
+        if (GUIManager.instance == null)
+        {
+            return;
+        }
+
+        if (held != null)
+        {
+            Character local = Character.localCharacter;
+            bool samePair = local != null
+                && ControlSplit.LocalCarrier(out Character rider, out bool solo)
+                && (solo ? held.Solo : PairRoster.ActorOf(rider) == held.RiderActor);
+            if (!samePair || !GUIManager.instance.backpackWheel.gameObject.activeSelf)
+            {
+                GUIManager.instance.CloseBackpackWheel();
+                return;
+            }
+        }
+
+        if (showing && !(RiderHud.ObservedCarrier() is Character carrier && carrier == shownFor))
+        {
+            CloseShown();
+            return;
+        }
+
+        SendHover();
+    }
+
+    private static void Send(int actor, WheelSignal signal) =>
         PhotonNetwork.RaiseEvent(
             RoomKeys.BackpackWheelEvent,
             signal.Encode(),
-            new RaiseEventOptions { TargetActors = [riderActor] },
+            new RaiseEventOptions { TargetActors = [actor] },
             SendOptions.SendReliable);
-    }
 
     internal static void Receive(EventData photonEvent)
     {
@@ -573,28 +617,38 @@ internal static class BackpackWheelSplit
             return;
         }
 
-        if (signal.Kind == WheelSignalKind.Pick)
+        // From the Rider, to the Carrier's open wheel.
+        if (held != null && !held.Solo && photonEvent.Sender == held.RiderActor && signal.Session == held.Session)
         {
-            if (held != null && photonEvent.Sender == held.RiderActor)
+            if (signal.Kind == WheelSignalKind.Pick)
             {
                 CarrierPick(signal);
+            }
+            else if (signal.Kind == WheelSignalKind.Hover && held.RiderPicks)
+            {
+                ShowHover(signal);
             }
 
             return;
         }
 
+        // From the Carrier, to the Rider's screen.
         if (RiderHud.ObservedCarrier() is not Character carrier || photonEvent.Sender != PairRoster.ActorOf(carrier))
         {
             return;
         }
 
-        if (signal.Kind == WheelSignalKind.Open)
+        switch (signal.Kind)
         {
-            RiderOpen(signal, carrier, photonEvent.Sender);
-        }
-        else
-        {
-            RiderClose(signal);
+            case WheelSignalKind.Open:
+                RiderOpen(signal, carrier, photonEvent.Sender);
+                break;
+            case WheelSignalKind.Close when showing && signal.Session == shownSession:
+                CloseShown();
+                break;
+            case WheelSignalKind.Hover when showing && !shownRiderPicks && signal.Session == shownSession:
+                ShowHover(signal);
+                break;
         }
     }
 }
