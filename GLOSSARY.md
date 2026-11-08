@@ -49,8 +49,9 @@ _Avoid_: input relay, keyboard/mouse split
 
 **Shared View** (시점 공유):
 The rule that both members of a Pair see and hear the Shared Body as its
-Carrier does: the same first-person view, crosshair, previews, progress, and
-item sounds, on the Rider's screen as on the Carrier's.
+Carrier does: the same first-person view, crosshair, previews, progress,
+screen effects, and item sounds, and the same HUD (slots, remaining uses,
+stamina, statuses), on the Rider's screen as on the Carrier's.
 _Avoid_: spectating, mirroring
 
 **Role Preference**:
