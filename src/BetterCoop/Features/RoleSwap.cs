@@ -55,6 +55,7 @@ internal static class RoleSwap
 
         if (!CanRequest(out Character partner))
         {
+            CoopNotice.Info(Strings.SwapUnavailable);
             return;
         }
 
@@ -243,7 +244,7 @@ internal static class RoleSwap
         Plugin.Verbose(
             $"Swap Places colours: normal {colors.normalColor}, highlighted {colors.highlightedColor}, "
             + $"selected {colors.selectedColor}, disabled {colors.disabledColor}; transition {button.transition}.");
-        clone.AddComponent<SwapPlacesButton>().Bind(button, clone.GetComponentInChildren<TMP_Text>(true));
+        clone.AddComponent<SwapPlacesButton>().Bind(clone.GetComponentInChildren<TMP_Text>(true));
 
         if (parent.GetComponent<LayoutGroup>() != null)
         {
@@ -271,38 +272,57 @@ internal static class RoleSwap
     }
 }
 
-/// <summary>Keeps the Swap Places label and availability current while the pause menu is open.</summary>
+/// <summary>
+/// Keeps the Swap Places label and availability current while the pause menu
+/// is open. The button stays interactable: the cloned menu button animates
+/// its looks, and its disabled look outlived the disabled state. Instead the
+/// label dims while no swap can be asked, and a press says why.
+/// </summary>
 internal sealed class SwapPlacesButton : MonoBehaviour
 {
-    private Button button = null!;
+    private const float UnavailableAlpha = 0.5f;
 
     private TMP_Text? label;
 
-    internal void Bind(Button target, TMP_Text? text)
+    private Color labelColor;
+
+    internal void Bind(TMP_Text? text)
     {
-        button = target;
         label = text;
+        if (label != null)
+        {
+            labelColor = label.color;
+        }
+
         Refresh();
     }
 
-    private void Update() => Refresh();
+    // After the button's animation has run this frame, so the label's colour is ours.
+    private void LateUpdate() => Refresh();
 
     private void Refresh()
     {
-        if (button == null)
+        if (label == null)
         {
             return;
         }
 
         bool pending = RoleSwap.Pending;
-        button.interactable = pending || RoleSwap.CanRequest(out _);
-        if (label != null)
+        string text = pending ? Strings.CancelSwap : Strings.SwapPlaces;
+        if (label.text != text)
         {
-            string text = pending ? Strings.CancelSwap : Strings.SwapPlaces;
-            if (label.text != text)
-            {
-                label.text = text;
-            }
+            label.text = text;
+        }
+
+        Color color = labelColor;
+        if (!pending && !RoleSwap.CanRequest(out _))
+        {
+            color.a *= UnavailableAlpha;
+        }
+
+        if (label.color != color)
+        {
+            label.color = color;
         }
     }
 }

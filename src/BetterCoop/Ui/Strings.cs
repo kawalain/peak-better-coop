@@ -45,6 +45,10 @@ internal static class Strings
 
     public static string CancelSwap => Korean ? "자리 바꾸기 취소" : "Cancel Swap";
 
+    public static string SwapUnavailable => Korean
+        ? "코옵: 짝과 둘 다 섬에서 살아 있을 때만 자리를 바꿀 수 있습니다."
+        : "Coop: you can swap places only while you and your partner are alive on the island.";
+
     public static string SwapAsked(string partner) => Korean
         ? $"코옵: {partner} 님에게 자리 바꾸기를 청했습니다. 30초 안에 상대도 누르면 바꿉니다."
         : $"Coop: asked {partner} to swap places. It happens if they agree within 30 seconds.";
