@@ -77,7 +77,15 @@ internal static class RiderPreviews
         // The Carrier's client holds the spot still while building.
         if (!UseFeedback.RiderSeesUse)
         {
-            __instance.TryUpdatePreview();
+            Pose? camera = RiderView.AimCameraForRider();
+            try
+            {
+                __instance.TryUpdatePreview();
+            }
+            finally
+            {
+                RiderView.RestoreCamera(camera);
+            }
         }
 
         if (__instance.isAngleable && __instance.currentPreview != null)
@@ -121,32 +129,51 @@ internal static class RiderPreviews
     {
         if (IsRidersCarrier(__instance.item.holderCharacter))
         {
-            RaycastHit hit = __instance.GetHit(out _);
-            __instance.item.overrideUsability = Optionable<bool>.Some(hit.transform);
+            Pose? camera = RiderView.AimCameraForRider();
+            try
+            {
+                RaycastHit hit = __instance.GetHit(out _);
+                __instance.item.overrideUsability = Optionable<bool>.Some(hit.transform);
+            }
+            finally
+            {
+                RiderView.RestoreCamera(camera);
+            }
         }
     }
 
-    /// <summary>The rope and vine shooters fire only from the ground: the Shared Body's, not the Rider's own.</summary>
+    /// <summary>
+    /// The rope and vine shooters aim from the camera and fire only from the
+    /// ground: for the Rider, the Shared Body's eyes and ground, not the Rider's own.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(RopeShooter), nameof(RopeShooter.WillAttach))]
-    private static void GroundRopeShooter(RopeShooter __instance, out bool? __state) =>
-        __state = StandInForGround(__instance.item.holderCharacter);
+    private static void GroundRopeShooter(RopeShooter __instance, out StandIn? __state) =>
+        __state = StandInForShooter(__instance.item.holderCharacter);
 
     [HarmonyFinalizer]
     [HarmonyPatch(typeof(RopeShooter), nameof(RopeShooter.WillAttach))]
-    private static void UngroundRopeShooter(bool? __state) => RestoreGround(__state);
+    private static void UngroundRopeShooter(StandIn? __state) => Restore(__state);
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(VineShooter), nameof(VineShooter.WillAttach))]
-    private static void GroundVineShooter(VineShooter __instance, out bool? __state) =>
-        __state = StandInForGround(__instance.item.holderCharacter);
+    private static void GroundVineShooter(VineShooter __instance, out StandIn? __state) =>
+        __state = StandInForShooter(__instance.item.holderCharacter);
 
     [HarmonyFinalizer]
     [HarmonyPatch(typeof(VineShooter), nameof(VineShooter.WillAttach))]
-    private static void UngroundVineShooter(bool? __state) => RestoreGround(__state);
+    private static void UngroundVineShooter(StandIn? __state) => Restore(__state);
+
+    /// <summary>What a shooter's check borrowed for the Rider: their own ground, and the camera.</summary>
+    internal readonly struct StandIn(bool ownGround, Pose? camera)
+    {
+        public bool OwnGround { get; } = ownGround;
+
+        public Pose? Camera { get; } = camera;
+    }
 
     /// <summary>The game reads the local character's ground; for the Rider, lend it the Carrier's for one call.</summary>
-    private static bool? StandInForGround(Character? holder)
+    private static StandIn? StandInForShooter(Character? holder)
     {
         if (!IsRidersCarrier(holder))
         {
@@ -156,14 +183,15 @@ internal static class RiderPreviews
         CharacterData rider = Character.localCharacter.data;
         bool own = rider.isGrounded;
         rider.isGrounded = holder!.data.isGrounded;
-        return own;
+        return new StandIn(own, RiderView.AimCameraForRider());
     }
 
-    private static void RestoreGround(bool? own)
+    private static void Restore(StandIn? standIn)
     {
-        if (own is bool grounded)
+        if (standIn is StandIn borrowed)
         {
-            Character.localCharacter.data.isGrounded = grounded;
+            Character.localCharacter.data.isGrounded = borrowed.OwnGround;
+            RiderView.RestoreCamera(borrowed.Camera);
         }
     }
 
@@ -193,13 +221,19 @@ internal static class RiderPreviews
         }
 
         bool climbing = carrier.data.isClimbingAnything;
+        if (!RiderView.TryGetRiderAim(out Vector3 eyes, out Quaternion aim))
+        {
+            EndPiton();
+            return;
+        }
+
         if (pitonPreview != null)
         {
             float reach = climbing ? spike.climbingSpikePreviewDisableDistance : spike.climbingSpikePreviewDisableDistanceGrounded;
             bool held = pitonWithPrimary ? RiderIntent.Primary : RiderIntent.Secondary;
             pitonTick += Time.deltaTime;
             if (!held
-                || Vector3.Distance(MainCamera.instance.transform.position, pitonPreview.transform.position) > reach
+                || Vector3.Distance(eyes, pitonPreview.transform.position) > reach
                 || pitonTick >= slot.prefab.usingTimePrimary)
             {
                 EndPiton();
@@ -216,9 +250,8 @@ internal static class RiderPreviews
             return;
         }
 
-        Transform camera = MainCamera.instance.transform;
         float distance = climbing ? spike.climbingSpikeStartDistance : spike.climbingSpikeStartDistanceGrounded;
-        if (!Physics.Raycast(camera.position, camera.forward, out RaycastHit hit, distance, HelperFunctions.GetMask(HelperFunctions.LayerType.TerrainMap)))
+        if (!Physics.Raycast(eyes, aim * Vector3.forward, out RaycastHit hit, distance, HelperFunctions.GetMask(HelperFunctions.LayerType.TerrainMap)))
         {
             return;
         }
@@ -278,16 +311,21 @@ internal static class RiderPreviews
 
         if (!anchorPlace.HasValue)
         {
-            Transform camera = MainCamera.instance.transform;
+            if (!RiderView.TryGetRiderAim(out Vector3 eyes, out Quaternion aim))
+            {
+                return;
+            }
+
+            Vector3 forward = aim * Vector3.forward;
             RaycastHit hit = HelperFunctions.LineCheck(
-                camera.position,
-                camera.position + (camera.forward * tier.maxAnchorGhostDistance),
+                eyes,
+                eyes + (forward * tier.maxAnchorGhostDistance),
                 HelperFunctions.LayerType.TerrainMap);
             if (hit.collider != null)
             {
                 anchorGhost.Ghost = true;
                 anchorGhost.transform.position = hit.point;
-                anchorGhost.transform.forward = Vector3.Cross(camera.right, hit.normal);
+                anchorGhost.transform.forward = Vector3.Cross(aim * Vector3.right, hit.normal);
                 anchorGhost.transform.up = hit.normal;
                 if (Vector3.Distance(hit.point, carrier!.Center) < tier.maxAnchorDistance)
                 {

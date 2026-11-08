@@ -32,6 +32,59 @@ internal static class RiderView
         return true;
     }
 
+    /// <summary>The game's camera offset in front of the head.</summary>
+    private const float CameraForwardOffset = -0.5f;
+
+    /// <summary>
+    /// Where the Rider aims from and toward: the Carrier's eyes and the
+    /// Rider's own look. Reach is the Shared Body's, wherever the camera is.
+    /// </summary>
+    internal static bool TryGetRiderAim(out Vector3 origin, out Quaternion rotation)
+    {
+        origin = default;
+        rotation = default;
+        if (!TryGetCarrierOfLocalRider(out Character carrier))
+        {
+            return false;
+        }
+
+        Vector3 look = Character.localCharacter.data.lookDirection;
+        if (look == Vector3.zero)
+        {
+            return false;
+        }
+
+        origin = carrier.GetCameraPos(CameraForwardOffset);
+        rotation = Quaternion.LookRotation(look);
+        return true;
+    }
+
+    /// <summary>
+    /// Puts the main camera at the Rider's aim for one game call that aims
+    /// from the camera; <see cref="RestoreCamera"/> puts it back before the
+    /// frame renders.
+    /// </summary>
+    internal static Pose? AimCameraForRider()
+    {
+        if (MainCamera.instance == null || !TryGetRiderAim(out Vector3 origin, out Quaternion rotation))
+        {
+            return null;
+        }
+
+        Transform camera = MainCamera.instance.transform;
+        var saved = new Pose(camera.position, camera.rotation);
+        camera.SetPositionAndRotation(origin, rotation);
+        return saved;
+    }
+
+    internal static void RestoreCamera(Pose? saved)
+    {
+        if (saved is Pose pose && MainCamera.instance != null)
+        {
+            MainCamera.instance.transform.SetPositionAndRotation(pose.position, pose.rotation);
+        }
+    }
+
     /// <summary>Renderers hidden for the Rider's screen, to give back when it ends.</summary>
     private static readonly HashSet<Renderer> Hidden = new();
 
