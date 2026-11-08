@@ -1,223 +1,84 @@
-using System;
+using System.Collections.Generic;
 using BepInEx.Configuration;
 using HarmonyLib;
+using PeakCoop.Core;
+using PeakCoop.Net;
+using PeakCoop.Ui;
 using Photon.Pun;
-using UnityEngine;
+using PhotonPlayer = Photon.Realtime.Player;
 
-public static class OnlyEven
+namespace PeakCoop.Features;
+
+/// <summary>
+/// Keeps the party at the Airport until it can form Pairs: an even player
+/// count (unless odd counts are allowed) and the same mod version everywhere.
+/// </summary>
+[HarmonyPatch]
+internal static class PartyGate
 {
-    private const string HarmonyId =
-        "com.peak.coopmod.onlyeven";
+    private static ConfigEntry<bool>? allowOddPlayerCount;
 
-    private static Harmony harmony;
-
-    private static bool initialized =
-        false;
-
-    public static ConfigEntry<bool>
-        AllowOnePlayer;
-
-    public static ConfigEntry<bool>
-        AllowThreePlayers;
-
-    public static void Initialize(
-        CoopMod plugin)
+    public static void Bind(ConfigFile config)
     {
-        if (initialized)
-        {
-            return;
-        }
-
-        if (plugin == null)
-        {
-            Debug.LogError(
-                "[OnlyEven] CoopMod instance is null.");
-
-            return;
-        }
-
-        AllowOnePlayer =
-            plugin.Config.Bind(
-                "Player Count",
-                "Allow 1 Player",
-                false,
-                "1명인 상태에서도 게임 시작을 허용합니다."
-            );
-
-        AllowThreePlayers =
-            plugin.Config.Bind(
-                "Player Count",
-                "Allow 3 Players",
-                false,
-                "3명인 상태에서도 게임 시작을 허용합니다."
-            );
-
-        harmony =
-            new Harmony(
-                HarmonyId);
-
-        harmony
-            .CreateClassProcessor(
-                typeof(
-                    AirportCheckInKiosk_StartGame_Patch))
-            .Patch();
-
-        harmony
-            .CreateClassProcessor(
-                typeof(
-                    AirportCheckInKiosk_LoadIslandMaster_Patch))
-            .Patch();
-
-        initialized =
-            true;
-
-        Debug.Log(
-            "[OnlyEven] Initialized.");
-
-        Debug.Log(
-            "[OnlyEven] Allow 1 Player: " +
-            AllowOnePlayer.Value);
-
-        Debug.Log(
-            "[OnlyEven] Allow 3 Players: " +
-            AllowThreePlayers.Value);
+        allowOddPlayerCount = config.Bind(
+            "Party",
+            "Allow Odd Player Count",
+            false,
+            "Let a Run depart with an odd number of players; the extra player stays an Unpaired Player.");
     }
 
-    public static void Shutdown()
+    private static PartyGateVerdict Evaluate()
     {
-        if (!initialized)
+        var members = new List<PartyMember>();
+        if (PhotonNetwork.InRoom)
         {
-            return;
+            foreach (PhotonPlayer player in PhotonNetwork.PlayerList)
+            {
+                members.Add(new PartyMember(player.NickName, ModPresence.VersionOf(player)));
+            }
         }
 
-        if (harmony != null)
-        {
-            harmony.UnpatchSelf();
-
-            harmony =
-                null;
-        }
-
-        AllowOnePlayer =
-            null;
-
-        AllowThreePlayers =
-            null;
-
-        initialized =
-            false;
-
-        Debug.Log(
-            "[OnlyEven] Shutdown.");
+        return PartyGateRules.Evaluate(
+            members,
+            MyPluginInfo.PLUGIN_VERSION,
+            allowOddPlayerCount?.Value ?? false);
     }
 
-    public static int
-        GetCurrentPlayerCount()
+    private static bool AllowDeparture(string source)
     {
-        if (!PhotonNetwork.InRoom ||
-            PhotonNetwork.CurrentRoom == null)
-        {
-            return 0;
-        }
-
-        return
-            PhotonNetwork
-                .CurrentRoom
-                .PlayerCount;
-    }
-
-    public static bool
-        CanStartGame()
-    {
-        int playerCount =
-            GetCurrentPlayerCount();
-
-        if (playerCount == 2 ||
-            playerCount == 4)
+        PartyGateVerdict verdict = Evaluate();
+        if (verdict.CanDepart)
         {
             return true;
         }
 
-        if (playerCount == 1 &&
-            AllowOnePlayer != null &&
-            AllowOnePlayer.Value)
+        Plugin.Log.LogInfo($"Departure blocked at {source} with {verdict.PlayerCount} players.");
+
+        if (verdict.OddCountBlocked)
         {
-            return true;
+            CoopNotice.Warning(Strings.OddPlayerCount(verdict.PlayerCount));
         }
 
-        if (playerCount == 3 &&
-            AllowThreePlayers != null &&
-            AllowThreePlayers.Value)
+        foreach (string player in verdict.PlayersWithoutMod)
         {
-            return true;
+            CoopNotice.Warning(Strings.MissingMod(player));
+        }
+
+        foreach (PartyMember member in verdict.PlayersWithOtherVersion)
+        {
+            CoopNotice.Warning(Strings.OtherVersion(member.Name, member.ModVersion!, MyPluginInfo.PLUGIN_VERSION));
         }
 
         return false;
     }
 
-    private static void
-        ShowBlockedMessage(
-            string source)
-    {
-        int playerCount =
-            GetCurrentPlayerCount();
+    /// <summary>The boarding pass "start" button of the player at the kiosk.</summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(BoardingPass), nameof(BoardingPass.StartGame))]
+    private static bool BeforeBoardingPassStart() => AllowDeparture("boarding pass");
 
-        Debug.Log(
-            "[OnlyEven] " +
-            source +
-            " blocked. PlayerCount=" +
-            playerCount);
-
-        PairPlayerStartLog
-            .ShowEvenPlayerRequired();
-    }
-
-    [HarmonyPatch(
-        typeof(AirportCheckInKiosk),
-        nameof(AirportCheckInKiosk.StartGame),
-        new Type[]
-        {
-            typeof(int)
-        })]
-    private static class
-        AirportCheckInKiosk_StartGame_Patch
-    {
-        private static bool Prefix()
-        {
-            if (CanStartGame())
-            {
-                return true;
-            }
-
-            ShowBlockedMessage(
-                "Game start");
-
-            return false;
-        }
-    }
-
-    [HarmonyPatch(
-        typeof(AirportCheckInKiosk),
-        nameof(AirportCheckInKiosk.LoadIslandMaster),
-        new Type[]
-        {
-            typeof(int),
-            typeof(byte[])
-        })]
-    private static class
-        AirportCheckInKiosk_LoadIslandMaster_Patch
-    {
-        private static bool Prefix()
-        {
-            if (CanStartGame())
-            {
-                return true;
-            }
-
-            ShowBlockedMessage(
-                "Master scene load");
-
-            return false;
-        }
-    }
+    /// <summary>The host's authoritative check, also covering players without the mod.</summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(AirportCheckInKiosk), nameof(AirportCheckInKiosk.LoadIslandMaster))]
+    private static bool BeforeHostLoadsIsland() => AllowDeparture("host island load");
 }
