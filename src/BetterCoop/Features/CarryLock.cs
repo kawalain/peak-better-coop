@@ -142,7 +142,11 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
 
     public void OnEvent(EventData photonEvent)
     {
-        if (photonEvent.Code != RoomKeys.RecoveryEvent)
+        // Only the Troop Leader repairs Pairs; another sender, or another mod
+        // that reuses the event code, is ignored.
+        if (photonEvent.Code != RoomKeys.RecoveryEvent
+            || PhotonNetwork.MasterClient == null
+            || photonEvent.Sender != PhotonNetwork.MasterClient.ActorNumber)
         {
             return;
         }
