@@ -5,7 +5,7 @@
     <AssemblyName>BetterCoop</AssemblyName>
     <RootNamespace>BetterCoop</RootNamespace>
     <Product>BetterCoop</Product>
-    <Version>0.5.2</Version>
+    <Version>0.5.3</Version>
     <BepInExPluginGuid>in.kawala.bettercoop</BepInExPluginGuid>
     <BepInExPluginName>BetterCoop</BepInExPluginName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
