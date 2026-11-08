@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using BepInEx.Configuration;
 using HarmonyLib;
 using PeakCoop.Core;
 using PeakCoop.Net;
@@ -16,17 +15,6 @@ namespace PeakCoop.Features;
 [HarmonyPatch]
 internal static class PartyGate
 {
-    private static ConfigEntry<bool>? allowOddPlayerCount;
-
-    public static void Bind(ConfigFile config)
-    {
-        allowOddPlayerCount = config.Bind(
-            "Party",
-            "Allow Odd Player Count",
-            false,
-            "Let a Run depart with an odd number of players; the extra player stays an Unpaired Player.");
-    }
-
     private static PartyGateVerdict Evaluate()
     {
         var members = new List<PartyMember>();
@@ -41,7 +29,7 @@ internal static class PartyGate
         return PartyGateRules.Evaluate(
             members,
             MyPluginInfo.PLUGIN_VERSION,
-            allowOddPlayerCount?.Value ?? false);
+            RunRules.AllowOddPlayerCount);
     }
 
     private static bool AllowDeparture(string source)
