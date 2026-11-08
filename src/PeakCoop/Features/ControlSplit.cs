@@ -274,6 +274,11 @@ internal static class ControlSplit
         input.useSecondaryWasPressed = secondary.WasPressed;
         input.useSecondaryIsPressed = secondary.IsPressed;
         input.useSecondaryWasReleased = secondary.WasReleased;
+        if (primary.WasPressed || primary.WasReleased || secondary.WasPressed || secondary.WasReleased)
+        {
+            // A grab, use, or throw aims along the latest look that arrived.
+            LookIn.SnapNext();
+        }
 
         input.scrollForwardWasPressed = ScrollForwardPresses.Step();
         input.scrollForwardIsPressed = scrollForwardHeld;

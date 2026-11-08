@@ -34,6 +34,12 @@ internal sealed class LookFollower
         snapped = false;
     }
 
+    /// <summary>
+    /// Makes the next step reach the target at once, for a frame whose action
+    /// must aim where the Rider aimed rather than where the smoothing has got to.
+    /// </summary>
+    public void SnapNext() => snapped = false;
+
     /// <summary>Moves the look toward the target; false while nothing has arrived.</summary>
     public bool Step(float deltaTime, ref float yaw, ref float pitch)
     {

@@ -42,6 +42,37 @@ public class LookFollowerTests
     }
 
     [Fact]
+    public void Later_snapshots_are_approached_smoothly()
+    {
+        var follower = new LookFollower();
+        follower.Receive(0f, 0f);
+        float yaw = 0f, pitch = 0f;
+        follower.Step(0.016f, ref yaw, ref pitch);
+
+        follower.Receive(90f, 40f);
+        follower.Step(0.016f, ref yaw, ref pitch);
+
+        Assert.InRange(yaw, 1f, 89f);
+        Assert.InRange(pitch, 1f, 39f);
+    }
+
+    [Fact]
+    public void A_snap_reaches_the_latest_snapshot_in_one_step()
+    {
+        var follower = new LookFollower();
+        follower.Receive(0f, 0f);
+        float yaw = 0f, pitch = 0f;
+        follower.Step(0.016f, ref yaw, ref pitch);
+
+        follower.Receive(90f, 40f);
+        follower.SnapNext();
+        follower.Step(0.016f, ref yaw, ref pitch);
+
+        Assert.Equal(90f, yaw, 3);
+        Assert.Equal(40f, pitch, 3);
+    }
+
+    [Fact]
     public void A_rewritten_yaw_turns_the_short_way_round()
     {
         // The game rewrote the body's unbounded yaw (1000, i.e. 280) into 10.
