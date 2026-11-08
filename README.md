@@ -62,8 +62,7 @@ machine-learning guess, common for mods because they change a game's code
 while it runs. BetterCoop runs only inside PEAK, downloads and starts
 nothing, and talks only to players in your room. Its source is at
 <https://github.com/kawalain/peak-better-coop>. Report the file as a false
-positive (Microsoft: <https://www.microsoft.com/en-us/wdsi/filesubmission>)
-and restore it, or reinstall.
+positive and restore it, or reinstall.
 
 ## Credits
 

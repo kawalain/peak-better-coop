@@ -60,8 +60,7 @@ Role Preference와 Debug 설정을 빼면 분대장의 값이 방 전체에 적�
 오진입니다. BetterCoop은 PEAK 안에서만 동작하고, 아무것도 내려받거나
 실행하지 않으며, 같은 방 플레이어와만 통신합니다. 소스는
 <https://github.com/kawalain/peak-better-coop>에 있습니다. 오진으로
-신고하고(Microsoft: <https://www.microsoft.com/en-us/wdsi/filesubmission>)
-파일을 복원하거나 다시 설치하세요.
+신고하고 파일을 복원하거나 다시 설치하세요.
 
 ## 만든 사람들
 
