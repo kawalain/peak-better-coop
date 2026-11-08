@@ -39,6 +39,13 @@ copy the DLL into that folder. Point it only at the Gale development profile's
 `BepInEx/plugins/PeakCoop` folder; the game folder itself stays untouched.
 Play-test feedback comes back as the profile's `BepInEx/LogOutput.log`.
 
+To set the profile up without the GUI, `gale --game peak --no-gui` creates the
+`Default` profile, and `gale --game peak --profile Default --install <zip> --no-gui`
+installs a local Thunderstore zip. Gale installs a zip as the mod loader only
+when the manifest `name` is the full name `BepInEx-BepInExPack_PEAK`, so rewrite
+that field in the downloaded BepInExPack_PEAK zip first; otherwise it lands in
+`BepInEx/plugins` and the loader never starts.
+
 ## Rewrite in progress
 
 Files under `src/PeakCoop/Features/` that are listed as `<Compile Remove>` in
