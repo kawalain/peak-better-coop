@@ -1,0 +1,29 @@
+# Thunderstore publish settings for tcli (`tools/publish.py` runs it).
+# tcli uploads the Release build's zip as is (`--file`), so the package's
+# name, version, description, and dependencies come from the zip's
+# manifest.json, which BetterCoop.csproj writes. tcli still requires the
+# [package] and [build] fields below to be filled in before it publishes.
+
+[config]
+schemaVersion = "0.0.1"
+
+[package]
+# The Thunderstore team that owns the package. It becomes the package's
+# namespace and cannot change after the first upload.
+namespace = "kawalain"
+name = "BetterCoop"
+# Required by tcli but not published: the version is BetterCoop.csproj's
+# <Version>, carried by the zip's manifest.json.
+versionNumber = "0.0.0"
+containsNsfwContent = false
+
+[build]
+# Unused: tcli does not build the package.
+outdir = "./artifacts"
+
+[publish]
+repository = "https://thunderstore.io"
+communities = ["peak"]
+
+[publish.categories]
+peak = ["mods", "gameplay", "all", "ai-generated"]

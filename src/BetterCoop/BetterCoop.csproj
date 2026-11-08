@@ -42,7 +42,8 @@
 
   <!--
     Release builds also produce a Thunderstore-format zip in artifacts/ that
-    players import into Gale as a local mod. Nothing is uploaded.
+    players import into Gale as a local mod and tools/publish.py uploads to
+    Thunderstore. The build itself uploads nothing.
   -->
   <PropertyGroup>
     <PackageStageDir>$(BaseIntermediateOutputPath)package\</PackageStageDir>

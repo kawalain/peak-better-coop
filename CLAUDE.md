@@ -65,6 +65,26 @@ Players must run the exact same version to depart, so bump `<Version>` in
 new features, patch for a build of fixes. Commits in between keep the version.
 A Release build writes the test build to `artifacts/BetterCoop-<version>.zip`.
 
+## Publish to Thunderstore
+
+Publish only when the user asks for this version to go out; a build, commit,
+or push does not. Thunderstore never accepts the same version twice, so a
+published version cannot be fixed, only superseded by a bump. Build Release,
+then check and publish that zip:
+
+```bash
+python -I tools/publish.py check
+python -I tools/publish.py publish
+```
+
+`check` uploads nothing: it confirms the zip matches `<Version>`, the version is
+not on Thunderstore yet, and a token is present. `publish` uploads with the tcli
+pinned in `.config/dotnet-tools.json`; Thunderstore takes the team from
+`thunderstore.toml` and everything else from the zip's `manifest.json`. The
+token is the team's service account token, in `TCLI_AUTH_TOKEN` or the
+git-ignored `.thunderstore-token`; the user provides it, and it never appears
+in commands, logs, or replies.
+
 ## Code layout
 
 `src/BetterCoop/Core/` holds game-independent rules (pairing, the Control Split's

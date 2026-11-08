@@ -11,3 +11,6 @@ decompiled/
 
 # Test build zips
 artifacts/
+
+# Thunderstore service account token for tools/publish.py
+.thunderstore-token
