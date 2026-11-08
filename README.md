@@ -58,6 +58,34 @@ BetterCoop works next to other mods, including ones that change carrying;
 while you are in a Pair, the Pair's rules win. It turns itself off beside
 Co-op Mod, and after a game update it does not fit yet.
 
+## For mod developers
+
+`BetterCoop.Api` lets another mod read the Pairs without depending on
+BetterCoop's internals: `Enabled`, `RoleOf(character)`,
+`TryGetPartner(character, out partner)`, `TryGetSharedBody(character, out body)`
+(a Rider plays through their Carrier's body), and the events `PairsChanged`,
+`PairChangeStarting`, and `PairChangeFinished`. `ApiVersion` rises only when a
+change breaks callers. A Rider's own character is idle while carried and its
+statuses are kept clear, so a mod that shows players' status should show the
+Shared Body instead.
+
+Reference `BetterCoop.dll` as a soft dependency and keep the calls in a
+method of their own, so your mod still loads without BetterCoop:
+
+```csharp
+[BepInDependency("in.kawala.bettercoop", BepInDependency.DependencyFlags.SoftDependency)]
+public class MyPlugin : BaseUnityPlugin
+{
+    static bool HasBetterCoop => Chainloader.PluginInfos.ContainsKey("in.kawala.bettercoop");
+
+    static bool IsRider(Character character) => HasBetterCoop && IsRiderInBetterCoop(character);
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    static bool IsRiderInBetterCoop(Character character) =>
+        BetterCoop.Api.RoleOf(character) == BetterCoop.Api.Role.Rider;
+}
+```
+
 ## Antivirus warnings
 
 Some antivirus programs flag `BetterCoop.dll` with a name ending in `!ml`: a

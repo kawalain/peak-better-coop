@@ -181,6 +181,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         try
         {
             PairRoster.Reload();
+            Api.RaisePairsChanged();
             FormerPairs.Forget();
             foreach (PhotonPlayer player in PhotonNetwork.PlayerList)
             {
@@ -198,6 +199,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         try
         {
             PairRoster.Reload();
+            Api.RaisePairsChanged();
             FormerPairs.Forget();
             KnownPlayers.Clear();
         }
@@ -240,6 +242,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
 
         PairingResult? previous = PairRoster.Reload();
         Announce(previous, PairRoster.Read());
+        Api.RaisePairsChanged();
     }
 
     public override void OnPlayerLeftRoom(PhotonPlayer otherPlayer)

@@ -48,6 +48,11 @@ internal static class PairShuffle
 
     private static float nextLatePairingCheck;
 
+    /// <summary>The latest operation this client told other mods had started, and had finished (ADR 0008).</summary>
+    private static int startedId;
+
+    private static int finishedId;
+
     private static readonly ArrivalClock Arrivals = new();
 
     /// <summary>The latest operation: the room's, or this host's newer one not yet echoed back.</summary>
@@ -90,6 +95,8 @@ internal static class PairShuffle
         appliedHandoverId = ReadHandover()?.Id ?? 0;
         countdownId = Current?.Id ?? 0;
         emptiedHandsId = countdownId;
+        startedId = countdownId;
+        finishedId = countdownId;
         hostClock = null;
         RoleSwap.OnJoinedRoom();
     }
@@ -103,6 +110,7 @@ internal static class PairShuffle
         }
 
         Operation? op = Current;
+        TellOtherMods(op);
         ShowCountdown(op);
         EmptyHandsBeforeRun(op);
         ApplyHandover();
@@ -459,6 +467,26 @@ internal static class PairShuffle
         {
             Plugin.Verbose($"Handing the inventory of {move.Value} to {move.Key}.");
             CharacterOf(move.Key)!.player.photonView.RPC("SyncInventoryRPC", RpcTarget.All, snapshots[move.Value], true);
+        }
+    }
+
+    private static void TellOtherMods(Operation? op)
+    {
+        if (op == null)
+        {
+            return;
+        }
+
+        if (op.Id > startedId)
+        {
+            startedId = op.Id;
+            Api.RaisePairChangeStarting(op.Kind);
+        }
+
+        if (op.Done && op.Id > finishedId)
+        {
+            finishedId = op.Id;
+            Api.RaisePairChangeFinished(op.Kind);
         }
     }
 

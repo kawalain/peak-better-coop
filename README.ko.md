@@ -57,6 +57,15 @@ ESC 메뉴의 **코옵** 페이지나 모드 매니저의 설정 편집기에서
 규칙이 우선합니다. Co-op Mod가 함께 있거나 아직 맞지 않는 게임 업데이트가
 나오면 스스로 꺼집니다.
 
+## 모드 개발자용
+
+`BetterCoop.Api`로 다른 모드가 BetterCoop 내부에 기대지 않고 짝을 읽을 수
+있습니다. `Enabled`, `RoleOf`, `TryGetPartner`, `TryGetSharedBody`(업힌
+사람은 업는 사람의 몸으로 플레이합니다)와 `PairsChanged`,
+`PairChangeStarting`, `PairChangeFinished` 이벤트가 있습니다. 사용법과
+예제는 [영어 README](https://github.com/kawalain/peak-better-coop#for-mod-developers)를
+참고하세요.
+
 ## 백신 경고
 
 일부 백신이 `BetterCoop.dll`을 `!ml`로 끝나는 이름으로 잡을 수 있습니다.
