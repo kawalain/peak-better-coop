@@ -22,8 +22,8 @@ _Avoid_: host, 방장 (in player text)
 ### Teams
 
 **Pair** (짝):
-Two players bound together, one as Carrier and one as Rider, from when Pairs
-are formed, a Late Pairing, or a Pair Assignment until a Pair Shuffle, a Role
+Two players bound together, one as Carrier and one as Rider, from a Pair
+Formation, a Late Pairing, or a Pair Assignment until a Pair Shuffle, a Role
 Swap, a Pair Assignment, a member leaving, or the end of the Run.
 _Avoid_: partner, couple, team
 
@@ -54,9 +54,14 @@ screen effects, and item sounds, and the same HUD (slots, remaining uses,
 stamina, statuses), on the Rider's screen as on the Carrier's.
 _Avoid_: spectating, mirroring
 
+**Pair Formation** (짝 편성):
+Forming the Pairs for the first time in a Run, when the party arrives on the
+island.
+_Avoid_: 짝짓기, 짝 짓기, matchmaking
+
 **Role Preference**:
-A player's stated wish to be Carrier, Rider, or either (Random) when Pairs are
-formed.
+A player's stated wish to be Carrier, Rider, or either (Random) in a Pair
+Formation, a Pair Shuffle, or a Late Pairing.
 
 **Pair Shuffle** (짝 섞기):
 Forming the Pairs anew in the middle of a Run so that every Pair changes:

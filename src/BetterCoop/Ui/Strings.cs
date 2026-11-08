@@ -74,7 +74,7 @@ internal static class Strings
         return $"{whole / 60}:{whole % 60:00}";
     }
 
-    public static string MenuPairsForm => Korean ? "짝은 섬에 도착하면 정해집니다" : "Pairs form on the island";
+    public static string MenuPairsForm => Korean ? "짝은 섬에 도착하면 편성됩니다" : "Pairs form on the island";
 
     public static string MenuPairs => Korean ? "짝 (업는 사람 ⇄ 업힌 사람)" : "Pairs (Carrier ⇄ Rider)";
 
@@ -117,8 +117,8 @@ internal static class Strings
     public static string RuleAllowOddPlayerCount => Korean ? "홀수 인원 출발 허용" : "Allow Odd Player Count";
 
     public static string AboutRolePreference => Korean
-        ? "짝을 정할 때 원하는 역할입니다. 다음 짝짓기부터 적용됩니다."
-        : "The role you would like when Pairs form; applies from the next pairing.";
+        ? "짝 편성과 짝 섞기에서 원하는 역할입니다. 다음 번부터 적용됩니다."
+        : "The role you would like when Pairs are formed or shuffled; applies from the next time.";
 
     public static string AboutSwapPlaces => Korean
         ? "둘 다 요청하면 업는 사람과 업힌 사람이 바뀝니다."
