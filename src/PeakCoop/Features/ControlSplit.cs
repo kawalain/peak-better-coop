@@ -427,5 +427,6 @@ internal sealed class ControlSplitLink : MonoBehaviourPunCallbacks, IOnEventCall
     {
         ControlSplit.Receive(photonEvent);
         UseFeedback.Receive(photonEvent);
+        SharedViewHud.Receive(photonEvent);
     }
 }

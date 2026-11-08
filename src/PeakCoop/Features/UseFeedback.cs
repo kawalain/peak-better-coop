@@ -24,6 +24,9 @@ internal static class UseFeedback
     /// <summary>Whether the Shared Body's use is under way, on the Rider's client.</summary>
     internal static bool RiderSeesUse => RiderProgress.IsActive(Time.unscaledTime);
 
+    /// <summary>The Shared Body's use progress as the Rider's bar shows it.</summary>
+    internal static float RiderProgressShown => RiderProgress.Display(Time.unscaledTime);
+
     /// <summary>Called every frame: the Carrier sends the progress of the Rider's action.</summary>
     internal static void SendFromCarrier()
     {

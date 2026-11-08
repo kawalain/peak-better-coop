@@ -35,4 +35,7 @@ internal static class RoomKeys
 
     /// <summary>Event: the progress of the Rider's action, sent back by their Carrier.</summary>
     public const byte UseProgressEvent = 187;
+
+    /// <summary>Event: the Carrier's crosshair, throw charge, and rope length, sent to their Rider.</summary>
+    public const byte HudEvent = 188;
 }
