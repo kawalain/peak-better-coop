@@ -29,6 +29,14 @@ internal static class Strings
         ? $"코옵: {carrier} 님과 {rider} 님의 짝이 풀렸습니다."
         : $"Co-op: the Pair of {carrier} and {rider} has ended.";
 
+    public static string ShuffleCountdown(int seconds) => Korean
+        ? $"코옵: {seconds}초 뒤 짝을 섞습니다."
+        : $"Co-op: shuffling Pairs in {seconds}...";
+
+    public static string RoleSwapCountdown(int seconds) => Korean
+        ? $"코옵: {seconds}초 뒤 자리를 바꿉니다."
+        : $"Co-op: swapping places in {seconds}...";
+
     public static string RiderHandEmptied => Korean
         ? "코옵: 업힌 사람은 아이템을 손에 들 수 없어 바닥에 내려놓았습니다."
         : "Co-op: a Rider cannot hold items, so it was dropped.";

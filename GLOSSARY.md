@@ -22,7 +22,8 @@ _Avoid_: host, 방장 (in player text)
 ### Teams
 
 **Pair** (짝):
-Two players bound together for a Run, one as Carrier and one as Rider.
+Two players bound together, one as Carrier and one as Rider, from when Pairs
+are formed until a Pair Shuffle, a member leaving, or the end of the Run.
 _Avoid_: partner, couple, team
 
 **Carrier** (업는 사람):
@@ -47,6 +48,23 @@ _Avoid_: input relay, keyboard/mouse split
 **Role Preference**:
 A player's stated wish to be Carrier, Rider, or either (Random) when Pairs are
 formed.
+
+**Pair Shuffle** (짝 섞기):
+Forming the Pairs anew in the middle of a Run, by the same rules as at the
+start and avoiding the previous partners where possible.
+_Avoid_: re-pairing, reshuffle
+
+**Campfire Shuffle**:
+A Pair Shuffle when a campfire is lit and the Run moves on to the next segment.
+
+**Timed Shuffle**:
+A Pair Shuffle at a fixed interval set by the Troop Leader.
+
+**Body Handover** (몸 인계):
+When Pairs change, each new Shared Body takes over one former Shared Body:
+its statuses always, and its place and items as the Troop Leader sets. Nothing
+is lost or copied: the items swap between the two bodies.
+_Avoid_: body swap, inheritance
 
 **Shared Life**:
 The rule that the Rider lives and dies with the Shared Body: the Rider dies

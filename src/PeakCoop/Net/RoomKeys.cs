@@ -15,6 +15,15 @@ internal static class RoomKeys
     /// <summary>Room property: the Pairs of the current Run.</summary>
     public const string Pairs = "PeakCoop.Pairs";
 
+    /// <summary>Room property: the latest Pair Shuffle or Role Swap the host announced.</summary>
+    public const string Operation = "PeakCoop.Operation";
+
+    /// <summary>Room property: the Body Handover of the latest operation, written with its Pairs.</summary>
+    public const string Handover = "PeakCoop.Handover";
+
+    /// <summary>Room property: server time the Timed Shuffle interval counts from.</summary>
+    public const string ShuffleClock = "PeakCoop.ShuffleClock";
+
     /// <summary>Event: a Rider's actions, sent to their Carrier.</summary>
     public const byte RiderActionsEvent = 185;
 

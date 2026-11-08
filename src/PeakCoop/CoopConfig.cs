@@ -12,6 +12,16 @@ internal static class CoopConfig
 
     public static ConfigEntry<bool> CarryWeight { get; private set; } = null!;
 
+    public static ConfigEntry<bool> CampfireShuffle { get; private set; } = null!;
+
+    public static ConfigEntry<bool> TimedShuffle { get; private set; } = null!;
+
+    public static ConfigEntry<ShuffleInterval> TimedShuffleInterval { get; private set; } = null!;
+
+    public static ConfigEntry<bool> HandOverPlace { get; private set; } = null!;
+
+    public static ConfigEntry<bool> HandOverItems { get; private set; } = null!;
+
     public static ConfigEntry<bool> RecoveryKey { get; private set; } = null!;
 
     public static ConfigEntry<bool> VerboseLog { get; private set; } = null!;
@@ -39,6 +49,36 @@ internal static class CoopConfig
             "Carry Weight",
             false,
             "Apply the game's weight for carrying a person to every Carrier. The host's value applies.");
+
+        CampfireShuffle = config.Bind(
+            "Shuffle",
+            "Campfire Shuffle",
+            true,
+            "Form the Pairs anew when a campfire is lit and the Run moves on to the next segment. The host's value applies.");
+
+        TimedShuffle = config.Bind(
+            "Shuffle",
+            "Timed Shuffle",
+            false,
+            "Form the Pairs anew at a fixed interval. The host's value applies.");
+
+        TimedShuffleInterval = config.Bind(
+            "Shuffle",
+            "Timed Shuffle Interval",
+            ShuffleInterval.TenMinutes,
+            "How often a Timed Shuffle comes. The host's value applies.");
+
+        HandOverPlace = config.Bind(
+            "Shuffle",
+            "Hand Over Place",
+            true,
+            "When Pairs change, each new Carrier moves to where the Shared Body they take over stood. Riders always move to their new Carrier. The host's value applies.");
+
+        HandOverItems = config.Bind(
+            "Shuffle",
+            "Hand Over Items",
+            true,
+            "When Pairs change, each new Carrier takes over the items of the Shared Body they take over; the items swap, so nothing is lost. Statuses are always handed over. The host's value applies.");
 
         RecoveryKey = config.Bind(
             "Debug",

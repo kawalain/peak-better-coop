@@ -1,4 +1,5 @@
 using System;
+using PeakCoop.Core;
 using Photon.Pun;
 using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
 using PhotonPlayer = Photon.Realtime.Player;
@@ -12,33 +13,52 @@ namespace PeakCoop.Net;
 internal sealed class RunRules : MonoBehaviourPunCallbacks
 {
     [Flags]
-    private enum Flags : byte
+    private enum Flags
     {
         None = 0,
         AllowOddPlayerCount = 1,
         CarryWeight = 2,
+        CampfireShuffle = 4,
+        TimedShuffle = 8,
+        HandOverPlace = 16,
+        HandOverItems = 32,
     }
 
-    public static bool AllowOddPlayerCount => (Current & Flags.AllowOddPlayerCount) != 0;
+    /// <summary>The Timed Shuffle interval's minutes sit above the flags.</summary>
+    private const int IntervalShift = 8;
 
-    public static bool CarryWeight => (Current & Flags.CarryWeight) != 0;
+    public static bool AllowOddPlayerCount => Has(Flags.AllowOddPlayerCount);
 
-    private static Flags Current
+    public static bool CarryWeight => Has(Flags.CarryWeight);
+
+    public static bool CampfireShuffle => Has(Flags.CampfireShuffle);
+
+    public static bool TimedShuffle => Has(Flags.TimedShuffle);
+
+    public static bool HandOverPlace => Has(Flags.HandOverPlace);
+
+    public static bool HandOverItems => Has(Flags.HandOverItems);
+
+    public static double TimedShuffleSeconds => Math.Max(1, Current >> IntervalShift) * 60.0;
+
+    private static int Current
     {
         get
         {
             if (PhotonNetwork.InRoom
                 && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Rules, out object value)
-                && value is byte flags)
+                && value is int rules)
             {
-                return (Flags)flags;
+                return rules;
             }
 
-            return LocalFlags();
+            return LocalRules();
         }
     }
 
-    private static Flags LocalFlags()
+    private static bool Has(Flags flag) => (Current & (int)flag) != 0;
+
+    private static int LocalRules()
     {
         Flags flags = Flags.None;
         if (CoopConfig.AllowOddPlayerCount.Value)
@@ -51,13 +71,38 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
             flags |= Flags.CarryWeight;
         }
 
-        return flags;
+        if (CoopConfig.CampfireShuffle.Value)
+        {
+            flags |= Flags.CampfireShuffle;
+        }
+
+        if (CoopConfig.TimedShuffle.Value)
+        {
+            flags |= Flags.TimedShuffle;
+        }
+
+        if (CoopConfig.HandOverPlace.Value)
+        {
+            flags |= Flags.HandOverPlace;
+        }
+
+        if (CoopConfig.HandOverItems.Value)
+        {
+            flags |= Flags.HandOverItems;
+        }
+
+        return (int)flags | ((int)CoopConfig.TimedShuffleInterval.Value << IntervalShift);
     }
 
     private void Start()
     {
         CoopConfig.AllowOddPlayerCount.SettingChanged += (_, _) => PublishIfHost();
         CoopConfig.CarryWeight.SettingChanged += (_, _) => PublishIfHost();
+        CoopConfig.CampfireShuffle.SettingChanged += (_, _) => PublishIfHost();
+        CoopConfig.TimedShuffle.SettingChanged += (_, _) => PublishIfHost();
+        CoopConfig.TimedShuffleInterval.SettingChanged += (_, _) => PublishIfHost();
+        CoopConfig.HandOverPlace.SettingChanged += (_, _) => PublishIfHost();
+        CoopConfig.HandOverItems.SettingChanged += (_, _) => PublishIfHost();
     }
 
     public override void OnJoinedRoom() => PublishIfHost();
@@ -71,8 +116,8 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
             return;
         }
 
-        var properties = new PhotonHashtable { [RoomKeys.Rules] = (byte)LocalFlags() };
-        PhotonNetwork.CurrentRoom.SetCustomProperties(properties);
-        Plugin.Verbose($"Published Run rules {LocalFlags()}.");
+        int rules = LocalRules();
+        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable { [RoomKeys.Rules] = rules });
+        Plugin.Verbose($"Published Run rules {(Flags)(rules & 0xFF)}, Timed Shuffle every {rules >> IntervalShift} min.");
     }
 }

@@ -101,18 +101,18 @@ internal static class PairRoster
         return new PairingResult(pairs, unpaired, overridden);
     }
 
-    public static void Write(PairingResult? result)
-    {
-        object? value = result == null
-            ? null
-            : new object[]
-            {
-                result.Pairs.SelectMany(p => new[] { p.Carrier, p.Rider }).ToArray(),
-                result.Unpaired.ToArray(),
-                result.PreferenceOverridden.ToArray(),
-            };
-        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable { [RoomKeys.Pairs] = value });
-    }
+    public static void Write(PairingResult? result) =>
+        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable { [RoomKeys.Pairs] = Encode(result) });
+
+    /// <summary>The room property value of <paramref name="result"/>, for writing it with other keys.</summary>
+    public static object? Encode(PairingResult? result) => result == null
+        ? null
+        : new object[]
+        {
+            result.Pairs.SelectMany(p => new[] { p.Carrier, p.Rider }).ToArray(),
+            result.Unpaired.ToArray(),
+            result.PreferenceOverridden.ToArray(),
+        };
 
     /// <summary>Reloads the cache; returns the previous value.</summary>
     public static PairingResult? Reload()
@@ -215,10 +215,16 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         {
             windowOpenedAt = null;
             formedOnThisIsland = false;
-            if (PairRoster.Read() != null)
+            PhotonHashtable room = PhotonNetwork.CurrentRoom.CustomProperties;
+            if (PairRoster.Read() != null || room.ContainsKey(RoomKeys.ShuffleClock) || room.ContainsKey(RoomKeys.Handover))
             {
                 Plugin.Verbose("Back at the Airport; clearing Pairs.");
-                PairRoster.Write(null);
+                PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable
+                {
+                    [RoomKeys.Pairs] = null,
+                    [RoomKeys.ShuffleClock] = null,
+                    [RoomKeys.Handover] = null,
+                });
             }
 
             return;
@@ -269,7 +275,11 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
             $"Formed {result.Pairs.Count} Pairs: "
             + string.Join(", ", result.Pairs.Select(p => $"{p.Carrier}>{p.Rider}"))
             + $"; unpaired [{string.Join(", ", result.Unpaired)}].");
-        PairRoster.Write(result);
+        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable
+        {
+            [RoomKeys.Pairs] = PairRoster.Encode(result),
+            [RoomKeys.ShuffleClock] = PhotonNetwork.Time,
+        });
     }
 
     private static void Announce(PairingResult? previous, PairingResult? current)
@@ -299,7 +309,13 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
             return;
         }
 
-        foreach (Pair gone in previous.Pairs.Where(p => !current.Pairs.Any(c => c.Carrier == p.Carrier && c.Rider == p.Rider)))
+        // A Pair Shuffle or Role Swap forms new Pairs; a member leaving only ends one.
+        foreach (Pair formed in current.Pairs.Where(c => !previous.Pairs.Any(p => p.Carrier == c.Carrier && p.Rider == c.Rider)))
+        {
+            CoopNotice.Info(Strings.PairFormed(NameOf(formed.Carrier), NameOf(formed.Rider)));
+        }
+
+        foreach (Pair gone in previous.Pairs.Where(p => !current.Pairs.Any(c => c.Contains(p.Carrier) || c.Contains(p.Rider))))
         {
             CoopNotice.Warning(Strings.PairDissolved(NameOf(gone.Carrier), NameOf(gone.Rider)));
         }

@@ -153,6 +153,12 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
             return;
         }
 
+        // After a Role Swap or Pair Shuffle the former Carrier drops this one first.
+        if (carrier.data.carrier != null && !force)
+        {
+            return;
+        }
+
         Plugin.Verbose($"Carrier starts carrying {rider.characterName}.");
         carrier.refs.carriying.StartCarry(rider);
     }

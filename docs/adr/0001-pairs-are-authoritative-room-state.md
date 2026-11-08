@@ -9,8 +9,9 @@ four separate places, which drifted apart and kept stale partners after a drop
 
 ## Consequences
 
-- A Pair survives drops, pass-outs, deaths, and segment changes for the whole
-  Run; it ends only when the Run ends or a member leaves the room.
+- A Pair survives drops, pass-outs, deaths, and segment changes; it ends only
+  when the Run ends, a member leaves the room, or a Pair Shuffle forms
+  new Pairs (ADR 0004).
 - Features that need a partner (shared stamina, death, revival, input relay,
   HUD) look up the Pair, so they agree even while the carry is momentarily
   broken.
