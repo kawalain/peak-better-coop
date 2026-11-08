@@ -4,7 +4,9 @@ namespace PeakCoop.Core;
 
 /// <summary>
 /// Moves the Carrier's look smoothly toward the latest look the Rider sent,
-/// so the Carrier's view glides between network snapshots.
+/// so the Carrier's view glides between network snapshots. Yaw is an
+/// unbounded angle that the game sometimes rewrites into [0, 360), so it
+/// turns the short way round rather than unwinding whole turns.
 /// </summary>
 internal sealed class LookFollower
 {
@@ -40,17 +42,26 @@ internal sealed class LookFollower
             return false;
         }
 
-        if (!snapped)
-        {
-            yaw = targetYaw;
-            pitch = targetPitch;
-            snapped = true;
-            return true;
-        }
-
-        float t = 1f - (float)Math.Exp(-Sharpness * deltaTime);
-        yaw += (targetYaw - yaw) * t;
+        float t = snapped ? 1f - (float)Math.Exp(-Sharpness * deltaTime) : 1f;
+        snapped = true;
+        yaw += DeltaAngle(yaw, targetYaw) * t;
         pitch += (targetPitch - pitch) * t;
         return true;
+    }
+
+    /// <summary>The shortest signed turn from one angle to another, in (-180, 180].</summary>
+    public static float DeltaAngle(float from, float to)
+    {
+        float delta = (to - from) % 360f;
+        if (delta > 180f)
+        {
+            delta -= 360f;
+        }
+        else if (delta <= -180f)
+        {
+            delta += 360f;
+        }
+
+        return delta;
     }
 }
