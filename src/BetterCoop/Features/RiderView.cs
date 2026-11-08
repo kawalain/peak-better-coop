@@ -85,6 +85,69 @@ internal static class RiderView
         }
     }
 
+    private static Pose? firstPersonPose;
+
+    private static float firstPersonFov;
+
+    private static bool overrodeSpectate;
+
+    /// <summary>A conscious Rider on their Carrier's back looks through the Carrier's eyes.</summary>
+    private static bool RiderLooksFirstPerson(MainCameraMovement movement)
+    {
+        Character local = Character.localCharacter;
+        return local != null
+            && !local.data.dead
+            && !local.data.fullyPassedOut
+            && !movement.isRocketing
+            && !movement.isGodCam
+            && movement.cam != null
+            && movement.cam.camOverride == null
+            && TryGetCarrierOfLocalRider(out _);
+    }
+
+    /// <summary>Notes the first-person camera the game placed, before other patches run.</summary>
+    [HarmonyPostfix]
+    [HarmonyPriority(Priority.First)]
+    [HarmonyPatch(typeof(MainCameraMovement), "LateUpdate")]
+    private static void NoteFirstPersonCamera(MainCameraMovement __instance)
+    {
+        firstPersonPose = null;
+        if (__instance.isSpectating || !RiderLooksFirstPerson(__instance))
+        {
+            overrodeSpectate = false;
+            return;
+        }
+
+        Transform camera = __instance.transform;
+        firstPersonPose = new Pose(camera.position, camera.rotation);
+        firstPersonFov = __instance.cam.cam.fieldOfView;
+    }
+
+    /// <summary>
+    /// Shared View holds against any other patch: if one turned the Rider's
+    /// first-person camera into spectating (a carried player usually
+    /// spectates), the camera goes back to where the game had put it.
+    /// </summary>
+    [HarmonyPostfix]
+    [HarmonyPriority(Priority.Last)]
+    [HarmonyPatch(typeof(MainCameraMovement), "LateUpdate")]
+    private static void KeepFirstPersonCamera(MainCameraMovement __instance)
+    {
+        if (firstPersonPose is not Pose pose || (!__instance.isSpectating && MainCameraMovement.specCharacter == null))
+        {
+            return;
+        }
+
+        __instance.StopSpectating();
+        __instance.transform.SetPositionAndRotation(pose.position, pose.rotation);
+        __instance.cam.cam.fieldOfView = firstPersonFov;
+        if (!overrodeSpectate)
+        {
+            overrodeSpectate = true;
+            Plugin.Verbose("Another patch turned the Rider's camera to spectating; kept the Carrier's eyes.");
+        }
+    }
+
     /// <summary>
     /// Whether the camera spectates; the game's own property throws while its
     /// camera does not exist, as during a scene load.
