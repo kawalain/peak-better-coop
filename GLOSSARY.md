@@ -46,6 +46,12 @@ action belongs to the Carrier. With default bindings this is mouse to the Rider
 and keyboard to the Carrier.
 _Avoid_: input relay, keyboard/mouse split
 
+**Shared View** (시점 공유):
+The rule that both members of a Pair see and hear the Shared Body as its
+Carrier does: the same first-person view, crosshair, previews, progress, and
+item sounds, on the Rider's screen as on the Carrier's.
+_Avoid_: spectating, mirroring
+
 **Role Preference**:
 A player's stated wish to be Carrier, Rider, or either (Random) when Pairs are
 formed.
