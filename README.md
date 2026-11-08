@@ -133,6 +133,14 @@ If your antivirus flags it:
 3. Restore the file from quarantine, or reinstall the mod. A new version is a
    different file and is often not flagged.
 
+## Credits
+
+- [Sappheiros009](https://github.com/Sappheiros009/CoopMod): the original
+  idea, from Co-op Mod.
+- [Puro](https://steamcommunity.com/profiles/76561198105109754): ideas.
+- [kawalain](https://steamcommunity.com/profiles/76561198436496102):
+  maintainer.
+
 ---
 
 ## 한국어
@@ -264,3 +272,10 @@ BetterCoop은 BepInEx를 통해 PEAK 안에서만 동작합니다. 다른 프로
    <https://www.microsoft.com/en-us/wdsi/filesubmission>에서 받습니다.
 3. 격리된 파일을 복원하거나 모드를 다시 설치하세요. 새 버전은 다른 파일이라
    잡히지 않는 경우가 많습니다.
+
+### 만든 사람들
+
+- [Sappheiros009](https://github.com/Sappheiros009/CoopMod): Co-op Mod의
+  원래 아이디어.
+- [Puro](https://steamcommunity.com/profiles/76561198105109754): 아이디어 제공.
+- [kawalain](https://steamcommunity.com/profiles/76561198436496102): 관리자.
