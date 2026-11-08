@@ -5,7 +5,7 @@ two steer that one body together: the **Carrier** on the keyboard, the
 **Rider** on the mouse. They share stamina and statuses, and they live, die,
 and come back together.
 
-[한국어 설명은 아래에 있습니다.](#한국어)
+[한국어](https://github.com/kawalain/peak-better-coop/blob/main/README.ko.md)
 
 ## How it plays
 
@@ -72,75 +72,3 @@ and restore it, or reinstall.
 - [Puro](https://steamcommunity.com/profiles/76561198105109754): ideas.
 - [kawalain](https://steamcommunity.com/profiles/76561198436496102):
   maintainer.
-
----
-
-## 한국어
-
-PEAK를 짝을 지어 오르는 모드입니다. 한 사람이 원정 내내 다른 사람을 업고,
-두 사람이 한 몸을 함께 움직입니다. **업는 사람**은 키보드, **업힌 사람**은
-마우스를 맡습니다. 스태미나와 상태 이상을 함께 쓰고, 함께 살고 죽고
-되살아납니다.
-
-### 플레이
-
-| 업는 사람 (키보드) | 업힌 사람 (마우스) |
-| --- | --- |
-| 이동, 점프, 달리기, 웅크리기 | 시점과 방향 |
-| 상호작용, 줍기, 내려놓기, 던지기 | 든 아이템 사용 |
-| 단축 슬롯, 감정 표현, 가방 휠 열기 | 스크롤, 핑, 가방 휠에서 고르기 |
-
-- 몸은 업힌 사람이 보는 쪽으로 걷습니다. 벽은 업힌 사람이 잡기를 누르고
-  있고 업는 사람이 오릅니다.
-- 두 사람 모두 업는 사람의 눈으로 보고, HUD도 같습니다.
-- 등 슬롯 키를 짧게 누르면 등의 아이템을 손에 들고, 길게 누르면 자기
-  가방이 열리며 업힌 사람이 아이템을 클릭합니다.
-- 모닥불을 피우면 짝이 바뀌고, 설정하면 시간마다도 바뀝니다. ESC 메뉴의
-  **자리 바꾸기**로 짝끼리 역할을 바꿀 수도 있습니다. 아이템과 상태 이상은
-  이어지고 사라지지 않습니다.
-
-### 설치
-
-모드 매니저(Gale, r2modman, Thunderstore Mod Manager)로 설치하세요. 방의
-모두가 같은 버전이어야 하고, 공항 키오스크가 없는 사람을 알려 줍니다.
-분대장(방장)이 허용하지 않으면 인원이 짝수여야 출발합니다.
-
-### 설정
-
-모드 매니저의 설정 편집기에서 `in.kawala.bettercoop` 아래에 있습니다. 자신의
-Role Preference와 Debug 설정을 빼면 분대장의 값이 방 전체에 적용됩니다.
-
-| 설정 | 기본값 | |
-| --- | --- | --- |
-| Role Preference | Random | 업는 사람, 업힌 사람, 무작위. |
-| Rider Picks From Backpack | 켬 | 끄면 업는 사람이 가방 휠에서 고릅니다. |
-| Allow Odd Player Count | 끔 | 남는 한 사람은 짝 없이 원정합니다. |
-| Campfire Shuffle | 켬 | 모닥불마다 짝을 새로 짓습니다. |
-| Timed Shuffle, Interval | 끔, 10 | 몇 분마다(1–60) 짝을 새로 짓습니다. |
-| Hand Over Place, Items | 켬, 켬 | 새 업는 사람이 이전 몸의 자리와 아이템을 이어받습니다. |
-| Carry Weight | 끔 | 업는 사람에게 사람 무게를 적용합니다. |
-| Verbose Log | 끔 | 버그를 알릴 때 켜고 `BepInEx/LogOutput.log`를 보내 주세요. |
-| Recovery Key | 켬 | 분대장이 F8로 모든 짝을 다시 붙입니다. |
-
-### 호환성
-
-업기를 바꾸는 모드를 포함해 다른 모드와 함께 쓸 수 있고, 짝인 동안에는 짝의
-규칙이 우선합니다. Co-op Mod가 함께 있거나 아직 맞지 않는 게임 업데이트가
-나오면 스스로 꺼집니다.
-
-### 백신 경고
-
-일부 백신이 `BetterCoop.dll`을 `!ml`로 끝나는 이름으로 잡을 수 있습니다.
-머신러닝의 추측으로, 실행 중인 게임 코드를 바꾸는 모드가 흔히 받는
-오진입니다. BetterCoop은 PEAK 안에서만 동작하고, 아무것도 내려받거나
-실행하지 않으며, 같은 방 플레이어와만 통신합니다. 소스는
-<https://github.com/kawalain/peak-better-coop>에 있습니다. 오진으로
-신고하고(Microsoft: <https://www.microsoft.com/en-us/wdsi/filesubmission>)
-파일을 복원하거나 다시 설치하세요.
-
-### 만든 사람들
-
-- [Sappheiros009](https://github.com/Sappheiros009/CoopMod): Co-op Mod의
-  원래 아이디어.
-- [Puro](https://steamcommunity.com/profiles/76561198105109754): 아이디어 제공.
-- [kawalain](https://steamcommunity.com/profiles/76561198436496102): 관리자.
