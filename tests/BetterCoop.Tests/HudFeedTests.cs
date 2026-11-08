@@ -66,6 +66,7 @@ public class HudFeedTests
         CarrierHud hud = Hud(reticle: CarrierHud.NoReticle, highlighted: true, throwCharge: 0.4f, rope: 12);
 
         Assert.Equal(hud, CarrierHud.Decode(hud.Encode()));
-        Assert.Null(CarrierHud.Decode(new object[] { 1, true, 0f, (short)1 }));
+        Assert.Null(CarrierHud.Decode(new object[] { 1L, true, 0f, (short)1 }));
+        Assert.Null(CarrierHud.Decode(new object[] { 200, true, 0f, (short)1 }));
     }
 }

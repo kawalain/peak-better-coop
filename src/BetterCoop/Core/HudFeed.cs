@@ -38,15 +38,16 @@ internal readonly struct CarrierHud : IEquatable<CarrierHud>
 
     public override int GetHashCode() => (Reticle, Highlighted, ThrowCharge, RopeSegments).GetHashCode();
 
-    public object[] Encode() => [Reticle, Highlighted, ThrowCharge, RopeSegments];
+    /// <summary>Photon cannot send an sbyte, so the crosshair travels as an int.</summary>
+    public object[] Encode() => [(int)Reticle, Highlighted, ThrowCharge, RopeSegments];
 
     public static CarrierHud? Decode(object? value) =>
         value is object[] { Length: 4 } parts
-        && parts[0] is sbyte reticle
+        && parts[0] is int reticle and >= sbyte.MinValue and <= sbyte.MaxValue
         && parts[1] is bool highlighted
         && parts[2] is float throwCharge
         && parts[3] is short ropeSegments
-            ? new CarrierHud(reticle, highlighted, throwCharge, ropeSegments)
+            ? new CarrierHud((sbyte)reticle, highlighted, throwCharge, ropeSegments)
             : null;
 }
 
