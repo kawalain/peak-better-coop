@@ -66,6 +66,8 @@ internal static class ControlSplit
     private static bool soloAnnounced;
 
     private static int partnerActor = -1;
+    private static Character? linkedLocal;
+    private static Character? linkedPartner;
 
     /// <summary>Whether Solo Pair applies: switched on and alone in a room.</summary>
     internal static bool SoloPairWanted =>
@@ -98,14 +100,14 @@ internal static class ControlSplit
                 return Mode.None;
             }
 
-            Enter(PairRoster.ActorOf(partner), role.ToString());
+            Enter(PairRoster.ActorOf(partner), local, partner, role.ToString());
             return role == PairRole.Carrier ? Mode.Carrier : Mode.Rider;
         }
 
         if (soloWanted)
         {
             partner = local;
-            if (Enter(SoloPartner, "Solo Pair"))
+            if (Enter(SoloPartner, local, local, "Solo Pair"))
             {
                 soloLook = local.data.lookValues;
             }
@@ -117,16 +119,23 @@ internal static class ControlSplit
         return Mode.None;
     }
 
-    /// <summary>Starts a fresh link to a partner; true when it changed.</summary>
-    private static bool Enter(int actor, string label)
+    /// <summary>
+    /// Starts a fresh link to a partner; true when it changed. A respawned
+    /// character (each scene load spawns new ones) also starts a fresh link.
+    /// </summary>
+    private static bool Enter(int actor, Character local, Character partner, string label)
     {
-        if (actor == partnerActor)
+        if (actor == partnerActor
+            && ReferenceEquals(local, linkedLocal)
+            && ReferenceEquals(partner, linkedPartner))
         {
             return false;
         }
 
         Forget();
         partnerActor = actor;
+        linkedLocal = local;
+        linkedPartner = partner;
         Plugin.Verbose($"Control Split active as {label} (partner {actor}).");
         return true;
     }
@@ -139,6 +148,8 @@ internal static class ControlSplit
         }
 
         partnerActor = -1;
+        linkedLocal = null;
+        linkedPartner = null;
         lastSent = null;
         PrimaryIn.Reset();
         SecondaryIn.Reset();
