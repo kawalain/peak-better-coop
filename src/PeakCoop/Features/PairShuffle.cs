@@ -230,7 +230,7 @@ internal static class PairShuffle
                 && !kept.Any(k => k.Contains(p.ActorNumber)))
             .Select(p => new PairCandidate(p.ActorNumber, ModPresence.RoleOf(p)))
             .ToList();
-        PairingResult formed = PairingRules.FormAvoiding(candidates, new System.Random(), before.Pairs);
+        PairingResult formed = PairingRules.Reshuffle(candidates, new System.Random(), before.Pairs, before.Unpaired);
         var pairs = kept.Concat(formed.Pairs).ToList();
         var unpaired = PhotonNetwork.PlayerList
             .Select(p => p.ActorNumber)

@@ -57,7 +57,11 @@ internal sealed class PairingResult
 /// <summary>Forms Pairs at random, honouring Role Preferences where possible.</summary>
 internal static class PairingRules
 {
-    public static PairingResult Form(IReadOnlyList<PairCandidate> candidates, Random random)
+    public static PairingResult Form(IReadOnlyList<PairCandidate> candidates, Random random) =>
+        Form(candidates, random, []);
+
+    /// <summary>Forms Pairs, leaving out someone not in <paramref name="satOut"/> when the count is odd.</summary>
+    private static PairingResult Form(IReadOnlyList<PairCandidate> candidates, Random random, IReadOnlyCollection<int> satOut)
     {
         // A wish this version does not know counts as no wish.
         List<PairCandidate> players = Shuffle(
@@ -77,7 +81,12 @@ internal static class PairingRules
                 players.Count(p => p.Preference == RolePreference.Carrier) > slots ? RolePreference.Carrier
                 : players.Count(p => p.Preference == RolePreference.Rider) > slots ? RolePreference.Rider
                 : RolePreference.Random;
-            int index = players.FindIndex(p => p.Preference == leaveOut);
+            int index = players.FindIndex(p => p.Preference == leaveOut && !satOut.Contains(p.Actor));
+            if (index < 0)
+            {
+                index = players.FindIndex(p => p.Preference == leaveOut);
+            }
+
             unpaired.Add(players[index].Actor);
             players.RemoveAt(index);
         }
@@ -132,31 +141,61 @@ internal static class PairingRules
     }
 
     /// <summary>
-    /// Forms Pairs as <see cref="Form"/> does, preferring a result that
-    /// repeats none of the <paramref name="previous"/> partners (Pair Shuffle).
-    /// Every attempt overrides the same number of wishes, so only repeats count.
+    /// Forms the Pairs anew for a Pair Shuffle so that every Pair changes:
+    /// no partners repeat while there are two Pairs or more, and a lone Pair
+    /// of the same two trades roles, whatever their Role Preferences. When
+    /// the count is odd, someone who did not sit out last time sits out.
     /// </summary>
-    public static PairingResult FormAvoiding(
+    public static PairingResult Reshuffle(
         IReadOnlyList<PairCandidate> candidates,
         Random random,
         IReadOnlyList<Pair> previous,
-        int attempts = 64)
+        IReadOnlyCollection<int> previousUnpaired)
     {
+        PairingResult formed = Form(candidates, random, previousUnpaired);
         var before = new HashSet<(int, int)>(previous.Select(PartnersOf));
-        PairingResult best = Form(candidates, random);
-        int bestRepeats = best.Pairs.Count(p => before.Contains(PartnersOf(p)));
-        for (int i = 1; i < attempts && bestRepeats > 0; i++)
+        var pairs = formed.Pairs.ToList();
+        var overridden = new HashSet<int>(formed.PreferenceOverridden);
+
+        // Each player had one partner before, so trading Riders with any
+        // other Pair parts a repeated Pair without making a new repeat, and
+        // keeps every role.
+        for (int i = 0; i < pairs.Count && pairs.Count > 1; i++)
         {
-            PairingResult next = Form(candidates, random);
-            int repeats = next.Pairs.Count(p => before.Contains(PartnersOf(p)));
-            if (repeats < bestRepeats)
+            if (!before.Contains(PartnersOf(pairs[i])))
             {
-                best = next;
-                bestRepeats = repeats;
+                continue;
+            }
+
+            int other = pairs.FindIndex(i + 1, p => before.Contains(PartnersOf(p)));
+            if (other < 0)
+            {
+                other = random.Next(pairs.Count - 1);
+                other += other >= i ? 1 : 0;
+            }
+
+            (pairs[i], pairs[other]) = (new Pair(pairs[i].Carrier, pairs[other].Rider), new Pair(pairs[other].Carrier, pairs[i].Rider));
+        }
+
+        if (pairs.Count == 1 && previous.Any(p => p.Carrier == pairs[0].Carrier && p.Rider == pairs[0].Rider))
+        {
+            Pair lone = pairs[0];
+            pairs[0] = new Pair(lone.Rider, lone.Carrier);
+            foreach (PairCandidate candidate in candidates.Where(c => lone.Contains(c.Actor)))
+            {
+                bool wantsOther = candidate.Preference == (candidate.Actor == lone.Carrier ? RolePreference.Carrier : RolePreference.Rider);
+                if (wantsOther)
+                {
+                    overridden.Add(candidate.Actor);
+                }
+                else
+                {
+                    overridden.Remove(candidate.Actor);
+                }
             }
         }
 
-        return best;
+        return new PairingResult(pairs, formed.Unpaired, overridden.ToList());
     }
 
     private static (int, int) PartnersOf(Pair pair) =>

@@ -57,8 +57,9 @@ A player's stated wish to be Carrier, Rider, or either (Random) when Pairs are
 formed.
 
 **Pair Shuffle** (짝 섞기):
-Forming the Pairs anew in the middle of a Run, by the same rules as at the
-start and avoiding the previous partners where possible.
+Forming the Pairs anew in the middle of a Run so that every Pair changes:
+new partners where there are enough players, otherwise the same two with
+their roles traded. Role Preferences hold where they allow it.
 _Avoid_: re-pairing, reshuffle
 
 **Campfire Shuffle**:

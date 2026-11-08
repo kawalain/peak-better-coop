@@ -7,28 +7,91 @@ public class PairShuffleTests
 {
     private static PairCandidate C(int actor, RolePreference preference = RolePreference.Random) => new(actor, preference);
 
-    [Fact]
-    public void A_shuffle_avoids_the_previous_partners_when_it_can()
+    private static PairingResult Reshuffle(PairCandidate[] candidates, int seed, Pair[] previous, int[]? previousUnpaired = null) =>
+        PairingRules.Reshuffle(candidates, new Random(seed), previous, previousUnpaired ?? []);
+
+    private static bool SamePartners(Pair a, Pair b) => a.Contains(b.Carrier) && a.Contains(b.Rider);
+
+    [Theory]
+    [InlineData(RolePreference.Random, RolePreference.Random, RolePreference.Random, RolePreference.Random)]
+    [InlineData(RolePreference.Carrier, RolePreference.Rider, RolePreference.Carrier, RolePreference.Rider)]
+    [InlineData(RolePreference.Carrier, RolePreference.Rider, RolePreference.Random, RolePreference.Random)]
+    [InlineData(RolePreference.Carrier, RolePreference.Carrier, RolePreference.Carrier, RolePreference.Rider)]
+    public void A_shuffle_never_repeats_a_partner_when_there_are_two_pairs(
+        RolePreference one, RolePreference two, RolePreference three, RolePreference four)
     {
         Pair[] previous = [new Pair(1, 2), new Pair(3, 4)];
-        for (int seed = 0; seed < 50; seed++)
+        for (int seed = 0; seed < 200; seed++)
         {
-            PairingResult result = PairingRules.FormAvoiding(
-                [C(1), C(2), C(3), C(4)],
-                new Random(seed),
-                previous);
+            PairingResult result = Reshuffle([C(1, one), C(2, two), C(3, three), C(4, four)], seed, previous);
 
-            Assert.DoesNotContain(result.Pairs, p => (p.Carrier, p.Rider) is (1, 2) or (2, 1) or (3, 4) or (4, 3));
+            Assert.Equal(2, result.Pairs.Count);
+            Assert.DoesNotContain(result.Pairs, p => previous.Any(q => SamePartners(p, q)));
         }
     }
 
     [Fact]
-    public void Two_players_keep_each_other()
+    public void A_shuffle_keeps_role_preferences_while_it_changes_partners()
     {
-        PairingResult result = PairingRules.FormAvoiding([C(1), C(2)], new Random(1), [new Pair(1, 2)]);
+        Pair[] previous = [new Pair(1, 2), new Pair(3, 4)];
+        for (int seed = 0; seed < 200; seed++)
+        {
+            PairingResult result = Reshuffle(
+                [C(1, RolePreference.Carrier), C(2, RolePreference.Rider), C(3, RolePreference.Carrier), C(4, RolePreference.Rider)],
+                seed,
+                previous);
 
-        Pair pair = Assert.Single(result.Pairs);
-        Assert.Equal(new[] { 1, 2 }, new[] { pair.Carrier, pair.Rider }.OrderBy(a => a));
+            Assert.Equal(new[] { 1, 3 }, result.Pairs.Select(p => p.Carrier).OrderBy(a => a));
+            Assert.Empty(result.PreferenceOverridden);
+        }
+    }
+
+    [Theory]
+    [InlineData(RolePreference.Random, RolePreference.Random)]
+    [InlineData(RolePreference.Carrier, RolePreference.Rider)]
+    public void Two_players_always_trade_roles(RolePreference first, RolePreference second)
+    {
+        for (int seed = 0; seed < 50; seed++)
+        {
+            PairingResult result = Reshuffle([C(1, first), C(2, second)], seed, [new Pair(1, 2)]);
+
+            Pair pair = Assert.Single(result.Pairs);
+            Assert.Equal((2, 1), (pair.Carrier, pair.Rider));
+        }
+    }
+
+    [Fact]
+    public void Trading_roles_against_a_wish_is_reported()
+    {
+        PairingResult result = Reshuffle([C(1, RolePreference.Carrier), C(2, RolePreference.Rider)], 0, [new Pair(1, 2)]);
+
+        Assert.Equal(new[] { 1, 2 }, result.PreferenceOverridden.OrderBy(a => a));
+    }
+
+    [Fact]
+    public void Whoever_sat_out_gets_a_pair_next()
+    {
+        for (int seed = 0; seed < 100; seed++)
+        {
+            PairingResult result = Reshuffle([C(1), C(2), C(3)], seed, [new Pair(1, 2)], [3]);
+
+            Assert.Contains(result.Pairs, p => p.Contains(3));
+            Assert.DoesNotContain(3, result.Unpaired);
+        }
+    }
+
+    [Fact]
+    public void No_pair_comes_back_unchanged_in_a_large_party()
+    {
+        Pair[] previous = [new Pair(1, 2), new Pair(3, 4), new Pair(5, 6), new Pair(7, 8)];
+        PairCandidate[] candidates = Enumerable.Range(1, 8).Select(a => C(a)).ToArray();
+        for (int seed = 0; seed < 200; seed++)
+        {
+            PairingResult result = Reshuffle(candidates, seed, previous);
+
+            Assert.Equal(4, result.Pairs.Count);
+            Assert.DoesNotContain(result.Pairs, p => previous.Any(q => SamePartners(p, q)));
+        }
     }
 
     [Fact]
