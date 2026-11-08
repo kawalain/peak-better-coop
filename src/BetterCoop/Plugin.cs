@@ -77,6 +77,7 @@ public sealed class Plugin : BaseUnityPlugin
         runtime.AddComponent<SharedViewSoundsKeeper>();
         runtime.AddComponent<PairShuffleLink>();
         runtime.AddComponent<Ui.Paper.PhotoDarkroom>();
+        runtime.AddComponent<Ui.Notices.NoticeBoard>();
 #if DEBUG
         Ui.Paper.PhotoDarkroom.More = Features.ZooPortraits.WarmOne;
 #endif

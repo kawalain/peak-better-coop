@@ -67,7 +67,7 @@ internal static class RoleSwap
             [RoomKeys.SwapRequest] = new object[] { actor, pending.Value.At },
         });
         Plugin.Verbose($"Asked {actor} to swap places.");
-        CoopNotice.Info(Strings.SwapAsked(partner.characterName));
+        CoopNotice.Show(NoticeKind.Memo, Strings.SwapAsked(partner.characterName));
     }
 
     private static void Withdraw(string? notice)
@@ -76,7 +76,7 @@ internal static class RoleSwap
         PhotonNetwork.LocalPlayer.SetCustomProperties(new PhotonHashtable { [RoomKeys.SwapRequest] = null });
         if (notice != null)
         {
-            CoopNotice.Info(notice);
+            CoopNotice.Show(NoticeKind.Memo, notice);
         }
     }
 
@@ -190,7 +190,7 @@ internal static class RoleSwap
             partnerOffered = true;
             if (pending == null)
             {
-                CoopNotice.Info(Strings.SwapOffered(player.NickName));
+                CoopNotice.Show(NoticeKind.Memo, Strings.SwapOffered(player.NickName));
             }
 
             return;
@@ -204,7 +204,7 @@ internal static class RoleSwap
                 && ServerClock.Since(PhotonNetwork.Time, op.At) < Operation.CountdownSeconds + 2;
             if (!swapping)
             {
-                CoopNotice.Info(Strings.SwapWithdrawn(player.NickName));
+                CoopNotice.Show(NoticeKind.Memo, Strings.SwapWithdrawn(player.NickName));
             }
         }
     }

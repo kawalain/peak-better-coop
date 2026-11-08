@@ -137,6 +137,41 @@ internal static class FormDrawing
         return Close(svg);
     }
 
+    /// <summary>
+    /// The punched hole of a baggage tag, <paramref name="size"/> across: a
+    /// card reinforcement ring round a hole that shows what lies behind.
+    /// </summary>
+    public static string TagHole(float size)
+    {
+        var svg = Open(size, size);
+        float c = size / 2f;
+        Ink ring = new(0.80f, 0.66f, 0.42f);
+        svg.Append(F($"<circle cx=\"{c}\" cy=\"{c}\" r=\"{c - 1f}\" fill=\"{ring.Hex}\" stroke=\"{ring.Mix(PaperDrawing.InkBlack, 0.35f).Hex}\" stroke-width=\"1.4\"/>"));
+        svg.Append(F($"<circle cx=\"{c}\" cy=\"{c}\" r=\"{c * 0.42f}\" fill=\"{PaperDrawing.InkBlack.Hex}\"/>"));
+        return Close(svg);
+    }
+
+    /// <summary>
+    /// An airmail envelope's border: red and blue bars slanting along a strip
+    /// <paramref name="width"/> by <paramref name="height"/>, with paper between.
+    /// </summary>
+    public static string Airmail(float width, float height)
+    {
+        var svg = Open(width, height);
+        Ink red = new(0.78f, 0.17f, 0.18f);
+        Ink blue = new(0.13f, 0.25f, 0.62f);
+        float bar = height * 1.4f;
+        float slant = height * 0.8f;
+        int i = 0;
+        for (float x = -slant; x < width; x += bar * 1.6f, i++)
+        {
+            string fill = (i % 2 == 0 ? red : blue).Hex;
+            svg.Append(F($"<path d=\"M{x + slant} 0H{x + slant + bar}L{x + bar} {height}H{x}Z\" fill=\"{fill}\"/>"));
+        }
+
+        return Close(svg);
+    }
+
     /// <summary>The thin printed edge round a yearbook photo.</summary>
     public static string PhotoEdge(float width, float height)
     {

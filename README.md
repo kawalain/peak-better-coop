@@ -26,6 +26,10 @@ and come back together.
 - **Roster** in the ESC menu is a paper form: the Pairs as a yearbook page
   of the scouts' passport photos, the time to the next shuffle, and where you
   swap places and set the role you would like.
+- News comes in on paper from the left: a telegram, a scout's memo, a
+  baggage tag for your things, or a red-stamped caution. When your own Pair
+  or role is about to change, a little airmail letter pops out with your
+  photo and your partner's and counts down in its postmark.
 
 ## Installing
 

@@ -24,6 +24,8 @@ public class FormDrawingTests
             FormDrawing.Card(200f, 140f, lifted: false),
             FormDrawing.Slot(200f, 140f, marked: true),
             FormDrawing.Silhouette(90f, 110f, new Ink(0.9f, 0.7f, 0.5f)),
+            FormDrawing.TagHole(30f),
+            FormDrawing.Airmail(300f, 10f),
         ];
 
         foreach (string drawing in drawings)

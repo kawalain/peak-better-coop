@@ -1,6 +1,7 @@
 using System;
 using ExitGames.Client.Photon;
 using HarmonyLib;
+using BetterCoop.Core;
 using BetterCoop.Net;
 using BetterCoop.Ui;
 using Photon.Pun;
@@ -114,7 +115,7 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
                     Quaternion.identity,
                     slot.data,
                     true);
-                CoopNotice.Info(Strings.RiderHandEmptied);
+                CoopNotice.Show(NoticeKind.Tag, Strings.RiderHandEmptied);
             }
             else
             {
@@ -137,7 +138,7 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
 
         Plugin.Verbose($"Dropping {rider.player.backpackSlot.GetPrefabName()} from the Rider's back.");
         items.photonView.RPC("DropItemFromSlotRPC", RpcTarget.All, (byte)Player.BACKPACKSLOTINDEX, at + (Vector3.up * 0.5f));
-        CoopNotice.Info(Strings.RiderBackEmptied);
+        CoopNotice.Show(NoticeKind.Tag, Strings.RiderBackEmptied);
     }
 
     /// <summary>
@@ -190,7 +191,7 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
                 break;
         }
 
-        CoopNotice.Info(Strings.Recovered);
+        CoopNotice.Show(NoticeKind.Tag, Strings.Recovered);
     }
 
     private static void KeepCarrying(Character carrier, bool force)

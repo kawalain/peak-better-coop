@@ -545,6 +545,11 @@ internal static class PairShuffle
         }
 
         int left = op.SecondsLeft(PhotonNetwork.Time);
+        if (PairLetters.Follow(op, left))
+        {
+            return;
+        }
+
         if (left > 0 && left != countdownShown)
         {
             countdownShown = left;

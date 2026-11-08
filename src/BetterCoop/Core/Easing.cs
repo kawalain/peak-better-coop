@@ -19,6 +19,14 @@ internal static class Easing
         return t < 0.5f ? 4f * t * t * t : 1f - ((float)Math.Pow(-2f * t + 2f, 3) / 2f);
     }
 
+    /// <summary>Springs out past the end and settles back, as a letter popping out from the edge.</summary>
+    public static float Pop(float t)
+    {
+        const float back = 1.70158f;
+        float u = Clamp(t) - 1f;
+        return 1f + ((back + 1f) * u * u * u) + (back * u * u);
+    }
+
     /// <summary>
     /// Moves <paramref name="value"/> towards <paramref name="target"/> as a
     /// spring that settles in about <paramref name="seconds"/>, the same

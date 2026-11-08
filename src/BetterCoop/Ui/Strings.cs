@@ -108,6 +108,60 @@ internal static class Strings
 
     public static string Serial(int number) => $"No. {number:D7}";
 
+    /// <summary>A notice's words without the "Coop:" the game's log needs to tell them from its own.</summary>
+    public static string Unprefixed(string message)
+    {
+        foreach (string prefix in new[] { "코옵: ", "Coop: " })
+        {
+            if (message.StartsWith(prefix, System.StringComparison.Ordinal))
+            {
+                return message.Substring(prefix.Length);
+            }
+        }
+
+        return message;
+    }
+
+    public static string NoticeHeading(Core.NoticeKind kind) => kind switch
+    {
+        Core.NoticeKind.Memo => Korean ? "메모" : "Memo",
+        Core.NoticeKind.Tag => Korean ? "꼬리표" : "Baggage tag",
+        Core.NoticeKind.Caution => Korean ? "주의 통지" : "Notice",
+        _ => Korean ? "전보" : "Telegram",
+    };
+
+    /// <summary>The word on the rubber stamp of a caution.</summary>
+    public static string CautionStamp => Korean ? "주의" : "Caution";
+
+    /// <summary>The Pair letter's heading: what is changing.</summary>
+    public static string LetterHeading(Core.OperationKind kind) => kind switch
+    {
+        Core.OperationKind.RoleSwap => Korean ? "역할 교대 통지" : "Role swap orders",
+        Core.OperationKind.LatePairing => Korean ? "짝 배정 통지" : "Pairing orders",
+        Core.OperationKind.PairAssignment => Korean ? "분대장 편성 통지" : "Troop Leader's orders",
+        Core.OperationKind.None => Korean ? "짝 편성 통지" : "Pair orders",
+        _ => Korean ? "짝 섞기 통지" : "Shuffle orders",
+    };
+
+    /// <summary>Under the photos while the countdown runs.</summary>
+    public static string LetterSoon(int seconds) => Korean ? $"{seconds}초 뒤 몸이 바뀝니다" : $"Changing places in {seconds}";
+
+    public static string LetterDone => Korean ? "새 짝과 함께 오릅니다" : "Climbing with your partner";
+
+    public static string LetterAlone => Korean ? "이번에는 짝 없이 오릅니다" : "Climbing alone for now";
+
+    /// <summary>The postmark's word once the change is made.</summary>
+    public static string LetterArrived => Korean ? "도착" : "Arrived";
+
+    /// <summary>The partner not yet known, as before a Pair Shuffle.</summary>
+    public static string LetterUnknown => Korean ? "누구일까요?" : "Who?";
+
+    public static string LetterYou => Korean ? "나" : "You";
+
+    public static string LetterTo(string player) => Korean ? $"받는 이: {player} 대원" : $"To: Scout {player}";
+
+    public static string LetterRoleUnknown => Korean ? "역할 미정" : "Role to come";
+
     /// <summary>The heading printed on a slip that asks before going on.</summary>
     public static string SlipQuery => Korean ? "확인 요청" : "Query";
 

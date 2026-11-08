@@ -59,7 +59,12 @@ public class EasingTests
     {
         Assert.Equal(expected, Easing.Out(t), 4);
         Assert.Equal(expected, Easing.InOut(t), 4);
+        Assert.Equal(expected, Easing.Pop(t), 4);
     }
+
+    [Fact]
+    public void A_pop_springs_past_the_end_before_settling() =>
+        Assert.True(Easing.Pop(0.7f) > 1f);
 
     [Fact]
     public void Out_is_ahead_and_in_out_is_even_at_half()

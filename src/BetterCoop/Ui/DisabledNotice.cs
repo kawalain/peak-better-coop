@@ -25,7 +25,10 @@ internal sealed class DisabledNotice : MonoBehaviour
         if (log != null && log != shownOn)
         {
             shownOn = log;
-            CoopNotice.Warning(Message());
+            // The mod is off, so its paper notices are too: only the game's log is left.
+            string message = Message();
+            Plugin.Log.LogInfo($"[Notice] {message}");
+            CoopNotice.InGameLog(message, warning: true);
         }
     }
 }

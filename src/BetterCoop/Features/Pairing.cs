@@ -413,19 +413,19 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
 
         if (previous == null)
         {
-            foreach (Pair pair in current.Pairs)
+            foreach (Pair pair in current.Pairs.Where(pair => !PairLetters.Formed(pair)))
             {
-                CoopNotice.Info(Strings.PairFormed(NameOf(pair.Carrier), NameOf(pair.Rider)));
+                CoopNotice.Show(NoticeKind.Memo, Strings.PairFormed(NameOf(pair.Carrier), NameOf(pair.Rider)));
             }
 
             foreach (int actor in current.PreferenceOverridden)
             {
-                CoopNotice.Info(Strings.PreferenceOverridden(NameOf(actor)));
+                CoopNotice.Show(NoticeKind.Memo, Strings.PreferenceOverridden(NameOf(actor)));
             }
 
             foreach (int actor in current.Unpaired)
             {
-                CoopNotice.Info(Strings.Unpaired(NameOf(actor)));
+                CoopNotice.Show(NoticeKind.Memo, Strings.Unpaired(NameOf(actor)));
             }
 
             return;
@@ -434,7 +434,11 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         // A Pair Shuffle or Role Swap forms new Pairs; a member leaving only ends one.
         foreach (Pair formed in current.Pairs.Where(c => !previous.Pairs.Any(p => p.Carrier == c.Carrier && p.Rider == c.Rider)))
         {
-            CoopNotice.Info(Strings.PairFormed(NameOf(formed.Carrier), NameOf(formed.Rider)));
+            // The player's own new Pair comes in their letter.
+            if (!PairLetters.Formed(formed))
+            {
+                CoopNotice.Show(NoticeKind.Memo, Strings.PairFormed(NameOf(formed.Carrier), NameOf(formed.Rider)));
+            }
         }
 
         foreach (Pair gone in previous.Pairs.Where(p => !current.Pairs.Any(c => c.Contains(p.Carrier) || c.Contains(p.Rider))))

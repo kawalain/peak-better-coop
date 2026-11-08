@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using BetterCoop.Core;
 using BetterCoop.Ui;
+using BetterCoop.Ui.Notices;
 using BetterCoop.Ui.Paper;
 using UnityEngine;
 using UnityEngine.UI;
@@ -119,6 +120,40 @@ internal sealed class ZooPage : PaperPage
         list.Stamp(() => T("종이 다시 올리기", "Raise the paper again"), () => T("재생", "Play"), Rise);
         list.Signature(() => T("서명", "Signed"), () => "Alder");
 
+        list.Header(() => T("알림", "Notices"));
+        list.Note(() => T(
+            "알림은 종류마다 다른 종이에 실려 왼쪽에서 들어옵니다. 종이로 보일 수 없을 때만 게임의 접속 기록에 씁니다.",
+            "Each kind of notice comes in from the left on its own paper. Only when the paper cannot be shown does it go to the game's join log."));
+        list.Stamp(
+            () => T("전보", "Telegram"),
+            () => T("재생", "Play"),
+            () => CoopNotice.Info(T("코옵: 분대장이 30초 뒤 짝을 섞습니다.", "Coop: the Troop Leader shuffles Pairs in 30 seconds.")));
+        list.Stamp(
+            () => T("메모", "Memo"),
+            () => T("재생", "Play"),
+            () => CoopNotice.Show(NoticeKind.Memo, Strings.SwapOffered("Birch")));
+        list.Stamp(
+            () => T("꼬리표", "Baggage tag"),
+            () => T("재생", "Play"),
+            () => CoopNotice.Show(NoticeKind.Tag, Strings.RiderBackEmptied));
+        list.Stamp(
+            () => T("주의 통지", "Caution"),
+            () => T("재생", "Play"),
+            () => CoopNotice.Warning(Strings.MissingMod("Cedar")));
+        list.Stamp(
+            () => T("짝 편지: 짝 섞기", "Pair letter: shuffle"),
+            () => T("재생", "Play"),
+            () => ZooLetter.Play(OperationKind.TimedShuffle, seed),
+            about: () => T("섞기 전에는 새 짝이 누구인지 모르고, 바뀐 뒤 보입니다.", "Before a shuffle the new partner is a surprise, shown once it is made."));
+        list.Stamp(
+            () => T("짝 편지: 역할 교대", "Pair letter: role swap"),
+            () => T("재생", "Play"),
+            () => ZooLetter.Play(OperationKind.RoleSwap, seed));
+        list.Stamp(
+            () => T("게임 기록으로 보내기", "Send to the game's log"),
+            () => T("재생", "Play"),
+            () => CoopNotice.InGameLog(T("코옵: 종이로 보일 수 없을 때는 이렇게 보입니다.", "Coop: this is how a notice looks when the paper cannot be shown."), warning: false));
+
         list.Header(() => T("편성표 예제", "Roster examples"));
         list.Choice(
             () => T("인원", "Players"),
@@ -154,6 +189,65 @@ internal sealed class ZooPage : PaperPage
         example.Open();
     }
 }
+/// <summary>
+/// Plays the Pair letter in the Zoo on made-up scouts: a three-second
+/// countdown, the change, and the letter slipping away. It runs on the
+/// letter itself, so it finishes after the pause menu closes.
+/// </summary>
+internal sealed class ZooLetter : MonoBehaviour
+{
+    private const float Countdown = 3f;
+
+    private OperationKind kind;
+
+    private FakeRoom room = null!;
+
+    private float age;
+
+    private bool closing;
+
+    public static void Play(OperationKind kind, int seed)
+    {
+        PairLetter? letter = NoticeBoard.Letter;
+        if (letter == null)
+        {
+            CoopNotice.Info(Strings.ShuffleCountdown(3));
+            return;
+        }
+
+        ZooLetter play = letter.GetComponent<ZooLetter>() ?? letter.gameObject.AddComponent<ZooLetter>();
+        play.kind = kind;
+        play.room = new FakeRoom(6, true, true, seed);
+        play.age = 0f;
+        play.closing = false;
+        play.enabled = true;
+        letter.Open(Strings.LetterHeading(kind), new ZooPortraits(seed), play.room.NameOf, 1);
+        NoticeBoard.Chime(bad: false);
+        play.Update();
+    }
+
+    private void Update()
+    {
+        PairLetter letter = GetComponent<PairLetter>();
+        age += Time.unscaledDeltaTime;
+        bool swap = kind == OperationKind.RoleSwap;
+        if (age < Countdown)
+        {
+            int left = Mathf.CeilToInt(Countdown - age);
+            letter.Show(swap ? 2 : null, swap ? false : null, known: swap, left.ToString(), Strings.LetterSoon(left));
+            return;
+        }
+
+        letter.Show(swap ? 2 : 4, swap ? false : true, known: true, Strings.LetterArrived, Strings.LetterDone);
+        if (!closing)
+        {
+            closing = true;
+            letter.CloseAfter(3f);
+            enabled = false;
+        }
+    }
+}
+
 /// <summary>
 /// Photos of made-up scouts, each dressed at random from the game's own
 /// skins, outfits, hats, eyes, and mouths, the same way for the same seed.
