@@ -34,25 +34,27 @@ only and must not touch Unity, Photon, or game types.
 
 ## Deploy and feedback
 
-The development profile is a plain folder outside `%APPDATA%`: a packaged host
-(such as the Claude desktop app) virtualises `%APPDATA%` for the tools it
-starts, so a Gale profile created from here is invisible to the game that Steam
-starts. `tools/dev_profile.py` builds and launches that folder profile:
+The development profile is a Gale profile whose data folder (Gale settings,
+Locations) lies outside `%APPDATA%`: a packaged host (such as the Claude desktop
+app) virtualises `%APPDATA%` for the tools it starts, so a build cannot reach a
+profile there, nor read one reliably. Set `PeakCoopDeployDir` in
+`Directory.Build.user.props` to
+`<gale_data>/peak/profiles/<profile>/BepInEx/plugins/PeakCoop`, the folder Gale
+made when the test build zip was imported, and every build deploys there.
+Start the game from Gale, or from here through Steam with that profile's
+preloader:
 
 ```bash
-python -I tools/dev_profile.py install <profile_dir> <cache_dir> PEAKModding-ModConfig
-python -I tools/dev_profile.py launch <profile_dir> <PeakGameDir>
+python -I tools/dev_profile.py launch <gale_data>/peak/profiles/<profile> <PeakGameDir>
 ```
 
-`install` adds BepInExPack_PEAK and ModConfig (in-game config editing) with
-their dependencies. Setting `PeakCoopDeployDir` in `Directory.Build.user.props`
-to `<profile_dir>/BepInEx/plugins/PeakCoop` makes every build deploy there.
 `launch` copies the doorstop proxy into the game folder, the only change made
-there. To test the Control Split alone, turn on `[Debug] Solo Pair`: alone in a room,
-your mouse takes the Rider's path (encoded, delayed by the set latency,
-replayed) before it reaches your body, and a solo Run may depart.
-Diagnostics land in `<profile_dir>/BepInEx/LogOutput.log`; players use
-Gale and send theirs from their own profile.
+there. Without Gale, `dev_profile.py install` lays out an equivalent folder
+profile from Thunderstore. To test the Control Split alone, turn on `[Debug]
+Solo Pair`: alone in a room, your mouse takes the Rider's path (encoded,
+delayed by the set latency, replayed) before it reaches your body, and a solo
+Run may depart. Diagnostics land in the profile's `BepInEx/LogOutput.log`;
+players send theirs from their own Gale profile.
 
 ## Test builds and versions
 
