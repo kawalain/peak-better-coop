@@ -16,7 +16,7 @@ internal static class CoopConfig
 
     public static ConfigEntry<bool> TimedShuffle { get; private set; } = null!;
 
-    public static ConfigEntry<ShuffleInterval> TimedShuffleInterval { get; private set; } = null!;
+    public static ConfigEntry<int> TimedShuffleInterval { get; private set; } = null!;
 
     public static ConfigEntry<bool> HandOverPlace { get; private set; } = null!;
 
@@ -65,8 +65,10 @@ internal static class CoopConfig
         TimedShuffleInterval = config.Bind(
             "Shuffle",
             "Timed Shuffle Interval",
-            ShuffleInterval.TenMinutes,
-            "How often a Timed Shuffle comes. The host's value applies.");
+            ShuffleInterval.DefaultMinutes,
+            new ConfigDescription(
+                $"How often a Timed Shuffle comes, in minutes ({ShuffleInterval.MinMinutes}-{ShuffleInterval.MaxMinutes}). The host's value applies.",
+                new AcceptableValueRange<int>(ShuffleInterval.MinMinutes, ShuffleInterval.MaxMinutes)));
 
         HandOverPlace = config.Bind(
             "Shuffle",

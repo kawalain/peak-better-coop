@@ -39,7 +39,8 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
 
     public static bool HandOverItems => Has(Flags.HandOverItems);
 
-    public static double TimedShuffleSeconds => Math.Max(1, Current >> IntervalShift) * 60.0;
+    /// <summary>The Troop Leader's interval, held to the allowed range whatever arrives.</summary>
+    public static double TimedShuffleSeconds => ShuffleInterval.Clamp(Current >> IntervalShift) * 60.0;
 
     private static int Current
     {
@@ -91,7 +92,7 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
             flags |= Flags.HandOverItems;
         }
 
-        return (int)flags | ((int)CoopConfig.TimedShuffleInterval.Value << IntervalShift);
+        return (int)flags | (ShuffleInterval.Clamp(CoopConfig.TimedShuffleInterval.Value) << IntervalShift);
     }
 
     private void Start()
