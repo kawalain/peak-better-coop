@@ -41,4 +41,7 @@ internal static class RoomKeys
 
     /// <summary>Event: an item sound the game played only on the Carrier's client, sent to their Rider.</summary>
     public const byte ItemSoundEvent = 189;
+
+    /// <summary>Event: the backpack wheel's opening and closing (Carrier to Rider) and the Rider's pick (back).</summary>
+    public const byte BackpackWheelEvent = 190;
 }

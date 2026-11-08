@@ -28,5 +28,9 @@ moved look to the Rider to avoid (ADR 0002).
   clears at once when the use stops.
 - Sounds the game already plays for everyone are never relayed, so nothing
   plays twice.
-- The backpack wheel is an input menu, not feedback, and stays on the Carrier's
-  screen until designed on its own.
+- The backpack wheel is an input menu, not feedback, so it follows the Control
+  Split instead: the Carrier opens it (interact, or holding the back-slot key
+  for the Carrier's own backpack) and holds it open, the Rider's screen shows
+  it, and the Rider's click picks a slice, which the Carrier's client carries
+  out. Releasing the key first closes it with no pick. A Run rule hands the
+  pick back to the Carrier, with the wheel on the Carrier's screen only.

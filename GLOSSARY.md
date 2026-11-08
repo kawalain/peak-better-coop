@@ -43,7 +43,8 @@ The Carrier's character, which both members of a Pair control at once.
 The rule that divides the Shared Body's game actions between the Pair: look,
 use, secondary use, scroll, and ping belong to the Rider, and every other
 action belongs to the Carrier. With default bindings this is mouse to the Rider
-and keyboard to the Carrier.
+and keyboard to the Carrier. In the backpack wheel, the Carrier opens it and
+holds it open, and the Rider picks from it.
 _Avoid_: input relay, keyboard/mouse split
 
 **Shared View** (시점 공유):

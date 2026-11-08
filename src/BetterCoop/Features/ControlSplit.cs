@@ -186,7 +186,11 @@ internal static class ControlSplit
         {
             case Mode.Rider:
                 RiderIntent.Capture(__instance);
-                CaptureRiderActions(__instance);
+                if (!BackpackWheelSplit.HoldsRiderButtons())
+                {
+                    CaptureRiderActions(__instance);
+                }
+
                 RiderBinoculars.Zoom(__instance);
                 DropCarrierActions(__instance);
                 break;
@@ -195,7 +199,11 @@ internal static class ControlSplit
                 PlayRiderActions(__instance, playerMovementActive);
                 break;
             case Mode.Solo:
-                CaptureRiderActions(__instance);
+                if (!BackpackWheelSplit.HoldsRiderButtons())
+                {
+                    CaptureRiderActions(__instance);
+                }
+
                 CaptureSoloLook(local, __instance);
                 DeliverSoloWire();
                 PlayRiderActions(__instance, playerMovementActive);
@@ -309,6 +317,12 @@ internal static class ControlSplit
     {
         if (!__instance.IsLocal || lookFrame == Time.frameCount)
         {
+            return;
+        }
+
+        if (GUIManager.instance != null && GUIManager.instance.backpackWheel.gameObject.activeSelf)
+        {
+            // The game holds a body still while its owner picks from a backpack wheel.
             return;
         }
 
@@ -432,6 +446,7 @@ internal sealed class ControlSplitLink : MonoBehaviourPunCallbacks, IOnEventCall
     {
         ControlSplit.SendFromRider();
         UseFeedback.SendFromCarrier();
+        BackpackWheelSplit.Tick();
     }
 
     public void OnEvent(EventData photonEvent)
@@ -440,5 +455,6 @@ internal sealed class ControlSplitLink : MonoBehaviourPunCallbacks, IOnEventCall
         UseFeedback.Receive(photonEvent);
         SharedViewHud.Receive(photonEvent);
         SharedViewSounds.Receive(photonEvent);
+        BackpackWheelSplit.Receive(photonEvent);
     }
 }

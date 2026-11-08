@@ -10,6 +10,8 @@ internal static class CoopConfig
 
     public static ConfigEntry<RolePreference> RolePreference { get; private set; } = null!;
 
+    public static ConfigEntry<bool> RiderPicksFromBackpack { get; private set; } = null!;
+
     public static ConfigEntry<bool> CarryWeight { get; private set; } = null!;
 
     public static ConfigEntry<bool> CampfireShuffle { get; private set; } = null!;
@@ -43,6 +45,12 @@ internal static class CoopConfig
             "Role Preference",
             Core.RolePreference.Random,
             "Your wish when Pairs are formed: Carrier (keyboard), Rider (mouse), or Random. Conflicts are settled at random.");
+
+        RiderPicksFromBackpack = config.Bind(
+            "Pair",
+            "Rider Picks From Backpack",
+            true,
+            "In a backpack wheel the Carrier opens, the Rider picks with the mouse while the Carrier holds the key. Off: the Carrier picks, and only the Carrier sees the wheel. The host's value applies.");
 
         CarryWeight = config.Bind(
             "Balance",

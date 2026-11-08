@@ -22,6 +22,7 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
         TimedShuffle = 8,
         HandOverPlace = 16,
         HandOverItems = 32,
+        RiderPicksFromBackpack = 64,
     }
 
     /// <summary>The Timed Shuffle interval's minutes sit above the flags.</summary>
@@ -38,6 +39,8 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
     public static bool HandOverPlace => Has(Flags.HandOverPlace);
 
     public static bool HandOverItems => Has(Flags.HandOverItems);
+
+    public static bool RiderPicksFromBackpack => Has(Flags.RiderPicksFromBackpack);
 
     /// <summary>The Troop Leader's interval, held to the allowed range whatever arrives.</summary>
     public static double TimedShuffleSeconds => ShuffleInterval.Clamp(Current >> IntervalShift) * 60.0;
@@ -92,6 +95,11 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
             flags |= Flags.HandOverItems;
         }
 
+        if (CoopConfig.RiderPicksFromBackpack.Value)
+        {
+            flags |= Flags.RiderPicksFromBackpack;
+        }
+
         return (int)flags | (ShuffleInterval.Clamp(CoopConfig.TimedShuffleInterval.Value) << IntervalShift);
     }
 
@@ -104,6 +112,7 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
         CoopConfig.TimedShuffleInterval.SettingChanged += (_, _) => PublishIfHost();
         CoopConfig.HandOverPlace.SettingChanged += (_, _) => PublishIfHost();
         CoopConfig.HandOverItems.SettingChanged += (_, _) => PublishIfHost();
+        CoopConfig.RiderPicksFromBackpack.SettingChanged += (_, _) => PublishIfHost();
     }
 
     public override void OnJoinedRoom() => PublishIfHost();
