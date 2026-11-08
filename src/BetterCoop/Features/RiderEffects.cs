@@ -234,6 +234,18 @@ internal sealed class RiderEffectsKeeper : MonoBehaviour
 
     private void Update()
     {
+        try
+        {
+            Tick();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("RiderEffectsKeeper.Update", exception);
+        }
+    }
+
+    private void Tick()
+    {
         if (Time.unscaledTime < nextCheck)
         {
             return;

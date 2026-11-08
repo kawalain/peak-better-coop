@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ExitGames.Client.Photon;
 using HarmonyLib;
@@ -261,5 +262,15 @@ internal static class SharedViewSounds
 /// <summary>Drives the Rider's item sounds that follow the Shared Body's state.</summary>
 internal sealed class SharedViewSoundsKeeper : MonoBehaviour
 {
-    private void Update() => SharedViewSounds.Keep();
+    private void Update()
+    {
+        try
+        {
+            SharedViewSounds.Keep();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("SharedViewSounds.Keep", exception);
+        }
+    }
 }

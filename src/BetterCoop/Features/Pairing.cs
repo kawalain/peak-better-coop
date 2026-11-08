@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using BetterCoop.Core;
@@ -152,11 +153,43 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
     /// </summary>
     private bool formedOnThisIsland;
 
-    public override void OnJoinedRoom() => PairRoster.Reload();
+    public override void OnJoinedRoom()
+    {
+        try
+        {
+            PairRoster.Reload();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PairingDirector.OnJoinedRoom", exception);
+        }
+    }
 
-    public override void OnLeftRoom() => PairRoster.Reload();
+    public override void OnLeftRoom()
+    {
+        try
+        {
+            PairRoster.Reload();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PairingDirector.OnLeftRoom", exception);
+        }
+    }
 
     public override void OnRoomPropertiesUpdate(PhotonHashtable changed)
+    {
+        try
+        {
+            RoomPropertiesChanged(changed);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PairingDirector.OnRoomPropertiesUpdate", exception);
+        }
+    }
+
+    private static void RoomPropertiesChanged(PhotonHashtable changed)
     {
         if (!changed.ContainsKey(RoomKeys.Pairs))
         {
@@ -168,6 +201,18 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
     }
 
     public override void OnPlayerLeftRoom(PhotonPlayer otherPlayer)
+    {
+        try
+        {
+            PlayerLeft(otherPlayer);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PairingDirector.OnPlayerLeftRoom", exception);
+        }
+    }
+
+    private static void PlayerLeft(PhotonPlayer otherPlayer)
     {
         if (PhotonNetwork.IsMasterClient && PairRoster.Read() is PairingResult current)
         {
@@ -197,6 +242,18 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
     }
 
     private void Update()
+    {
+        try
+        {
+            Tick();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PairingDirector.Update", exception);
+        }
+    }
+
+    private void Tick()
     {
         if (Time.unscaledTime < nextTick)
         {

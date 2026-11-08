@@ -1,3 +1,4 @@
+using System;
 using ExitGames.Client.Photon;
 using HarmonyLib;
 using BetterCoop.Net;
@@ -27,6 +28,18 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
     private float nextHandCheck;
 
     private void Update()
+    {
+        try
+        {
+            Tick();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("CarryKeeper.Update", exception);
+        }
+    }
+
+    private void Tick()
     {
         if (CoopConfig.RecoveryKey.Value
             && PhotonNetwork.IsMasterClient
@@ -141,6 +154,18 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
     }
 
     public void OnEvent(EventData photonEvent)
+    {
+        try
+        {
+            HandleEvent(photonEvent);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("CarryKeeper.OnEvent", exception);
+        }
+    }
+
+    private static void HandleEvent(EventData photonEvent)
     {
         // Only the Troop Leader repairs Pairs; another sender, or another mod
         // that reuses the event code, is ignored.

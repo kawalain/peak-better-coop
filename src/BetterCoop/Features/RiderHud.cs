@@ -1,3 +1,4 @@
+using System;
 using HarmonyLib;
 using UnityEngine;
 using Zorro.Core;
@@ -74,6 +75,18 @@ internal sealed class RiderHudRefresher : MonoBehaviour
     private int shownSelection = int.MinValue;
 
     private void Update()
+    {
+        try
+        {
+            Tick();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("RiderHudRefresher.Update", exception);
+        }
+    }
+
+    private void Tick()
     {
         RiderBinoculars.Keep();
         RiderView.Keep();

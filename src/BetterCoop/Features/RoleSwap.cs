@@ -299,7 +299,17 @@ internal sealed class SwapPlacesButton : MonoBehaviour
     }
 
     // After the button's animation has run this frame, so the label's colour is ours.
-    private void LateUpdate() => Refresh();
+    private void LateUpdate()
+    {
+        try
+        {
+            Refresh();
+        }
+        catch (System.Exception exception)
+        {
+            Guard.Report("SwapPlacesButton.LateUpdate", exception);
+        }
+    }
 
     private void Refresh()
     {

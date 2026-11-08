@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
@@ -519,10 +520,39 @@ internal static class PairShuffle
 /// <summary>Drives Pair Shuffles and Role Swaps.</summary>
 internal sealed class PairShuffleLink : MonoBehaviourPunCallbacks
 {
-    public override void OnJoinedRoom() => PairShuffle.OnJoinedRoom();
+    public override void OnJoinedRoom()
+    {
+        try
+        {
+            PairShuffle.OnJoinedRoom();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PairShuffle.OnJoinedRoom", exception);
+        }
+    }
 
-    public override void OnPlayerPropertiesUpdate(PhotonPlayer targetPlayer, PhotonHashtable changedProps) =>
-        RoleSwap.OnRequestChanged(targetPlayer, changedProps);
+    public override void OnPlayerPropertiesUpdate(PhotonPlayer targetPlayer, PhotonHashtable changedProps)
+    {
+        try
+        {
+            RoleSwap.OnRequestChanged(targetPlayer, changedProps);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("RoleSwap.OnRequestChanged", exception);
+        }
+    }
 
-    private void Update() => PairShuffle.Tick();
+    private void Update()
+    {
+        try
+        {
+            PairShuffle.Tick();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PairShuffle.Tick", exception);
+        }
+    }
 }

@@ -115,9 +115,29 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
         CoopConfig.RiderPicksFromBackpack.SettingChanged += (_, _) => PublishIfHost();
     }
 
-    public override void OnJoinedRoom() => PublishIfHost();
+    public override void OnJoinedRoom()
+    {
+        try
+        {
+            PublishIfHost();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("RunRules.OnJoinedRoom", exception);
+        }
+    }
 
-    public override void OnMasterClientSwitched(PhotonPlayer newMasterClient) => PublishIfHost();
+    public override void OnMasterClientSwitched(PhotonPlayer newMasterClient)
+    {
+        try
+        {
+            PublishIfHost();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("RunRules.OnMasterClientSwitched", exception);
+        }
+    }
 
     private static void PublishIfHost()
     {

@@ -1,3 +1,4 @@
+using System;
 using BetterCoop.Core;
 using Photon.Pun;
 using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
@@ -26,7 +27,17 @@ internal sealed class ModPresence : MonoBehaviourPunCallbacks
         CoopConfig.RolePreference.SettingChanged += (_, _) => Publish();
     }
 
-    public override void OnJoinedRoom() => Publish();
+    public override void OnJoinedRoom()
+    {
+        try
+        {
+            Publish();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("ModPresence.OnJoinedRoom", exception);
+        }
+    }
 
     public override void OnEnable()
     {

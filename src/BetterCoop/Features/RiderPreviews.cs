@@ -361,5 +361,15 @@ internal static class RiderPreviews
 /// <summary>Drives the Rider's previews.</summary>
 internal sealed class RiderPreviewsKeeper : MonoBehaviour
 {
-    private void Update() => RiderPreviews.Keep();
+    private void Update()
+    {
+        try
+        {
+            RiderPreviews.Keep();
+        }
+        catch (System.Exception exception)
+        {
+            Guard.Report("RiderPreviews.Keep", exception);
+        }
+    }
 }

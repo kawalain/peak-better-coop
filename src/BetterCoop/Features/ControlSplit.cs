@@ -1,3 +1,4 @@
+using System;
 using ExitGames.Client.Photon;
 using HarmonyLib;
 using BetterCoop.Core;
@@ -448,19 +449,76 @@ internal static class ControlSplit
 /// <summary>Drives the Control Split's network side.</summary>
 internal sealed class ControlSplitLink : MonoBehaviourPunCallbacks, IOnEventCallback
 {
+    // Each step is guarded on its own, so one failing feature leaves the others running.
     private void LateUpdate()
     {
-        ControlSplit.SendFromRider();
-        UseFeedback.SendFromCarrier();
-        BackpackWheelSplit.Tick();
+        try
+        {
+            ControlSplit.SendFromRider();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("ControlSplit.SendFromRider", exception);
+        }
+        try
+        {
+            UseFeedback.SendFromCarrier();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("UseFeedback.SendFromCarrier", exception);
+        }
+        try
+        {
+            BackpackWheelSplit.Tick();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("BackpackWheelSplit.Tick", exception);
+        }
     }
 
     public void OnEvent(EventData photonEvent)
     {
-        ControlSplit.Receive(photonEvent);
-        UseFeedback.Receive(photonEvent);
-        SharedViewHud.Receive(photonEvent);
-        SharedViewSounds.Receive(photonEvent);
-        BackpackWheelSplit.Receive(photonEvent);
+        try
+        {
+            ControlSplit.Receive(photonEvent);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("ControlSplit.Receive", exception);
+        }
+        try
+        {
+            UseFeedback.Receive(photonEvent);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("UseFeedback.Receive", exception);
+        }
+        try
+        {
+            SharedViewHud.Receive(photonEvent);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("SharedViewHud.Receive", exception);
+        }
+        try
+        {
+            SharedViewSounds.Receive(photonEvent);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("SharedViewSounds.Receive", exception);
+        }
+        try
+        {
+            BackpackWheelSplit.Receive(photonEvent);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("BackpackWheelSplit.Receive", exception);
+        }
     }
 }
