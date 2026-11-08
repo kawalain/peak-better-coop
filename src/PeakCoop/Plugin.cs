@@ -53,6 +53,7 @@ public sealed class Plugin : BaseUnityPlugin
         runtime.AddComponent<CarryKeeper>();
         runtime.AddComponent<ControlSplitLink>();
         runtime.AddComponent<RiderHudRefresher>();
+        runtime.AddComponent<RiderEffectsKeeper>();
 
         Log.LogInfo($"{MyPluginInfo.PLUGIN_NAME} {MyPluginInfo.PLUGIN_VERSION} loaded.");
     }
