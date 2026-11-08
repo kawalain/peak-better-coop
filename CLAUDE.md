@@ -46,6 +46,12 @@ when the manifest `name` is the full name `BepInEx-BepInExPack_PEAK`, so rewrite
 that field in the downloaded BepInExPack_PEAK zip first; otherwise it lands in
 `BepInEx/plugins` and the loader never starts.
 
+## Test builds and versions
+
+Players must run the exact same version to depart, so bump `<Version>` in
+`PeakCoop.csproj` only when a test build goes to players: minor for a build with
+new features, patch for a build of fixes. Commits in between keep the version.
+
 ## Rewrite in progress
 
 Files under `src/PeakCoop/Features/` that are listed as `<Compile Remove>` in
