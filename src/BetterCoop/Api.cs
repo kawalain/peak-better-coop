@@ -42,7 +42,7 @@ public static class Api
         /// <summary>A Late Pairing: two Unpaired Players become a Pair.</summary>
         LatePairing,
 
-        /// <summary>A Pair Assignment: the Troop Leader pairs two chosen players.</summary>
+        /// <summary>A Pair Assignment: the Troop Leader sets the Pairs as they choose.</summary>
         Assignment,
     }
 

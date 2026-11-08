@@ -71,10 +71,11 @@ internal interface ICoopRoom
     /// <summary>Re-attaches every Pair's carry and wakes every Rider.</summary>
     void Recover();
 
-    bool CanAssign(int carrier, int rider);
+    /// <summary>Whether a Pair Assignment setting these Pairs could run now.</summary>
+    bool CanArrange(IReadOnlyList<Pair> pairs);
 
-    /// <summary>Orders a Pair Assignment; false when it cannot start now.</summary>
-    bool Assign(int carrier, int rider);
+    /// <summary>Orders a Pair Assignment setting these Pairs; false when it cannot start now.</summary>
+    bool Arrange(IReadOnlyList<Pair> pairs);
 
     bool Rule(RunRule rule);
 

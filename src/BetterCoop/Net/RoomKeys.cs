@@ -18,6 +18,9 @@ internal static class RoomKeys
     /// <summary>Room property: the latest Pair Shuffle or Role Swap the host announced.</summary>
     public const string Operation = "BetterCoop.Operation";
 
+    /// <summary>Room property: the Pairs a Pair Assignment sets, written with its announcement.</summary>
+    public const string Assignment = "BetterCoop.Assignment";
+
     /// <summary>Room property: the Body Handover of the latest operation, written with its Pairs.</summary>
     public const string Handover = "BetterCoop.Handover";
 

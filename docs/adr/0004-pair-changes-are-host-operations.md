@@ -40,10 +40,14 @@ not done and runs it.
   number; when both are Unpaired again they pair first, in their former roles,
   and the left-behind member does not wait for them otherwise.
 - A Pair Assignment, which the Troop Leader orders from the Roster, is an
-  operation too. It moves no items or places: the named Carrier keeps their
-  body, the Rider comes to it, and the two former partners are left Unpaired
-  for a Late Pairing. A Pair Shuffle or Role Swap the Troop Leader orders
-  there runs as the usual operation. It moves no items and leaves
+  operation too. The Pairs it sets are written with its announcement, under
+  their operation's id, so a new Troop Leader runs it with the same Pairs; the
+  Troop Leader checks them again when it runs, as a member may have left. It
+  concerns every player, as a Pair Shuffle does. It moves no items or places:
+  each new Carrier keeps their body and their Rider comes to it, while a Pair
+  only turned round hands its body over as a Role Swap does. Players it leaves
+  out are Unpaired for a Late Pairing. A Pair Shuffle or Role Swap the Troop
+  Leader orders there runs as the usual operation. It moves no items and leaves
   the new Rider's statuses to be cleared as at any pairing; its plan only takes
   the Shared Body to the higher member's place. A lone Unpaired Player waits
   rather than breaking up another Pair.

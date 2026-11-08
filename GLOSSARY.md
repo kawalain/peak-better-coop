@@ -78,9 +78,10 @@ The Shared Body starts where the higher of the two is.
 _Avoid_: re-pairing, late join pairing
 
 **Pair Assignment** (짝 지정):
-The Troop Leader binding two chosen players as a Pair, naming which one
-carries. Their former partners become Unpaired Players, and the next Pair
-Shuffle mixes the assigned Pair like any other.
+The Troop Leader setting the Pairs as they choose, one Pair or all of them at
+once, naming who carries in each. Players they leave out become Unpaired
+Players and pair up by Late Pairing; the next Pair Shuffle mixes the assigned
+Pairs like any other.
 _Avoid_: manual pairing, forced pair
 
 **Campfire Shuffle** (모닥불 짝 섞기):

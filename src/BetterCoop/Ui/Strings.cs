@@ -209,7 +209,7 @@ internal static class Strings
 
     public static string AssignmentCountdown(int seconds) => Korean
         ? $"코옵: {seconds}초 뒤 분대장이 정한 짝이 됩니다."
-        : $"Coop: the Troop Leader pairs you up in {seconds}...";
+        : $"Coop: the Troop Leader's Pairs take effect in {seconds}...";
 
     public static string MenuAssignCarrier => Korean ? "짝 지정: 업는 사람" : "Assign: Carrier";
 

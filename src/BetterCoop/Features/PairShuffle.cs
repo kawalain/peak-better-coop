@@ -36,6 +36,9 @@ internal static class PairShuffle
     /// <summary>The last operation this client published as host, ahead of the room's echo.</summary>
     private static Operation? published;
 
+    /// <summary>The Pairs of the last Pair Assignment this client published as host, ahead of the room's echo.</summary>
+    private static object[]? publishedAssignment;
+
     private static int executedId;
 
     private static int appliedHandoverId;
@@ -90,6 +93,7 @@ internal static class PairShuffle
     internal static void OnJoinedRoom()
     {
         published = null;
+        publishedAssignment = null;
         executedId = 0;
         Queue.Clear();
         appliedHandoverId = ReadHandover()?.Id ?? 0;
@@ -150,10 +154,38 @@ internal static class PairShuffle
         return true;
     }
 
-    private static void Publish(Operation op)
+    /// <summary>
+    /// The Troop Leader asks for a Pair Assignment setting these Pairs. They
+    /// are written with the announcement, so a new Troop Leader can run it.
+    /// </summary>
+    internal static bool RequestAssignment(IReadOnlyList<Pair> pairs)
+    {
+        if (!PhotonNetwork.IsMasterClient || !PairRoster.Formed)
+        {
+            return false;
+        }
+
+        Operation? op = Queue.Request(Current, OperationKind.PairAssignment, PhotonNetwork.Time);
+        if (op == null)
+        {
+            return false;
+        }
+
+        publishedAssignment = Arrangement.Encode(op.Id, pairs);
+        Publish(op, new PhotonHashtable { [RoomKeys.Assignment] = publishedAssignment });
+        return true;
+    }
+
+    /// <summary>Whether a Pair Assignment setting these Pairs could run now.</summary>
+    internal static bool CanArrange(IReadOnlyList<Pair> pairs) =>
+        PairRoster.Formed && PairRoster.Read() is PairingResult before && Arranged(before, pairs) != null;
+
+    private static void Publish(Operation op, PhotonHashtable? with = null)
     {
         published = op;
-        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable { [RoomKeys.Operation] = op.Encode() });
+        PhotonHashtable properties = with ?? new PhotonHashtable();
+        properties[RoomKeys.Operation] = op.Encode();
+        PhotonNetwork.CurrentRoom.SetCustomProperties(properties);
         Plugin.Verbose($"Announced {op.Kind} #{op.Id} at server time {op.At:F2}.");
     }
 
@@ -260,8 +292,7 @@ internal static class PairShuffle
         }
         else if (before != null && op.Kind == OperationKind.PairAssignment)
         {
-            after = Assign(before, op);
-            plan = after == null ? null : new HandoverPlan(op.Id, movesPlaces: false, []);
+            after = Assign(before, op, out plan);
         }
         else if (before != null)
         {
@@ -376,30 +407,39 @@ internal static class PairShuffle
     }
 
     /// <summary>
-    /// The Pair the Troop Leader assigned, while both still run this version
-    /// and the Carrier is awake. The Carrier keeps their body and place; the
-    /// Rider comes to them, and the new Rider's statuses clear as at any pairing.
+    /// The Pairs the Troop Leader set, checked again now: the Pairs may have
+    /// changed since, as when a member left. Each new Carrier keeps their body
+    /// and place, and their Rider comes to them, the new Rider's statuses
+    /// cleared as at any pairing. A Pair only turned round hands its body over
+    /// as a Role Swap does.
     /// </summary>
-    private static PairingResult? Assign(PairingResult before, Operation op)
+    private static PairingResult? Assign(PairingResult before, Operation op, out HandoverPlan? plan)
     {
-        if (!CanAssign(op.SwapCarrier, op.SwapRider))
+        plan = null;
+        object? stored = op.Id == Arrangement.IdOf(publishedAssignment)
+            ? publishedAssignment
+            : PhotonNetwork.CurrentRoom.CustomProperties[RoomKeys.Assignment];
+        if (Arrangement.Decode(stored, op.Id) is not IReadOnlyList<Pair> wanted
+            || Arranged(before, wanted) is not PairingResult after)
         {
             return null;
         }
 
-        return PairingRules.Assign(before, op.SwapCarrier, op.SwapRider, PhotonNetwork.PlayerList.Select(p => p.ActorNumber));
+        IReadOnlyList<(Pair Before, Pair After)> turned = PairingRules.TurnedRound(before.Pairs, after.Pairs);
+        plan = turned.Count == 0
+            ? new HandoverPlan(op.Id, movesPlaces: false, [])
+            : PlanHandover(op.Id, turned.Select(t => t.Before).ToList(), turned.Select(t => t.After).ToList());
+        return after;
     }
 
-    /// <summary>Whether a Pair Assignment of these two can run now.</summary>
-    internal static bool CanAssign(int carrier, int rider)
-    {
-        if (carrier == rider || !IsEligible(carrier) || !IsEligible(rider) || CharacterOf(carrier) is not Character body)
-        {
-            return false;
-        }
-
-        return !body.data.dead && !body.data.passedOut && !body.data.fullyPassedOut;
-    }
+    private static PairingResult? Arranged(PairingResult before, IReadOnlyList<Pair> wanted) =>
+        PairingRules.Arrange(
+            before,
+            wanted,
+            PhotonNetwork.PlayerList.Select(p => p.ActorNumber),
+            IsEligible,
+            IsAlive,
+            actor => CharacterOf(actor) is Character body && !body.data.dead && !body.data.passedOut && !body.data.fullyPassedOut);
 
     private static bool IsEligible(int actor) =>
         PhotonNetwork.CurrentRoom?.GetPlayer(actor) is PhotonPlayer player

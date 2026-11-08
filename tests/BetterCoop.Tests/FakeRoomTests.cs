@@ -55,7 +55,7 @@ public class FakeRoomTests
         Pair first = room.Pairs[0];
         Pair second = room.Pairs[1];
 
-        Assert.True(room.Assign(first.Carrier, second.Carrier));
+        Assert.True(room.Arrange(Arrangement.WithPair(room.Pairs, first.Carrier, second.Carrier)));
 
         Assert.Contains(room.Pairs, p => p.Carrier == first.Carrier && p.Rider == second.Carrier);
         Assert.Contains(room.Pairs, p => p.Contains(first.Rider) && p.Contains(second.Rider));
@@ -66,8 +66,19 @@ public class FakeRoomTests
     [Fact]
     public void An_assignment_needs_two_different_players_after_Pair_Formation()
     {
-        Assert.False(new FakeRoom(4, troopLeader: true, formed: true).Assign(2, 2));
-        Assert.False(new FakeRoom(4, troopLeader: true, formed: false).Assign(1, 2));
+        var formed = new FakeRoom(4, troopLeader: true, formed: true);
+        Assert.False(formed.Arrange(Arrangement.WithPair(formed.Pairs, 2, 2)));
+        Assert.False(new FakeRoom(4, troopLeader: true, formed: false).Arrange([new Pair(1, 2)]));
+    }
+
+    [Fact]
+    public void A_whole_arrangement_applies_at_once()
+    {
+        var room = new FakeRoom(6, troopLeader: true, formed: true);
+
+        Assert.True(room.Arrange([new Pair(1, 2), new Pair(3, 4), new Pair(6, 5)]));
+
+        Assert.Equal([(1, 2), (3, 4), (6, 5)], room.Pairs.Select(p => (p.Carrier, p.Rider)));
     }
 
     [Fact]

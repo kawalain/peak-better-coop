@@ -180,12 +180,23 @@ public class PairingRulesTests
         Assert.Equal([1], result.Unpaired);
     }
 
+    private static readonly int[] Room = [1, 2, 3, 4, 5, 6, 7];
+
+    private static PairingResult? Arrange(PairingResult before, Pair[] wanted, int[]? dead = null, int[]? asleep = null) =>
+        PairingRules.Arrange(
+            before,
+            wanted,
+            Room,
+            Room.Contains,
+            a => dead == null || !dead.Contains(a),
+            a => (dead == null || !dead.Contains(a)) && (asleep == null || !asleep.Contains(a)));
+
     [Fact]
-    public void An_assignment_parts_both_former_pairs()
+    public void An_assignment_sets_the_pairs_and_leaves_the_rest_unpaired()
     {
         var before = new PairingResult([new Pair(1, 2), new Pair(3, 4), new Pair(5, 6)], [7], [2, 5]);
 
-        PairingResult after = PairingRules.Assign(before, 1, 4, [1, 2, 3, 4, 5, 6, 7]);
+        PairingResult after = Arrange(before, [new Pair(5, 6), new Pair(1, 4)])!;
 
         Assert.Equal([(5, 6), (1, 4)], after.Pairs.Select(p => (p.Carrier, p.Rider)));
         Assert.Equal([2, 3, 7], after.Unpaired);
@@ -197,10 +208,48 @@ public class PairingRulesTests
     {
         var before = new PairingResult([new Pair(1, 2)], [], []);
 
-        PairingResult after = PairingRules.Assign(before, 2, 1, [1, 2]);
+        PairingResult after = PairingRules.Arrange(before, [new Pair(2, 1)], [1, 2], _ => true, _ => true, _ => true)!;
 
         Pair pair = Assert.Single(after.Pairs);
         Assert.Equal((2, 1), (pair.Carrier, pair.Rider));
         Assert.Empty(after.Unpaired);
+        Assert.Equal([(1, 2)], PairingRules.TurnedRound(before.Pairs, after.Pairs).Select(t => (t.Before.Carrier, t.Before.Rider)));
+    }
+
+    [Fact]
+    public void An_assignment_can_end_every_pair()
+    {
+        var before = new PairingResult([new Pair(1, 2), new Pair(3, 4)], [], []);
+
+        PairingResult after = Arrange(before, [])!;
+
+        Assert.Empty(after.Pairs);
+        Assert.Equal(Room, after.Unpaired);
+    }
+
+    [Theory]
+    [InlineData(1, 1, 3, 4)]
+    [InlineData(1, 2, 2, 3)]
+    [InlineData(1, 9, 3, 4)]
+    public void An_assignment_with_a_player_twice_or_unnamed_does_not_run(int a, int b, int c, int d) =>
+        Assert.Null(Arrange(new PairingResult([], Room, []), [new Pair(a, b), new Pair(c, d)]));
+
+    [Fact]
+    public void A_changed_pair_needs_an_awake_carrier_but_a_kept_one_does_not()
+    {
+        var before = new PairingResult([new Pair(1, 2), new Pair(3, 4)], [], []);
+
+        Assert.Null(Arrange(before, [new Pair(1, 2), new Pair(3, 5)], asleep: [3]));
+        Assert.NotNull(Arrange(before, [new Pair(1, 2), new Pair(3, 4)], asleep: [3]));
+        Assert.NotNull(Arrange(before, [new Pair(5, 3), new Pair(1, 2)], asleep: [3]));
+    }
+
+    [Fact]
+    public void A_dead_pair_stays_together()
+    {
+        var before = new PairingResult([new Pair(1, 2), new Pair(3, 4)], [5], []);
+
+        Assert.Null(Arrange(before, [new Pair(3, 4), new Pair(1, 5)], dead: [1, 2]));
+        Assert.NotNull(Arrange(before, [new Pair(1, 2), new Pair(3, 5)], dead: [1, 2]));
     }
 }

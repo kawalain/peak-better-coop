@@ -154,19 +154,17 @@ internal sealed class FakeRoom : ICoopRoom
     {
     }
 
-    public bool CanAssign(int carrier, int rider) =>
-        Formed && carrier != rider && players.Contains(carrier) && players.Contains(rider);
+    public bool CanArrange(IReadOnlyList<Pair> wanted) => Formed && Arranged(wanted) != null;
 
-    /// <summary>A Pair Assignment, then the Late Pairing of the partners it leaves behind.</summary>
-    public bool Assign(int carrier, int rider)
+    /// <summary>A Pair Assignment, then the Late Pairing of the players it leaves Unpaired.</summary>
+    public bool Arrange(IReadOnlyList<Pair> wanted)
     {
-        if (!CanAssign(carrier, rider))
+        if (!Formed || Arranged(wanted) is not PairingResult after)
         {
             return false;
         }
 
-        var before = new PairingResult(pairs, unpaired, []);
-        Apply(PairingRules.Assign(before, carrier, rider, players));
+        Apply(after);
         PairLeftovers();
         return true;
     }
@@ -221,6 +219,10 @@ internal sealed class FakeRoom : ICoopRoom
             unpaired.Remove(second);
         }
     }
+
+    /// <summary>Everyone in a made-up room is awake and may be named.</summary>
+    private PairingResult? Arranged(IReadOnlyList<Pair> wanted) =>
+        PairingRules.Arrange(new PairingResult(pairs, unpaired, []), wanted, players, players.Contains, _ => true, _ => true);
 
     private List<PairCandidate> Candidates() =>
         players.Select(a => new PairCandidate(a, preferences[a])).ToList();

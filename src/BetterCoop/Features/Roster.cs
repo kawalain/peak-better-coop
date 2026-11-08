@@ -271,7 +271,7 @@ internal static class TroopLeaderRows
             () => Strings.MenuAssign,
             () => Strings.StampApproved,
             () => Assign(room, picks),
-            available: () => !room.Busy && room.CanAssign(picks.Carrier, picks.Rider),
+            available: () => !room.Busy && room.CanArrange(Arrangement.WithPair(room.Pairs, picks.Carrier, picks.Rider)),
             about: () => Strings.AboutAssign,
             visible: () => room.Formed);
 
@@ -306,13 +306,14 @@ internal static class TroopLeaderRows
 
     private static void Assign(ICoopRoom room, AssignPicks picks)
     {
-        if (!room.CanAssign(picks.Carrier, picks.Rider))
+        IReadOnlyList<Pair> pairs = Arrangement.WithPair(room.Pairs, picks.Carrier, picks.Rider);
+        if (picks.Carrier == picks.Rider || !room.CanArrange(pairs))
         {
             CoopNotice.Info(Strings.MenuAssignUnavailable);
             return;
         }
 
-        Order(room.Assign(picks.Carrier, picks.Rider));
+        Order(room.Arrange(pairs));
     }
 
     private static string PickName(ICoopRoom room, int actor) =>
@@ -381,9 +382,9 @@ internal sealed class LiveRoom : ICoopRoom
 
     public void Recover() => CarryKeeper.RequestRecovery();
 
-    public bool CanAssign(int carrier, int rider) => PairShuffle.CanAssign(carrier, rider);
+    public bool CanArrange(IReadOnlyList<Pair> pairs) => PairShuffle.CanArrange(pairs);
 
-    public bool Assign(int carrier, int rider) => PairShuffle.Request(OperationKind.PairAssignment, carrier, rider);
+    public bool Arrange(IReadOnlyList<Pair> pairs) => PairShuffle.RequestAssignment(pairs);
 
     public bool Rule(RunRule rule) => Entry(rule).Value;
 

@@ -199,21 +199,64 @@ internal static class PairingRules
     }
 
     /// <summary>
-    /// A Pair Assignment: the two named players become a Pair, and the Pairs
-    /// they were in end, leaving their former partners Unpaired. Every other
-    /// Pair stays as it is.
+    /// A Pair Assignment: the Pairs become those the Troop Leader set, and
+    /// every player in the room outside them is Unpaired, for a Late Pairing.
+    /// Null when the arrangement cannot run: a player in two Pairs or paired
+    /// with themself, a player the Troop Leader may not name, a player whose
+    /// Pair changes while their Shared Body is dead, or a changed Pair whose
+    /// Carrier is not awake. A Pair kept as it was needs none of this.
     /// </summary>
-    public static PairingResult Assign(PairingResult before, int carrier, int rider, IEnumerable<int> inRoom)
+    /// <param name="nameable">Whether the Troop Leader may put this player in a Pair.</param>
+    /// <param name="alive">Whether this player's Shared Body is alive.</param>
+    /// <param name="awake">Whether this player could carry now.</param>
+    public static PairingResult? Arrange(
+        PairingResult before,
+        IReadOnlyList<Pair> wanted,
+        IEnumerable<int> inRoom,
+        Func<int, bool> nameable,
+        Func<int, bool> alive,
+        Func<int, bool> awake)
     {
-        var assigned = new Pair(carrier, rider);
-        var pairs = before.Pairs
-            .Where(p => !p.Contains(carrier) && !p.Contains(rider))
-            .Append(assigned)
-            .ToList();
-        var unpaired = inRoom.Where(a => !pairs.Any(p => p.Contains(a))).ToList();
-        var overridden = before.PreferenceOverridden.Where(a => pairs.Any(p => p.Contains(a)) && !assigned.Contains(a)).ToList();
+        var members = wanted.SelectMany(p => new[] { p.Carrier, p.Rider }).ToList();
+        if (members.Distinct().Count() != members.Count)
+        {
+            return null;
+        }
+
+        bool Kept(Pair pair) => before.Pairs.Any(p => p.Carrier == pair.Carrier && p.Rider == pair.Rider);
+        Pair? PairBefore(int actor) => before.Pairs.FirstOrDefault(p => p.Contains(actor));
+        Pair? PairAfter(int actor) => wanted.FirstOrDefault(p => p.Contains(actor));
+        bool Changes(int actor) =>
+            PairBefore(actor) is not Pair from
+                ? PairAfter(actor) != null
+                : PairAfter(actor) is not Pair to || from.Carrier != to.Carrier || from.Rider != to.Rider;
+
+        foreach (Pair pair in wanted.Where(p => !Kept(p)))
+        {
+            if (!nameable(pair.Carrier) || !nameable(pair.Rider) || !awake(pair.Carrier))
+            {
+                return null;
+            }
+        }
+
+        var room = inRoom.ToList();
+        if (room.Concat(before.Pairs.SelectMany(p => new[] { p.Carrier, p.Rider })).Distinct().Any(a => Changes(a) && PairBefore(a) != null && !alive(a)))
+        {
+            return null;
+        }
+
+        var pairs = wanted.ToList();
+        var unpaired = room.Where(a => !pairs.Any(p => p.Contains(a))).ToList();
+        var overridden = before.PreferenceOverridden.Where(a => !Changes(a) && PairAfter(a) != null).ToList();
         return new PairingResult(pairs, unpaired, overridden);
     }
+
+    /// <summary>The Pairs turned round from one to the other: the same two, roles traded.</summary>
+    public static IReadOnlyList<(Pair Before, Pair After)> TurnedRound(IReadOnlyList<Pair> before, IReadOnlyList<Pair> after) =>
+        (from next in after
+         from former in before
+         where former.Carrier == next.Rider && former.Rider == next.Carrier
+         select (former, next)).ToList();
 
     private static (int, int) PartnersOf(Pair pair) =>
         pair.Carrier < pair.Rider ? (pair.Carrier, pair.Rider) : (pair.Rider, pair.Carrier);

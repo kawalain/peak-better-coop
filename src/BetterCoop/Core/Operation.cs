@@ -44,18 +44,18 @@ internal sealed class Operation
     /// <summary>Server time the operation runs at.</summary>
     public double At { get; }
 
-    /// <summary>The Carrier of the Pair a Role Swap turns round, one of the two a Late Pairing pairs, or the Carrier a Pair Assignment names, else -1.</summary>
+    /// <summary>The Carrier of the Pair a Role Swap turns round, or one of the two a Late Pairing pairs, else -1.</summary>
     public int SwapCarrier { get; }
 
-    /// <summary>The Rider of the Pair a Role Swap turns round, the other of the two a Late Pairing pairs, or the Rider a Pair Assignment names, else -1.</summary>
+    /// <summary>The Rider of the Pair a Role Swap turns round, or the other of the two a Late Pairing pairs, else -1.</summary>
     public int SwapRider { get; }
 
     public bool Done { get; }
 
     public bool IsShuffle => Kind is OperationKind.CampfireShuffle or OperationKind.TimedShuffle or OperationKind.OrderedShuffle;
 
-    /// <summary>Whether the operation concerns this player: everyone for a Pair Shuffle.</summary>
-    public bool Involves(int actor) => IsShuffle || actor == SwapCarrier || actor == SwapRider;
+    /// <summary>Whether the operation concerns this player: everyone for a Pair Shuffle or a Pair Assignment.</summary>
+    public bool Involves(int actor) => IsShuffle || Kind == OperationKind.PairAssignment || actor == SwapCarrier || actor == SwapRider;
 
     /// <summary>Whether hands stay empty now: from just before the run until it is done.</summary>
     public bool Locks(double now) => !Done && ServerClock.Since(now, At) >= -LockLeadSeconds;
