@@ -1,0 +1,326 @@
+using System.Collections.Generic;
+using System.Linq;
+using BetterCoop.Core;
+using BetterCoop.Net;
+using BetterCoop.Ui;
+using Photon.Pun;
+using UnityEngine;
+using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
+using PhotonPlayer = Photon.Realtime.Player;
+
+namespace BetterCoop.Features;
+
+/// <summary>A character's place in the Pairs of the current Run.</summary>
+internal enum PairRole
+{
+    None,
+    Carrier,
+    Rider,
+}
+
+/// <summary>
+/// The Pairs of the current Run as every client sees them: read from the room
+/// property the host writes (ADR 0001). Pairs exist only on the island.
+/// </summary>
+internal static class PairRoster
+{
+    private static readonly Dictionary<int, Pair> ByActor = new();
+
+    private static PairingResult? published;
+
+    /// <summary>True when the host has formed Pairs for the Run on this island.</summary>
+    public static bool Formed => published != null && GameHandler.IsOnIsland;
+
+    public static IReadOnlyList<Pair> Pairs => Formed ? published!.Pairs : [];
+
+    public static PairRole RoleOf(Character? character)
+    {
+        if (!TryGetPair(character, out Pair pair))
+        {
+            return PairRole.None;
+        }
+
+        return pair.Carrier == ActorOf(character!) ? PairRole.Carrier : PairRole.Rider;
+    }
+
+    public static bool TryGetPair(Character? character, out Pair pair)
+    {
+        pair = null!;
+        if (character == null || character.isBot || !Formed)
+        {
+            return false;
+        }
+
+        return ByActor.TryGetValue(ActorOf(character), out pair!);
+    }
+
+    /// <summary>The partner's character, when both are in the room with a character.</summary>
+    public static bool TryGetPartner(Character? character, out Character partner)
+    {
+        partner = null!;
+        return TryGetPair(character, out Pair pair)
+            && PlayerHandler.TryGetCharacter(pair.PartnerOf(ActorOf(character!)), out partner)
+            && partner != null;
+    }
+
+    /// <summary>The Carrier and Rider of the local player's Pair.</summary>
+    public static bool TryGetLocalPair(out Character carrier, out Character rider)
+    {
+        carrier = null!;
+        rider = null!;
+        Character local = Character.localCharacter;
+        if (!TryGetPair(local, out Pair pair))
+        {
+            return false;
+        }
+
+        return PlayerHandler.TryGetCharacter(pair.Carrier, out carrier) && carrier != null
+            && PlayerHandler.TryGetCharacter(pair.Rider, out rider) && rider != null;
+    }
+
+    public static int ActorOf(Character character) => character.photonView.Owner.ActorNumber;
+
+    public static PairingResult? Read()
+    {
+        if (!PhotonNetwork.InRoom
+            || !PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Pairs, out object value)
+            || value is not object[] { Length: 3 } parts
+            || parts[0] is not int[] flat
+            || parts[1] is not int[] unpaired
+            || parts[2] is not int[] overridden)
+        {
+            return null;
+        }
+
+        var pairs = new List<Pair>();
+        for (int i = 0; i + 1 < flat.Length; i += 2)
+        {
+            pairs.Add(new Pair(flat[i], flat[i + 1]));
+        }
+
+        return new PairingResult(pairs, unpaired, overridden);
+    }
+
+    public static void Write(PairingResult? result) =>
+        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable { [RoomKeys.Pairs] = Encode(result) });
+
+    /// <summary>The room property value of <paramref name="result"/>, for writing it with other keys.</summary>
+    public static object? Encode(PairingResult? result) => result == null
+        ? null
+        : new object[]
+        {
+            result.Pairs.SelectMany(p => new[] { p.Carrier, p.Rider }).ToArray(),
+            result.Unpaired.ToArray(),
+            result.PreferenceOverridden.ToArray(),
+        };
+
+    /// <summary>Reloads the cache; returns the previous value.</summary>
+    public static PairingResult? Reload()
+    {
+        PairingResult? previous = published;
+        published = Read();
+        ByActor.Clear();
+        if (published != null)
+        {
+            foreach (Pair pair in published.Pairs)
+            {
+                ByActor[pair.Carrier] = pair;
+                ByActor[pair.Rider] = pair;
+            }
+        }
+
+        return previous;
+    }
+}
+
+/// <summary>
+/// Forms the Pairs once per Run on the host, dissolves a Pair when a member
+/// leaves, clears them back at the Airport, and announces changes on every client.
+/// </summary>
+internal sealed class PairingDirector : MonoBehaviourPunCallbacks
+{
+    private const float SpawnWaitSeconds = 30f;
+
+    private float? windowOpenedAt;
+
+    private float nextTick;
+
+    /// <summary>
+    /// Set once this host has written the Pairs for the island. The room
+    /// property arrives back only after a server round trip, and pairing twice
+    /// could swap roles mid-carry.
+    /// </summary>
+    private bool formedOnThisIsland;
+
+    public override void OnJoinedRoom() => PairRoster.Reload();
+
+    public override void OnLeftRoom() => PairRoster.Reload();
+
+    public override void OnRoomPropertiesUpdate(PhotonHashtable changed)
+    {
+        if (!changed.ContainsKey(RoomKeys.Pairs))
+        {
+            return;
+        }
+
+        PairingResult? previous = PairRoster.Reload();
+        Announce(previous, PairRoster.Read());
+    }
+
+    public override void OnPlayerLeftRoom(PhotonPlayer otherPlayer)
+    {
+        if (PhotonNetwork.IsMasterClient && PairRoster.Read() is PairingResult current)
+        {
+            DissolveAbsent(current, otherPlayer.ActorNumber);
+        }
+    }
+
+    /// <summary>
+    /// Dissolves the Pairs of players who left. The room property reflects a
+    /// write only after a server round trip, so this works from what is in the
+    /// room now rather than from the last change: rerunning it on a stale copy
+    /// writes the same result instead of reviving a dissolved Pair.
+    /// </summary>
+    private static void DissolveAbsent(PairingResult current, int leavingActor = -1)
+    {
+        Dictionary<int, PhotonPlayer> inRoom = PhotonNetwork.CurrentRoom.Players;
+        if (!PairingRules.TryDissolveAbsent(
+                current,
+                actor => actor != leavingActor && inRoom.ContainsKey(actor),
+                out PairingResult reconciled))
+        {
+            return;
+        }
+
+        Plugin.Verbose($"Dissolving {current.Pairs.Count - reconciled.Pairs.Count} Pair(s) with a member gone.");
+        PairRoster.Write(reconciled);
+    }
+
+    private void Update()
+    {
+        if (Time.unscaledTime < nextTick)
+        {
+            return;
+        }
+
+        nextTick = Time.unscaledTime + 0.5f;
+        if (!PhotonNetwork.InRoom || !PhotonNetwork.IsMasterClient)
+        {
+            windowOpenedAt = null;
+            formedOnThisIsland = false;
+            return;
+        }
+
+        if (!GameHandler.IsOnIsland)
+        {
+            windowOpenedAt = null;
+            formedOnThisIsland = false;
+            PhotonHashtable room = PhotonNetwork.CurrentRoom.CustomProperties;
+            if (PairRoster.Read() != null || room.ContainsKey(RoomKeys.ShuffleClock) || room.ContainsKey(RoomKeys.Handover))
+            {
+                Plugin.Verbose("Back at the Airport; clearing Pairs.");
+                PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable
+                {
+                    [RoomKeys.Pairs] = null,
+                    [RoomKeys.ShuffleClock] = null,
+                    [RoomKeys.Handover] = null,
+                });
+            }
+
+            return;
+        }
+
+        if (PairRoster.Read() is PairingResult current)
+        {
+            // Also covers leaves this client missed as master, such as the old host's.
+            DissolveAbsent(current);
+            return;
+        }
+
+        if (formedOnThisIsland)
+        {
+            return;
+        }
+
+        windowOpenedAt ??= Time.unscaledTime;
+        PhotonPlayer[] players = PhotonNetwork.PlayerList.Where(p => !p.IsInactive).ToArray();
+        var spawned = players.Where(p => PlayerHandler.TryGetCharacter(p.ActorNumber, out Character c) && c != null).ToList();
+        bool waited = Time.unscaledTime - windowOpenedAt.Value >= SpawnWaitSeconds;
+        if (spawned.Count < players.Length && !waited)
+        {
+            return;
+        }
+
+        FormPairs(players, spawned);
+        formedOnThisIsland = true;
+    }
+
+    private static void FormPairs(PhotonPlayer[] players, List<PhotonPlayer> spawned)
+    {
+        var candidates = spawned
+            .Where(p => ModPresence.VersionOf(p) == MyPluginInfo.PLUGIN_VERSION)
+            .Select(p => new PairCandidate(p.ActorNumber, ModPresence.RoleOf(p)))
+            .ToList();
+        PairingResult formed = PairingRules.Form(candidates, new System.Random());
+
+        var lateOrUnmodded = players
+            .Select(p => p.ActorNumber)
+            .Where(a => candidates.All(c => c.Actor != a));
+        var result = new PairingResult(
+            formed.Pairs,
+            formed.Unpaired.Concat(lateOrUnmodded).ToList(),
+            formed.PreferenceOverridden);
+
+        Plugin.Verbose(
+            $"Formed {result.Pairs.Count} Pairs: "
+            + string.Join(", ", result.Pairs.Select(p => $"{p.Carrier}>{p.Rider}"))
+            + $"; unpaired [{string.Join(", ", result.Unpaired)}].");
+        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable
+        {
+            [RoomKeys.Pairs] = PairRoster.Encode(result),
+            [RoomKeys.ShuffleClock] = PhotonNetwork.Time,
+        });
+    }
+
+    private static void Announce(PairingResult? previous, PairingResult? current)
+    {
+        if (current == null || !GameHandler.IsOnIsland)
+        {
+            return;
+        }
+
+        if (previous == null)
+        {
+            foreach (Pair pair in current.Pairs)
+            {
+                CoopNotice.Info(Strings.PairFormed(NameOf(pair.Carrier), NameOf(pair.Rider)));
+            }
+
+            foreach (int actor in current.PreferenceOverridden)
+            {
+                CoopNotice.Info(Strings.PreferenceOverridden(NameOf(actor)));
+            }
+
+            foreach (int actor in current.Unpaired)
+            {
+                CoopNotice.Info(Strings.Unpaired(NameOf(actor)));
+            }
+
+            return;
+        }
+
+        // A Pair Shuffle or Role Swap forms new Pairs; a member leaving only ends one.
+        foreach (Pair formed in current.Pairs.Where(c => !previous.Pairs.Any(p => p.Carrier == c.Carrier && p.Rider == c.Rider)))
+        {
+            CoopNotice.Info(Strings.PairFormed(NameOf(formed.Carrier), NameOf(formed.Rider)));
+        }
+
+        foreach (Pair gone in previous.Pairs.Where(p => !current.Pairs.Any(c => c.Contains(p.Carrier) || c.Contains(p.Rider))))
+        {
+            CoopNotice.Warning(Strings.PairDissolved(NameOf(gone.Carrier), NameOf(gone.Rider)));
+        }
+    }
+
+    private static string NameOf(int actor) =>
+        PhotonNetwork.CurrentRoom?.GetPlayer(actor)?.NickName ?? $"#{actor}";
+}

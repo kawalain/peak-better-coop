@@ -28,7 +28,7 @@ COMMUNITY_INDEX = "https://thunderstore.io/c/peak/api/v1/package/"
 LOADER = "BepInEx-BepInExPack_PEAK"
 PEAK_APP_ID = "3527290"
 SUBDIRS = {"plugins", "patchers", "core", "monomod", "config"}
-USER_AGENT = "peak-coop-dev-profile"
+USER_AGENT = "peak-better-coop-dev-profile"
 
 
 def fetch(url: str) -> bytes:

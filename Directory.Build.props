@@ -1,6 +1,6 @@
 <Project>
   <!--
-    Machine-local overrides (PeakGameDir, PeakCoopDeployDir) live in the
+    Machine-local overrides (PeakGameDir, BetterCoopDeployDir) live in the
     git-ignored Directory.Build.user.props next to this file.
   -->
   <Import Project="$(MSBuildThisFileDirectory)Directory.Build.user.props"

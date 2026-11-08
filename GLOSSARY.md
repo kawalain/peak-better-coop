@@ -1,4 +1,4 @@
-# PEAK Co-op
+# BetterCoop
 
 A PEAK mod in which players climb in two-person teams: one player carries the
 other for the whole climb, the two control the carrying body together, and they

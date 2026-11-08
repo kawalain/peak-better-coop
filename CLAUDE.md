@@ -1,4 +1,4 @@
-# PEAK Co-op
+# BetterCoop
 
 BepInEx 5 plugin for PEAK (Unity 6, Photon PUN). Domain terms are in
 `GLOSSARY.md`; use them in code, logs, and UI text. Decisions are in `docs/adr/`.
@@ -37,10 +37,11 @@ only and must not touch Unity, Photon, or game types.
 The development profile is a Gale profile whose data folder (Gale settings,
 Locations) lies outside `%APPDATA%`: a packaged host (such as the Claude desktop
 app) virtualises `%APPDATA%` for the tools it starts, so a build cannot reach a
-profile there, nor read one reliably. Set `PeakCoopDeployDir` in
+profile there, nor read one reliably. Set `BetterCoopDeployDir` in
 `Directory.Build.user.props` to
-`<gale_data>/peak/profiles/<profile>/BepInEx/plugins/PeakCoop`, the folder Gale
-made when the test build zip was imported, and every build deploys there.
+`<gale_data>/peak/profiles/<profile>/BepInEx/plugins/BetterCoop`, the mod's
+folder laid out from the test build zip, and every build deploys there. When the
+package changes, replace that folder directly rather than through Gale's GUI.
 Start the game from Gale, or from here through Steam with that profile's
 preloader:
 
@@ -59,13 +60,13 @@ players send theirs from their own Gale profile.
 ## Test builds and versions
 
 Players must run the exact same version to depart, so bump `<Version>` in
-`PeakCoop.csproj` only when a test build goes to players: minor for a build with
+`BetterCoop.csproj` only when a test build goes to players: minor for a build with
 new features, patch for a build of fixes. Commits in between keep the version.
-A Release build writes the test build to `artifacts/PeakCoop-<version>.zip`.
+A Release build writes the test build to `artifacts/BetterCoop-<version>.zip`.
 
 ## Code layout
 
-`src/PeakCoop/Core/` holds game-independent rules (pairing, the Control Split's
+`src/BetterCoop/Core/` holds game-independent rules (pairing, the Control Split's
 button replay and look smoothing, the Rider snapshot format) and is the only
 code the tests reach. `Features/` holds one Harmony feature per file, named
 after its glossary term; `Net/` holds Photon keys and presence; `Ui/` holds
