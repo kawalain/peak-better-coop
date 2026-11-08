@@ -38,9 +38,18 @@ internal static class PaperText
         text.color = Ink;
         text.alignment = alignment;
         text.textWrappingMode = TextWrappingModes.NoWrap;
-        text.overflowMode = TextOverflowModes.Ellipsis;
+        // Ellipsis would also cut a line whose box is a little short of its height, hiding all of it.
+        text.overflowMode = TextOverflowModes.Overflow;
         text.raycastTarget = false;
         return text;
+    }
+
+    /// <summary>Shrinks the text as far as <paramref name="smallest"/> to fit its box, as a long name in a narrow caption.</summary>
+    public static void Fit(TMP_Text text, float smallest)
+    {
+        text.fontSizeMax = text.fontSize;
+        text.fontSizeMin = smallest;
+        text.enableAutoSizing = true;
     }
 
     public static void Set(TMP_Text text, string value)

@@ -24,15 +24,15 @@ namespace BetterCoop.Ui.Paper;
 /// </summary>
 internal sealed class PairBoard : MonoBehaviour
 {
-    public const float PhotoWidth = 116f;
+    public const float PhotoWidth = ScoutPhoto.Width;
 
-    public const float PhotoHeight = PhotoWidth * PhotoStudio.Height / PhotoStudio.Width;
+    public const float PhotoHeight = ScoutPhoto.PhotoHeight;
 
-    private const float CaptionHeight = 52f;
+    private const float CaptionHeight = ScoutPhoto.CaptionHeight;
 
     private const float CellHeight = PhotoHeight + CaptionHeight;
 
-    private const float PairLabelHeight = 34f;
+    private const float PairLabelHeight = 32f;
 
     private const float PartnerGap = 8f;
 
@@ -330,7 +330,7 @@ internal sealed class PairBoard : MonoBehaviour
 
     private void LayOut(RectTransform root)
     {
-        GridLayoutGroup pairs = Grid(root, "Pairs", new Vector2(PairWidth, PairLabelHeight + CellHeight), PairsPerRow, new Vector2(36f, 26f));
+        GridLayoutGroup pairs = Grid(root, "Pairs", new Vector2(PairWidth, PairLabelHeight + CellHeight), PairsPerRow, new Vector2(22f, 12f));
         int number = 0;
         for (int i = 0; i < draft.Rows.Count; i++)
         {
@@ -361,10 +361,10 @@ internal sealed class PairBoard : MonoBehaviour
 
         RectTransform title = PaperList.NewRect("UnpairedTitle", root);
         LayoutElement titleSize = title.gameObject.AddComponent<LayoutElement>();
-        titleSize.minHeight = titleSize.preferredHeight = 56f;
+        titleSize.minHeight = titleSize.preferredHeight = 44f;
         Text(title, Strings.MenuUnpaired, PaperText.Value, TextAlignmentOptions.Bottom).fontStyle = FontStyles.Bold;
 
-        GridLayoutGroup unpaired = Grid(root, "Unpaired", new Vector2(PhotoWidth, CellHeight), UnpairedPerRow, new Vector2(18f, 22f));
+        GridLayoutGroup unpaired = Grid(root, "Unpaired", new Vector2(PhotoWidth, CellHeight), UnpairedPerRow, new Vector2(10f, 12f));
         int count = draft.Unpaired.Count + (editable ? 1 : 0);
         for (int i = 0; i < count; i++)
         {
@@ -410,14 +410,14 @@ internal sealed class PairBoard : MonoBehaviour
         }
         else
         {
-            RectTransform place = PhotoArea(content);
+            RectTransform place = ScoutPhoto.PhotoArea(content);
             VectorView.Add(place, s => FormDrawing.Slot(s.x, s.y, marked: false), Color.clear);
-            TMP_Text empty = Text(Caption(content), slot.Kind == SlotKind.Unpaired ? Strings.MenuDropHere : Strings.MenuEmptyPlace, PaperText.Note, TextAlignmentOptions.Top);
+            TMP_Text empty = Text(ScoutPhoto.Caption(content), slot.Kind == SlotKind.Unpaired ? Strings.MenuDropHere : Strings.MenuEmptyPlace, PaperText.Note, TextAlignmentOptions.Top);
             empty.color = PaperList.Faded(PaperText.Ink, 0.45f);
         }
 
         // Over the photo, where a held one would land.
-        RectTransform mark = PhotoArea(rect);
+        RectTransform mark = ScoutPhoto.PhotoArea(rect);
         view.Mark = VectorView.Add(mark, s => FormDrawing.Slot(s.x, s.y, marked: true), Color.clear).GetComponent<RawImage>();
         view.Mark.enabled = false;
 
@@ -438,66 +438,8 @@ internal sealed class PairBoard : MonoBehaviour
     }
 
     /// <summary>A scout as the yearbook prints them: their photo, and their name and role under it.</summary>
-    private void Portrait(RectTransform parent, int actor, SlotKind kind)
-    {
-        RectTransform photo = PhotoArea(parent);
-        Texture? taken = portraits.Photo(actor);
-        if (taken != null)
-        {
-            RawImage image = photo.gameObject.AddComponent<RawImage>();
-            image.texture = taken;
-            image.raycastTarget = false;
-        }
-        else
-        {
-            Color skin = portraits.Skin(actor);
-            var ink = new Ink(skin.r, skin.g, skin.b);
-            VectorView.Add(photo, s => FormDrawing.Silhouette(s.x, s.y, ink), skin);
-        }
-
-        RectTransform edge = PaperList.NewRect("Edge", photo);
-        edge.anchorMin = Vector2.zero;
-        edge.anchorMax = Vector2.one;
-        edge.offsetMin = edge.offsetMax = Vector2.zero;
-        VectorView.Add(edge, s => FormDrawing.PhotoEdge(s.x, s.y), Color.clear);
-
-        RectTransform caption = Caption(parent);
-        VerticalLayoutGroup lines = caption.gameObject.AddComponent<VerticalLayoutGroup>();
-        lines.childControlWidth = lines.childControlHeight = true;
-        lines.childForceExpandWidth = true;
-        lines.childForceExpandHeight = false;
-        lines.childAlignment = TextAnchor.UpperCenter;
-        lines.spacing = -2f;
-        TMP_Text name = PaperText.Make(PaperList.NewRect("Name", caption).gameObject, template, PaperText.Value, TextAlignmentOptions.Top);
-        name.text = nameOf(actor);
-        if (kind != SlotKind.Unpaired)
-        {
-            TMP_Text role = PaperText.Make(PaperList.NewRect("Role", caption).gameObject, template, PaperText.Note * 0.85f, TextAlignmentOptions.Top);
-            role.text = Strings.RoleOf(kind == SlotKind.Carrier);
-            role.color = PaperList.Faded(PaperText.Ink, 0.6f);
-        }
-    }
-
-    private static RectTransform PhotoArea(RectTransform parent)
-    {
-        RectTransform photo = PaperList.NewRect("Photo", parent);
-        photo.anchorMin = photo.anchorMax = new Vector2(0.5f, 1f);
-        photo.pivot = new Vector2(0.5f, 1f);
-        photo.sizeDelta = new Vector2(PhotoWidth, PhotoHeight);
-        photo.anchoredPosition = Vector2.zero;
-        return photo;
-    }
-
-    private static RectTransform Caption(RectTransform parent)
-    {
-        RectTransform caption = PaperList.NewRect("Caption", parent);
-        caption.anchorMin = Vector2.zero;
-        caption.anchorMax = new Vector2(1f, 0f);
-        caption.pivot = new Vector2(0.5f, 0f);
-        caption.sizeDelta = new Vector2(8f, CaptionHeight - 4f);
-        caption.anchoredPosition = Vector2.zero;
-        return caption;
-    }
+    private void Portrait(RectTransform parent, int actor, SlotKind kind) =>
+        ScoutPhoto.Add(parent, template, portraits, actor, nameOf(actor), kind == SlotKind.Unpaired ? null : Strings.RoleOf(kind == SlotKind.Carrier));
 
     private TMP_Text Text(RectTransform rect, string value, float size, TextAlignmentOptions alignment)
     {

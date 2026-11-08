@@ -296,7 +296,7 @@ internal static class FormDrawing
     /// </summary>
     private static void Crayon(StringBuilder svg, Random hand, IReadOnlyList<(float X, float Y)> points, Ink colour, float size)
     {
-        float width = Math.Max(2.2f, size * 0.03f);
+        float width = Math.Max(3.6f, size * 0.05f);
         float[] passes = [1f, 0.8f, 0.6f];
         float[] shades = [0f, 0.22f, 0.1f];
         for (int pass = 0; pass < passes.Length; pass++)

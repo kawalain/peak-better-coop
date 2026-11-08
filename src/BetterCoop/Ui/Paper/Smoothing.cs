@@ -14,7 +14,7 @@ internal sealed class SlidingText : MonoBehaviour
 {
     private const float Seconds = 0.2f;
 
-    private const float Distance = 36f;
+    private const float Distance = 22f;
 
     private TMP_Text now = null!;
 

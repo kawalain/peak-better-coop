@@ -189,8 +189,8 @@ internal static class Strings
         : "Announced, everyone is told and the Pairs become as you laid them out three seconds later; anyone left Unpaired pairs up by Late Pairing.";
 
     public static string MenuBoardHelp => Korean
-        ? "카드를 끌어 옮기거나, 눌러서 든 다음 놓을 곳을 누릅니다. 카드 위에 놓으면 서로 자리를 바꿉니다. 오른쪽 클릭이나 ESC로 제자리에 둡니다."
-        : "Drag a card, or press it to pick it up and press where it goes. Dropped on a card, the two trade places. A right click or Esc puts it back.";
+        ? "사진을 끌어 옮기거나, 눌러서 든 다음 놓을 곳을 누릅니다. 사진 위에 놓으면 서로 자리를 바꿉니다. 오른쪽 클릭이나 ESC로 제자리에 둡니다."
+        : "Drag a photo, or press it to pick it up and press where it goes. Dropped on a photo, the two trade places. A right click or Esc puts it back.";
 
     public static string MenuNewPair => Korean ? "새 짝" : "New";
 

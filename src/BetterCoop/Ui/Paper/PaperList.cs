@@ -247,8 +247,8 @@ internal sealed class PaperList
         RectTransform doodle = NewRect("Doodle", blank);
         doodle.anchorMin = doodle.anchorMax = new Vector2(1f, 0f);
         doodle.pivot = new Vector2(1f, 0f);
-        doodle.sizeDelta = new Vector2(132f, 112f);
-        doodle.anchoredPosition = new Vector2(30f, 20f);
+        doodle.sizeDelta = new Vector2(150f, 128f);
+        doodle.anchoredPosition = new Vector2(-6f, 14f);
         doodle.localRotation = Quaternion.Euler(0f, 0f, -8f);
         string drawn = string.Empty;
         VectorView sketch = VectorView.Add(doodle, size => FormDrawing.Doodle(size.x, size.y, drawn), Color.clear);
@@ -493,8 +493,6 @@ internal sealed class PaperList
         LayoutElement width = answer.gameObject.AddComponent<LayoutElement>();
         width.minWidth = width.preferredWidth = 140f;
         width.minHeight = 40f;
-        // The sliding answers stay inside their blank.
-        answer.gameObject.AddComponent<RectMask2D>();
         SlidingText text = SlidingText.Add(answer, template, PaperText.Label, Pen);
         int stepped = 1;
         void Go(int by)
