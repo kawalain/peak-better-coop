@@ -33,15 +33,34 @@ internal static class RiderHud
         return cachedCarrier;
     }
 
+    /// <summary>Set while a game check that hides details from spectators runs for the Rider's own HUD.</summary>
+    private static bool asOwnHud;
+
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Character), nameof(Character.observedCharacter), MethodType.Getter)]
     private static void ObserveCarrier(ref Character __result)
     {
-        if (MainCameraMovement.specCharacter == null && ObservedCarrier() is Character carrier)
+        if (!asOwnHud && MainCameraMovement.specCharacter == null && ObservedCarrier() is Character carrier)
         {
             __result = carrier;
         }
     }
+
+    /// <summary>
+    /// The game shows an item's remaining uses only on one's own HUD; the
+    /// Rider's HUD is the Shared Body's own, so it shows them too.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(InventoryItemUI), nameof(InventoryItemUI.TrySetFuel))]
+    private static void ShowFuelAsOwn(out bool __state)
+    {
+        __state = asOwnHud;
+        asOwnHud = true;
+    }
+
+    [HarmonyFinalizer]
+    [HarmonyPatch(typeof(InventoryItemUI), nameof(InventoryItemUI.TrySetFuel))]
+    private static void EndFuelAsOwn(bool __state) => asOwnHud = __state;
 }
 
 /// <summary>Keeps the Rider's HUD and view in step with the Carrier: slot highlight, item prompts, binocular view, hidden bodies.</summary>
