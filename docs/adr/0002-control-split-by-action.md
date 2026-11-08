@@ -22,6 +22,11 @@ key never moves an action to the other player.
 - The Rider stays conscious while carried, so the Rider's client shows the same
   interaction prompts without delay. The game's carry otherwise requires a
   passed-out passenger, so the carry is held by the mod for the whole Run.
+- PEAK moves a body relative to where it looks, so the Rider steers and the
+  Carrier only throttles; the Carrier cannot turn on their own.
+- The Shared Body has one set of statuses, the Carrier's. The Rider's own
+  statuses are cleared at pairing and kept clear, and the Rider lives or dies
+  only through shared death and revival.
 - The Rider's keyboard plays no part beyond menus and push-to-talk, and the
   Rider's own inventory is idle while paired. The Shared Body has only the
   Carrier's three hand slots: carrying leaves no room for a backpack.
