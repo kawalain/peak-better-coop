@@ -124,6 +124,35 @@ internal static class PairingRules
         return new PairingResult(pairs, unpaired, overridden);
     }
 
+    /// <summary>
+    /// Dissolves every Pair with a member no longer in the room; the partner
+    /// left behind becomes unpaired. Idempotent, so the host may apply it to a
+    /// stale copy of the Pairs and still converge.
+    /// </summary>
+    /// <returns>False when every Pair is complete.</returns>
+    public static bool TryDissolveAbsent(
+        PairingResult result,
+        Func<int, bool> isPresent,
+        out PairingResult reconciled)
+    {
+        reconciled = result;
+        var kept = result.Pairs.Where(p => isPresent(p.Carrier) && isPresent(p.Rider)).ToList();
+        if (kept.Count == result.Pairs.Count)
+        {
+            return false;
+        }
+
+        var leftBehind = result.Pairs
+            .Except(kept)
+            .SelectMany(p => new[] { p.Carrier, p.Rider })
+            .Where(isPresent);
+        reconciled = new PairingResult(
+            kept,
+            result.Unpaired.Concat(leftBehind).Distinct().ToList(),
+            result.PreferenceOverridden);
+        return true;
+    }
+
     private static List<T> Shuffle<T>(IEnumerable<T> items, Random random)
     {
         var list = items.ToList();

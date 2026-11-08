@@ -169,24 +169,31 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
 
     public override void OnPlayerLeftRoom(PhotonPlayer otherPlayer)
     {
-        if (!PhotonNetwork.IsMasterClient)
+        if (PhotonNetwork.IsMasterClient && PairRoster.Read() is PairingResult current)
+        {
+            DissolveAbsent(current, otherPlayer.ActorNumber);
+        }
+    }
+
+    /// <summary>
+    /// Dissolves the Pairs of players who left. The room property reflects a
+    /// write only after a server round trip, so this works from what is in the
+    /// room now rather than from the last change: rerunning it on a stale copy
+    /// writes the same result instead of reviving a dissolved Pair.
+    /// </summary>
+    private static void DissolveAbsent(PairingResult current, int leavingActor = -1)
+    {
+        Dictionary<int, PhotonPlayer> inRoom = PhotonNetwork.CurrentRoom.Players;
+        if (!PairingRules.TryDissolveAbsent(
+                current,
+                actor => actor != leavingActor && inRoom.ContainsKey(actor),
+                out PairingResult reconciled))
         {
             return;
         }
 
-        PairingResult? current = PairRoster.Read();
-        if (current == null || !current.Pairs.Any(p => p.Contains(otherPlayer.ActorNumber)))
-        {
-            return;
-        }
-
-        var kept = current.Pairs.Where(p => !p.Contains(otherPlayer.ActorNumber)).ToList();
-        var unpaired = current.Unpaired.Concat(
-            current.Pairs.Where(p => p.Contains(otherPlayer.ActorNumber))
-                .Select(p => p.PartnerOf(otherPlayer.ActorNumber)))
-            .ToList();
-        Plugin.Verbose($"Actor {otherPlayer.ActorNumber} left; dissolving their Pair.");
-        PairRoster.Write(new PairingResult(kept, unpaired, current.PreferenceOverridden));
+        Plugin.Verbose($"Dissolving {current.Pairs.Count - reconciled.Pairs.Count} Pair(s) with a member gone.");
+        PairRoster.Write(reconciled);
     }
 
     private void Update()
@@ -217,7 +224,14 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
             return;
         }
 
-        if (formedOnThisIsland || PairRoster.Read() != null)
+        if (PairRoster.Read() is PairingResult current)
+        {
+            // Also covers leaves this client missed as master, such as the old host's.
+            DissolveAbsent(current);
+            return;
+        }
+
+        if (formedOnThisIsland)
         {
             return;
         }

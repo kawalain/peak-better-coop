@@ -86,6 +86,53 @@ public class PairingRulesTests
     }
 
     [Fact]
+    public void Complete_pairs_need_no_dissolving()
+    {
+        var pairs = new PairingResult([new Pair(1, 2), new Pair(3, 4)], [5], []);
+
+        Assert.False(PairingRules.TryDissolveAbsent(pairs, _ => true, out PairingResult same));
+        Assert.Same(pairs, same);
+    }
+
+    [Fact]
+    public void A_pair_with_a_member_gone_is_dissolved_and_the_partner_left_unpaired()
+    {
+        var pairs = new PairingResult([new Pair(1, 2), new Pair(3, 4)], [5], [3]);
+
+        Assert.True(PairingRules.TryDissolveAbsent(pairs, a => a != 1, out PairingResult result));
+
+        Pair kept = Assert.Single(result.Pairs);
+        Assert.Equal((3, 4), (kept.Carrier, kept.Rider));
+        Assert.Equal([5, 2], result.Unpaired);
+        Assert.Equal([3], result.PreferenceOverridden);
+    }
+
+    [Fact]
+    public void Dissolving_from_a_stale_copy_never_revives_a_pair()
+    {
+        // Two players leave within one round trip: the second dissolve still
+        // reads the Pairs from before the first one was written.
+        var stale = new PairingResult([new Pair(1, 2), new Pair(3, 4)], [], []);
+        var present = new HashSet<int> { 2, 4 };
+
+        PairingRules.TryDissolveAbsent(stale, present.Contains, out PairingResult result);
+
+        Assert.Empty(result.Pairs);
+        Assert.Equal([2, 4], result.Unpaired);
+    }
+
+    [Fact]
+    public void A_pair_with_both_members_gone_leaves_nobody_behind()
+    {
+        var pairs = new PairingResult([new Pair(1, 2)], [], []);
+
+        PairingRules.TryDissolveAbsent(pairs, _ => false, out PairingResult result);
+
+        Assert.Empty(result.Pairs);
+        Assert.Empty(result.Unpaired);
+    }
+
+    [Fact]
     public void A_lone_player_stays_unpaired()
     {
         PairingResult result = Form(0, C(1, RolePreference.Carrier));
