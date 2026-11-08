@@ -38,4 +38,7 @@ internal static class RoomKeys
 
     /// <summary>Event: the Carrier's crosshair, throw charge, and rope length, sent to their Rider.</summary>
     public const byte HudEvent = 188;
+
+    /// <summary>Event: an item sound the game played only on the Carrier's client, sent to their Rider.</summary>
+    public const byte ItemSoundEvent = 189;
 }

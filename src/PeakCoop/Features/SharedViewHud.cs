@@ -22,6 +22,9 @@ internal static class SharedViewHud
 
     private static readonly ProgressSmoother RiderThrow = new();
 
+    /// <summary>The Carrier's throw charge as the Rider's throw bar shows it.</summary>
+    internal static float RiderThrowShown => RiderThrow.Display(Time.unscaledTime);
+
     private static CarrierHud received = new(0, false, 0f, -1);
 
     private static GameObject? shownReticle;
