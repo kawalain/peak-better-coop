@@ -145,6 +145,13 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
 
     private float nextTick;
 
+    /// <summary>
+    /// Set once this host has written the Pairs for the island. The room
+    /// property arrives back only after a server round trip, and pairing twice
+    /// could swap roles mid-carry.
+    /// </summary>
+    private bool formedOnThisIsland;
+
     public override void OnJoinedRoom() => PairRoster.Reload();
 
     public override void OnLeftRoom() => PairRoster.Reload();
@@ -193,12 +200,14 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         if (!PhotonNetwork.InRoom || !PhotonNetwork.IsMasterClient)
         {
             windowOpenedAt = null;
+            formedOnThisIsland = false;
             return;
         }
 
         if (!GameHandler.IsOnIsland)
         {
             windowOpenedAt = null;
+            formedOnThisIsland = false;
             if (PairRoster.Read() != null)
             {
                 Plugin.Verbose("Back at the Airport; clearing Pairs.");
@@ -208,7 +217,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
             return;
         }
 
-        if (PairRoster.Read() != null)
+        if (formedOnThisIsland || PairRoster.Read() != null)
         {
             return;
         }
@@ -223,6 +232,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         }
 
         FormPairs(players, spawned);
+        formedOnThisIsland = true;
     }
 
     private static void FormPairs(PhotonPlayer[] players, List<PhotonPlayer> spawned)
