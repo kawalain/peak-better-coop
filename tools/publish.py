@@ -102,7 +102,7 @@ def check() -> tuple[Path, str]:
         raise CheckFailed(f"{full_name} is already on Thunderstore; bump <Version>")
     token = read_token()
     communities = ", ".join(config["publish"]["communities"])
-    print(f"ready: {full_name} from {archive.relative_to(ROOT)} to {communities}")
+    print(f"ready: {full_name} from {archive.relative_to(ROOT)} to {communities}", flush=True)
     return archive, token
 
 
