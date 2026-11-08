@@ -253,7 +253,17 @@ internal static class CarryLockPatches
     private static bool KeepCarryAwake(CharacterCarrying __instance) =>
         !IsLivePair(__instance.character, __instance.character.data.carriedPlayer);
 
-    /// <summary>No drop while the Pair lives (slot 4, the DROP prompt, a backpack pickup).</summary>
+    private const float DropNoteSeconds = 10f;
+
+    private static float nextDropNote;
+
+    private static int unnotedDrops;
+
+    /// <summary>
+    /// No drop while the Pair lives (slot 4, the DROP prompt, a backpack
+    /// pickup). Another mod may ask every frame, so the log notes the
+    /// refusals at most once per <see cref="DropNoteSeconds"/>.
+    /// </summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(CharacterCarrying), nameof(CharacterCarrying.Drop))]
     private static bool RefuseDrop(CharacterCarrying __instance, Character target)
@@ -263,7 +273,17 @@ internal static class CarryLockPatches
             return true;
         }
 
-        Plugin.Verbose("Refused a drop of a live Pair.");
+        if (Time.unscaledTime < nextDropNote)
+        {
+            unnotedDrops++;
+            return false;
+        }
+
+        Plugin.Verbose(unnotedDrops > 0
+            ? $"Refused a drop of a live Pair ({unnotedDrops} more since the last note)."
+            : "Refused a drop of a live Pair.");
+        unnotedDrops = 0;
+        nextDropNote = Time.unscaledTime + DropNoteSeconds;
         return false;
     }
 
