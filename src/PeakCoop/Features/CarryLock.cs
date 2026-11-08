@@ -59,6 +59,7 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
             KeepCarrying(local, force: false);
         }
 
+        SharedLife.Keep();
         if (role == PairRole.Rider && Time.unscaledTime >= nextHandCheck)
         {
             nextHandCheck = Time.unscaledTime + 0.5f;
@@ -168,9 +169,9 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
         }
     }
 
-    private static void WakeRider(Character rider)
+    internal static void WakeRider(Character rider)
     {
-        rider.refs.afflictions.ClearAllStatus(excludeCurse: false);
+        rider.refs.afflictions.ClearAllStatus(excludeCurse: false, excludePetrify: false);
         if ((rider.data.passedOut || rider.data.fullyPassedOut) && !rider.data.dead)
         {
             Plugin.Verbose("Waking the Rider.");

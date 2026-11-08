@@ -32,7 +32,9 @@ key never moves an action to the other player.
   passed-out Carrier cannot be carried; others help them where they lie.
 - The Shared Body has one set of statuses, the Carrier's. The Rider's own
   statuses are cleared at pairing and kept clear, and the Rider lives or dies
-  only through shared death and revival.
+  only with the Shared Body (Shared Life): the Rider's client follows the
+  Carrier's state rather than death and revival events, which arrive from
+  different senders in no fixed order.
 - The Rider's keyboard plays no part beyond menus and push-to-talk, and the
   Rider's own inventory is idle while paired: the Rider's hands and back stay
   empty, and anything that lands there (a back item worn before pairing, an

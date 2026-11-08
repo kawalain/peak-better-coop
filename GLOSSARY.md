@@ -48,6 +48,12 @@ _Avoid_: input relay, keyboard/mouse split
 A player's stated wish to be Carrier, Rider, or either (Random) when Pairs are
 formed.
 
+**Shared Life**:
+The rule that the Rider lives and dies with the Shared Body: the Rider dies
+when the Carrier dies, comes back when the Carrier comes back, and never passes
+out or dies alone. Reviving either member revives both.
+_Avoid_: shared death, shared revival
+
 **Unpaired Player** (짝 없는 사람):
 A player in the room who is not in any Pair and plays as in unmodded PEAK.
 _Avoid_: solo player, odd player
