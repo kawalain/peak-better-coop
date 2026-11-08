@@ -116,17 +116,36 @@ internal static class PaperDrawing
         return svg.ToString();
     }
 
-    /// <summary>How many dashes a perforation across paper this wide has.</summary>
-    public static int DashCount(float width) =>
-        (int)Math.Floor((width - 2f * (Notch + 14f) + Gap) / (Dash + Gap));
+    /// <summary>The colour of every dashed line on the paper.</summary>
+    public static Ink DashInk => Paper.Mix(PassportBlue, 0.7f);
 
-    private static void AppendPerforation(StringBuilder svg, float width, float y)
+    /// <summary>
+    /// A dashed line across a strip of the given size, drawn as the paper's
+    /// perforations are, for rules under headings on the paper.
+    /// </summary>
+    public static string DashedRule(float width, float height)
     {
-        float start = Notch + 14f;
-        int count = DashCount(width);
+        var svg = new StringBuilder();
+        svg.Append(F($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{width}\" height=\"{height}\" viewBox=\"0 0 {width} {height}\">"));
+        AppendDashes(svg, 0f, width, height / 2f);
+        svg.Append("</svg>");
+        return svg.ToString();
+    }
+
+    /// <summary>How many dashes fit along a line this long.</summary>
+    public static int DashCount(float length) =>
+        Math.Max(0, (int)Math.Floor((length + Gap) / (Dash + Gap)));
+
+    private static void AppendPerforation(StringBuilder svg, float width, float y) =>
+        AppendDashes(svg, Notch + 14f, width - Notch - 14f, y);
+
+    /// <summary>Dashes from <paramref name="start"/> to <paramref name="end"/>, centred so both ends match.</summary>
+    private static void AppendDashes(StringBuilder svg, float start, float end, float y)
+    {
+        int count = DashCount(end - start);
         float used = count * (Dash + Gap) - Gap;
-        float x = start + (width - 2f * start - used) / 2f;
-        string fill = Paper.Mix(PassportBlue, 0.7f).Hex;
+        float x = start + (end - start - used) / 2f;
+        string fill = DashInk.Hex;
         for (int i = 0; i < count; i++, x += Dash + Gap)
         {
             svg.Append(F($"<rect x=\"{x}\" y=\"{y - DashThickness / 2f}\" width=\"{Dash}\" height=\"{DashThickness}\" rx=\"{DashThickness / 2f}\" fill=\"{fill}\"/>"));

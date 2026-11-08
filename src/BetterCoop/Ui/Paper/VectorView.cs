@@ -1,22 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using BetterCoop.Core;
 using Unity.VectorGraphics;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace BetterCoop.Ui;
+namespace BetterCoop.Ui.Paper;
 
 /// <summary>
-/// Shows the Coop Menu's paper: draws <see cref="PaperDrawing"/>'s SVG with
-/// the game's own vector graphics (parsed and tessellated into triangles)
-/// into a multisampled texture at the panel's size on screen, and draws it
-/// again when that size changes. Until the paper is drawn, or if it cannot
-/// be, the panel shows plain paper colour.
+/// Shows an SVG drawing made for its own size: the game's vector graphics
+/// parse and tessellate it into triangles, drawn into a multisampled texture
+/// at the size the view takes on screen, and drawn again when that size
+/// changes. Until the drawing is ready, or if it cannot be made, the view
+/// shows its fallback colour.
 /// </summary>
 [RequireComponent(typeof(RawImage))]
-internal sealed class PaperView : MonoBehaviour
+internal sealed class VectorView : MonoBehaviour
 {
     private const int Samples = 8;
 
@@ -30,29 +29,34 @@ internal sealed class PaperView : MonoBehaviour
 
     private Vector2 drawnSize;
 
-    private int drawnPixels;
+    private float drawnScale;
 
     private bool failed;
 
-    public static Color Paper => ToColor(PaperDrawing.Paper);
+    /// <summary>Makes the SVG for the view's size in UI units; its view box must be that size.</summary>
+    public Func<Vector2, string> Drawing { get; set; } = _ => string.Empty;
 
-    public static Color Ink => ToColor(PaperDrawing.InkBlack);
+    /// <summary>What shows until the drawing is ready, or if it cannot be made.</summary>
+    public Color Fallback { get; set; } = Color.clear;
 
-    public static Color Blue => ToColor(PaperDrawing.PassportBlue);
+    /// <summary>Adds a view filling <paramref name="rect"/> that shows <paramref name="drawing"/>.</summary>
+    public static VectorView Add(RectTransform rect, Func<Vector2, string> drawing, Color fallback)
+    {
+        RawImage raw = rect.gameObject.AddComponent<RawImage>();
+        raw.raycastTarget = false;
+        raw.color = fallback;
+        VectorView view = rect.gameObject.AddComponent<VectorView>();
+        view.Drawing = drawing;
+        view.Fallback = fallback;
+        return view;
+    }
 
-    /// <summary>The paper's top and bottom perforations, from its top and bottom edges.</summary>
-    public float TopTear { get; set; }
-
-    public float BottomTear { get; set; }
-
-    /// <summary>The panel the paper is cut to; the paper reaches past it by its margin for the shadow.</summary>
-    public RectTransform Panel { get; set; } = null!;
+    /// <summary>Draws again on the next frame, as when what the drawing shows has changed.</summary>
+    public void Redraw() => drawnSize = Vector2.zero;
 
     private void Awake()
     {
         image = GetComponent<RawImage>();
-        image.texture = null;
-        image.color = Paper;
     }
 
     private void LateUpdate()
@@ -65,25 +69,25 @@ internal sealed class PaperView : MonoBehaviour
                 return;
             }
 
-            Vector2 size = Panel.rect.size;
-            int pixels = Mathf.RoundToInt(canvas.rootCanvas.scaleFactor * 1000f);
+            Vector2 size = ((RectTransform)transform).rect.size;
+            float scale = canvas.rootCanvas.scaleFactor;
             bool lost = texture != null && !texture.IsCreated();
-            if (size.x < 1f || size.y < 1f || (!lost && texture != null && size == drawnSize && pixels == drawnPixels))
+            if (size.x < 1f || size.y < 1f || (!lost && texture != null && size == drawnSize && Mathf.Approximately(scale, drawnScale)))
             {
                 return;
             }
 
-            Draw(size, canvas.rootCanvas.scaleFactor);
+            Draw(size, scale);
             drawnSize = size;
-            drawnPixels = pixels;
+            drawnScale = scale;
         }
         catch (Exception exception)
         {
             failed = true;
             Release();
             image.texture = null;
-            image.color = Paper;
-            Guard.Report("PaperView.Draw", exception);
+            image.color = Fallback;
+            Guard.Report("VectorView.Draw", exception);
         }
     }
 
@@ -91,9 +95,8 @@ internal sealed class PaperView : MonoBehaviour
 
     private void Draw(Vector2 size, float scale)
     {
-        string svg = PaperDrawing.Svg(size.x, size.y, TopTear, BottomTear);
-        SVGParser.SceneInfo scene = SVGParser.ImportSVG(new StringReader(svg));
-        // Fine enough that curves stay round at any size the panel is shown.
+        SVGParser.SceneInfo scene = SVGParser.ImportSVG(new StringReader(Drawing(size)));
+        // Fine enough that curves stay round at any size the view is shown.
         var options = new VectorUtils.TessellationOptions
         {
             StepDistance = float.MaxValue,
@@ -103,9 +106,8 @@ internal sealed class PaperView : MonoBehaviour
         };
         List<VectorUtils.Geometry> shapes = VectorUtils.TessellateScene(scene.Scene, options);
 
-        (float width, float height) = PaperDrawing.Canvas(size.x, size.y);
-        int pixelWidth = Mathf.Clamp(Mathf.CeilToInt(width * scale), 1, MaxSide);
-        int pixelHeight = Mathf.Clamp(Mathf.CeilToInt(height * scale), 1, MaxSide);
+        int pixelWidth = Mathf.Clamp(Mathf.CeilToInt(size.x * scale), 1, MaxSide);
+        int pixelHeight = Mathf.Clamp(Mathf.CeilToInt(size.y * scale), 1, MaxSide);
         RenderTexture target = Target(pixelWidth, pixelHeight);
 
         bool linear = QualitySettings.activeColorSpace == ColorSpace.Linear;
@@ -114,8 +116,7 @@ internal sealed class PaperView : MonoBehaviour
         try
         {
             GL.Clear(true, true, Color.clear);
-            Material paint = Material();
-            paint.SetPass(0);
+            Material().SetPass(0);
             GL.PushMatrix();
             GL.LoadOrtho();
             GL.Begin(GL.TRIANGLES);
@@ -127,7 +128,7 @@ internal sealed class PaperView : MonoBehaviour
                 {
                     Vector2 point = shape.WorldTransform * shape.Vertices[index];
                     // SVG's y runs down; the texture's runs up.
-                    GL.Vertex3(point.x / width, 1f - point.y / height, 0f);
+                    GL.Vertex3(point.x / size.x, 1f - point.y / size.y, 0f);
                 }
             }
 
@@ -141,7 +142,7 @@ internal sealed class PaperView : MonoBehaviour
 
         image.texture = target;
         image.color = Color.white;
-        Plugin.Verbose($"Drew the Coop Menu's paper at {pixelWidth}x{pixelHeight} from {shapes.Count} shapes.");
+        Plugin.Verbose($"Drew {name} at {pixelWidth}x{pixelHeight} from {shapes.Count} shapes.");
     }
 
     private RenderTexture Target(int width, int height)
@@ -162,7 +163,7 @@ internal sealed class PaperView : MonoBehaviour
         description.msaaSamples = Mathf.Clamp(SystemInfo.GetRenderTextureSupportedMSAASampleCount(description), 1, Samples);
         texture = new RenderTexture(description)
         {
-            name = "BetterCoop.Paper",
+            name = "BetterCoop.Vector",
             filterMode = FilterMode.Bilinear,
             wrapMode = TextureWrapMode.Clamp,
             hideFlags = HideFlags.HideAndDontSave,
@@ -198,7 +199,7 @@ internal sealed class PaperView : MonoBehaviour
 
         material = new Material(Canvas.GetDefaultCanvasMaterial())
         {
-            name = "BetterCoop.PaperInk",
+            name = "BetterCoop.VectorInk",
             hideFlags = HideFlags.HideAndDontSave,
         };
         material.mainTexture = Texture2D.whiteTexture;
@@ -209,6 +210,4 @@ internal sealed class PaperView : MonoBehaviour
         material.DisableKeyword("UNITY_UI_ALPHACLIP");
         return material;
     }
-
-    private static Color ToColor(Ink ink) => new(ink.R, ink.G, ink.B, ink.A);
 }

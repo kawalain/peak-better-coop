@@ -44,10 +44,30 @@ public class PaperDrawingTests
     public void Both_perforations_run_across_the_paper()
     {
         int dashes = Draw().Descendants(Svg + "rect").Count();
+        float span = 1000f - 2f * (PaperDrawing.Notch + 14f);
 
-        Assert.Equal(2 * PaperDrawing.DashCount(1000f), dashes);
-        Assert.InRange(PaperDrawing.DashCount(1000f), 40, 50);
+        Assert.Equal(2 * PaperDrawing.DashCount(span), dashes);
+        Assert.InRange(PaperDrawing.DashCount(span), 40, 50);
     }
+
+    [Fact]
+    public void A_dashed_rule_matches_the_perforations_and_fills_its_strip()
+    {
+        XElement rule = XElement.Parse(PaperDrawing.DashedRule(400f, 4f));
+        var dashes = rule.Descendants(Svg + "rect").ToList();
+
+        Assert.Equal("0 0 400 4", rule.Attribute("viewBox")!.Value);
+        Assert.Equal(PaperDrawing.DashCount(400f), dashes.Count);
+        Assert.All(dashes, d => Assert.Equal(PaperDrawing.DashInk.Hex, d.Attribute("fill")!.Value));
+        float first = float.Parse(dashes[0].Attribute("x")!.Value, CultureInfo.InvariantCulture);
+        float last = float.Parse(dashes[^1].Attribute("x")!.Value, CultureInfo.InvariantCulture)
+            + float.Parse(dashes[^1].Attribute("width")!.Value, CultureInfo.InvariantCulture);
+        Assert.Equal(400f - last, first, 2);
+    }
+
+    [Fact]
+    public void A_strip_too_short_for_a_dash_stays_empty() =>
+        Assert.Empty(XElement.Parse(PaperDrawing.DashedRule(5f, 4f)).Descendants(Svg + "rect"));
 
     [Fact]
     public void Only_the_shadow_lets_anything_show_through()
