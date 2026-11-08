@@ -158,6 +158,7 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
         try
         {
             HandleEvent(photonEvent);
+            TroopLeaderRevive.Handle(photonEvent);
         }
         catch (Exception exception)
         {
@@ -236,7 +237,7 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
         if ((rider.data.passedOut || rider.data.fullyPassedOut) && !rider.data.dead)
         {
             Plugin.Verbose("Waking the Rider.");
-            rider.photonView.RPC("ReviveCharacter", RpcTarget.All, false);
+            TroopLeaderRevive.Wake(rider);
         }
     }
 }

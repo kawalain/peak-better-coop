@@ -47,4 +47,7 @@ internal static class RoomKeys
 
     /// <summary>Event: the remaining uses of the Shared Body's slots, sent by the Carrier to their Rider.</summary>
     public const byte SlotUsesEvent = 191;
+
+    /// <summary>Event: a Pair member asks the Troop Leader to revive or wake a member of their Pair.</summary>
+    public const byte ReviveRequestEvent = 192;
 }

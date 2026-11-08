@@ -1,6 +1,9 @@
+using ExitGames.Client.Photon;
 using HarmonyLib;
 using BetterCoop.Core;
+using BetterCoop.Net;
 using Photon.Pun;
+using Photon.Realtime;
 using UnityEngine;
 
 namespace BetterCoop.Features;
@@ -51,7 +54,7 @@ internal static class SharedLife
                 rider.DieInstantly();
                 break;
             case RiderLifeAction.Revive:
-                rider.photonView.RPC("RPCA_ReviveAtPosition", RpcTarget.All, carrier.Center + Vector3.up, false, -1);
+                TroopLeaderRevive.AtPosition(rider, carrier.Center + Vector3.up, applyStatus: false, statueSegment: -1);
                 break;
             case RiderLifeAction.Wake:
                 CarryKeeper.WakeRider(rider);
@@ -86,6 +89,7 @@ internal static class SharedLife
     /// <summary>
     /// Reviving either member revives both at the same spot; a Rider picked
     /// by a random revival gets time for the Carrier's revival to arrive.
+    /// The Troop Leader sends the partner's revival (ADR 0007).
     /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(Character), nameof(Character.RPCA_ReviveAtPosition))]
@@ -96,8 +100,8 @@ internal static class SharedLife
             riderRevivedAt = Time.time;
         }
 
-        if (!PairRoster.TryGetPartner(__instance, out Character partner)
-            || !partner.IsLocal
+        if (!PhotonNetwork.IsMasterClient
+            || !PairRoster.TryGetPartner(__instance, out Character partner)
             || !partner.data.dead)
         {
             return;
@@ -119,5 +123,79 @@ internal static class SharedLife
 
         Plugin.Verbose("Refused a Rider's death while the Carrier lives.");
         return true;
+    }
+}
+
+/// <summary>
+/// Revives of Pair members are sent by the Troop Leader, as the game's own
+/// revives are (ADR 0007): a member's client asks, and the Troop Leader sends
+/// the revive. A lost request is asked again by the caller's next check.
+/// </summary>
+internal static class TroopLeaderRevive
+{
+    /// <summary>Brings a dead Pair member back at <paramref name="position"/>.</summary>
+    internal static void AtPosition(Character target, Vector3 position, bool applyStatus, int statueSegment) =>
+        Request(target, atPosition: true, position, applyStatus, statueSegment);
+
+    /// <summary>Wakes a passed-out Pair member where they are.</summary>
+    internal static void Wake(Character target) =>
+        Request(target, atPosition: false, Vector3.zero, applyStatus: false, statueSegment: -1);
+
+    private static void Request(Character target, bool atPosition, Vector3 position, bool applyStatus, int statueSegment)
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            Send(target, atPosition, position, applyStatus, statueSegment);
+            return;
+        }
+
+        PhotonNetwork.RaiseEvent(
+            RoomKeys.ReviveRequestEvent,
+            new object[] { target.photonView.ViewID, atPosition, position, applyStatus, statueSegment },
+            new RaiseEventOptions { Receivers = ReceiverGroup.MasterClient },
+            SendOptions.SendReliable);
+    }
+
+    /// <summary>Carries out a member's request, on the Troop Leader's client.</summary>
+    internal static void Handle(EventData photonEvent)
+    {
+        if (photonEvent.Code != RoomKeys.ReviveRequestEvent
+            || !PhotonNetwork.IsMasterClient
+            || photonEvent.CustomData is not object[] { Length: 5 } parts
+            || parts[0] is not int viewId
+            || parts[1] is not bool atPosition
+            || parts[2] is not Vector3 position
+            || parts[3] is not bool applyStatus
+            || parts[4] is not int statueSegment)
+        {
+            return;
+        }
+
+        // Only a member of the target's own Pair may ask, so the relay revives
+        // nobody the game would not have.
+        PhotonView view = PhotonView.Find(viewId);
+        Character? target = view != null ? view.GetComponent<Character>() : null;
+        if (target == null
+            || !PairRoster.TryGetPair(target, out Pair pair)
+            || !pair.Contains(photonEvent.Sender))
+        {
+            Plugin.Verbose($"Ignored a revive request from #{photonEvent.Sender} for view {viewId}.");
+            return;
+        }
+
+        Send(target, atPosition, position, applyStatus, statueSegment);
+    }
+
+    private static void Send(Character target, bool atPosition, Vector3 position, bool applyStatus, int statueSegment)
+    {
+        Plugin.Verbose($"Troop Leader {(atPosition ? "revives" : "wakes")} {target.characterName}.");
+        if (atPosition)
+        {
+            target.photonView.RPC("RPCA_ReviveAtPosition", RpcTarget.All, position, applyStatus, statueSegment);
+        }
+        else
+        {
+            target.photonView.RPC("ReviveCharacter", RpcTarget.All, applyStatus);
+        }
     }
 }

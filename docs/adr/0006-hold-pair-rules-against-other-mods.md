@@ -17,6 +17,8 @@ depends on, whatever produced the change:
   stays with the Shared Body instead of falling to the ground.
 - Drops of a live Pair and carries of a Pair member by anyone else stay
   refused, as before.
+- Revives are sent by the Troop Leader, as the game's own revives are (ADR
+  0007), so a mod that flags revives from anyone else sees nothing amiss.
 
 Naming mods would break on their next update and would miss every mod not yet
 seen; disabling BetterCoop beside them would stop a whole party for a camera
