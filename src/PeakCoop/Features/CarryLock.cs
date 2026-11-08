@@ -202,11 +202,15 @@ internal static class CarryLockPatches
         return false;
     }
 
-    /// <summary>Carry Weight off (the default) lifts the weight of the Rider.</summary>
-    [HarmonyPostfix]
+    /// <summary>
+    /// Carry Weight off (the default) lifts the weight of the Rider: the game
+    /// weighs the Carrier as if carrying nobody, so its own sum and cap apply.
+    /// </summary>
+    [HarmonyPrefix]
     [HarmonyPatch(typeof(CharacterAfflictions), nameof(CharacterAfflictions.UpdateWeight))]
-    private static void LiftRiderWeight(CharacterAfflictions __instance)
+    private static void HideRiderFromWeight(CharacterAfflictions __instance, out Character? __state)
     {
+        __state = null;
         Character carrier = __instance.character;
         if (RunRules.CarryWeight
             || !carrier.photonView.IsMine
@@ -215,9 +219,18 @@ internal static class CarryLockPatches
             return;
         }
 
-        const float CarryWeightStatus = 0.025f * 8;
-        float weight = __instance.GetCurrentStatus(CharacterAfflictions.STATUSTYPE.Weight);
-        __instance.SetStatus(CharacterAfflictions.STATUSTYPE.Weight, Mathf.Max(0f, weight - CarryWeightStatus));
+        __state = carrier.data.carriedPlayer;
+        carrier.data.carriedPlayer = null;
+    }
+
+    [HarmonyFinalizer]
+    [HarmonyPatch(typeof(CharacterAfflictions), nameof(CharacterAfflictions.UpdateWeight))]
+    private static void RestoreRiderAfterWeight(CharacterAfflictions __instance, Character? __state)
+    {
+        if (__state != null)
+        {
+            __instance.character.data.carriedPlayer = __state;
+        }
     }
 
     /// <summary>The Shared Body has one set of statuses: the Rider gains none.</summary>
