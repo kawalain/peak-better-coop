@@ -172,7 +172,13 @@ internal static class ControlSplit
         lastSequenceIn = int.MinValue;
     }
 
+    /// <summary>
+    /// Runs before any other patch on sampling, so the Rider's actions are
+    /// read as the player made them even where another patch clears a carried
+    /// player's input afterwards.
+    /// </summary>
     [HarmonyPostfix]
+    [HarmonyPriority(Priority.First)]
     [HarmonyPatch(typeof(CharacterInput), nameof(CharacterInput.Sample))]
     private static void SplitSampledInput(CharacterInput __instance, bool playerMovementActive)
     {
