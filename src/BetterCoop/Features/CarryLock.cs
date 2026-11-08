@@ -7,6 +7,7 @@ using Photon.Realtime;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Zorro.Core;
+using Zorro.Core.Serizalization;
 
 namespace BetterCoop.Features;
 
@@ -106,12 +107,37 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
             }
         }
 
-        if (!rider.player.backpackSlot.IsEmpty())
+        // A Pair Shuffle or Role Swap is moving inventories; judge the back once it lands.
+        if (rider.player.backpackSlot.IsEmpty() || PairShuffle.LocalLocked)
         {
-            Plugin.Verbose($"Dropping {rider.player.backpackSlot.GetPrefabName()} from the Rider's back.");
-            items.photonView.RPC("DropItemFromSlotRPC", RpcTarget.All, (byte)Player.BACKPACKSLOTINDEX, at + (Vector3.up * 0.5f));
-            CoopNotice.Info(Strings.RiderBackEmptied);
+            return;
         }
+
+        if (carrier.player.backpackSlot.IsEmpty())
+        {
+            Plugin.Verbose($"Handing {rider.player.backpackSlot.GetPrefabName()} from the Rider's back to the Carrier's.");
+            HandBackItemToCarrier(rider.player, carrier.player);
+            return;
+        }
+
+        Plugin.Verbose($"Dropping {rider.player.backpackSlot.GetPrefabName()} from the Rider's back.");
+        items.photonView.RPC("DropItemFromSlotRPC", RpcTarget.All, (byte)Player.BACKPACKSLOTINDEX, at + (Vector3.up * 0.5f));
+        CoopNotice.Info(Strings.RiderBackEmptied);
+    }
+
+    /// <summary>
+    /// Moves the Rider's back item onto the Carrier's empty back, the way a
+    /// Body Handover moves inventories: a forced sync of both players to every
+    /// client. Whatever put it there (a revival, another mod's carry), the
+    /// Shared Body keeps it and nothing lands on the ground.
+    /// </summary>
+    private static void HandBackItemToCarrier(Player rider, Player carrier)
+    {
+        var emptyBack = new BackpackSlot(Player.BACKPACKSLOTINDEX);
+        byte[] riderData = IBinarySerializable.ToManagedArray(new InventorySyncData(rider.itemSlots, emptyBack, rider.tempFullSlot));
+        byte[] carrierData = IBinarySerializable.ToManagedArray(new InventorySyncData(carrier.itemSlots, rider.backpackSlot, carrier.tempFullSlot));
+        carrier.photonView.RPC("SyncInventoryRPC", RpcTarget.All, carrierData, true);
+        rider.photonView.RPC("SyncInventoryRPC", RpcTarget.All, riderData, true);
     }
 
     public void OnEvent(EventData photonEvent)

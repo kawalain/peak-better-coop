@@ -41,9 +41,10 @@ key never moves an action to the other player.
   different senders in no fixed order.
 - The Rider's keyboard plays no part beyond menus and push-to-talk, and the
   Rider's own inventory is idle while paired: the Rider's hands and back stay
-  empty, and anything that lands there (a back item worn before pairing, an
-  item spawned into the Rider's hand) is dropped at the Shared Body for the
-  Carrier to pick up.
+  empty. An item that lands in the Rider's hand (one spawned there) is
+  dropped at the Shared Body for the Carrier to pick up; a back item (one worn
+  before pairing, or handed over by another mod's carry) moves onto the
+  Carrier's back when that is empty, and is dropped there otherwise.
 - The Shared Body has the Carrier's three hand slots and back slot. The back
   slot holds a backpack, fanny pack, jetpack, or rocket pack as usual; a tap of
   the back-slot key brings that item to hand and never puts the Rider down,

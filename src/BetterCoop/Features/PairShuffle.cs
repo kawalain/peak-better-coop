@@ -381,11 +381,28 @@ internal static class PairShuffle
     private static void PutAwayAfterHandover(Player __instance, bool forceSync)
     {
         Character character = __instance.character;
-        if (forceSync && __instance.view.IsMine && character != null && character.data.currentItem != null)
+        if (forceSync
+            && __instance.view.IsMine
+            && character != null
+            && character.data.currentItem != null
+            && !StillHolds(__instance, character))
         {
             Plugin.Verbose("The inventory was handed over; putting the held item away.");
             character.refs.items.EquipSlot(Optionable<byte>.None);
         }
+    }
+
+    /// <summary>Whether the selected slot still holds the item in hand, as when only the back slot changed.</summary>
+    private static bool StillHolds(Player player, Character character)
+    {
+        Optionable<byte> selected = character.refs.items.currentSelectedSlot;
+        ItemSlot? slot = selected.IsSome ? player.GetItemSlot(selected.Value) : null;
+        Item held = character.data.currentItem;
+        return slot != null
+            && !slot.IsEmpty()
+            && slot.data != null
+            && held.data != null
+            && slot.data.guid == held.data.guid;
     }
 
     private static HandoverPlan? ReadHandover() =>
