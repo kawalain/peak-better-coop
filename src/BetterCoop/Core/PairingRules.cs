@@ -198,6 +198,23 @@ internal static class PairingRules
         return new PairingResult(pairs, formed.Unpaired, overridden.ToList());
     }
 
+    /// <summary>
+    /// A Pair Assignment: the two named players become a Pair, and the Pairs
+    /// they were in end, leaving their former partners Unpaired. Every other
+    /// Pair stays as it is.
+    /// </summary>
+    public static PairingResult Assign(PairingResult before, int carrier, int rider, IEnumerable<int> inRoom)
+    {
+        var assigned = new Pair(carrier, rider);
+        var pairs = before.Pairs
+            .Where(p => !p.Contains(carrier) && !p.Contains(rider))
+            .Append(assigned)
+            .ToList();
+        var unpaired = inRoom.Where(a => !pairs.Any(p => p.Contains(a))).ToList();
+        var overridden = before.PreferenceOverridden.Where(a => pairs.Any(p => p.Contains(a)) && !assigned.Contains(a)).ToList();
+        return new PairingResult(pairs, unpaired, overridden);
+    }
+
     private static (int, int) PartnersOf(Pair pair) =>
         pair.Carrier < pair.Rider ? (pair.Carrier, pair.Rider) : (pair.Rider, pair.Carrier);
 

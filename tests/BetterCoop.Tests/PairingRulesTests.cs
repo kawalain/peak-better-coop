@@ -179,4 +179,28 @@ public class PairingRulesTests
         Assert.Empty(result.Pairs);
         Assert.Equal([1], result.Unpaired);
     }
+
+    [Fact]
+    public void An_assignment_parts_both_former_pairs()
+    {
+        var before = new PairingResult([new Pair(1, 2), new Pair(3, 4), new Pair(5, 6)], [7], [2, 5]);
+
+        PairingResult after = PairingRules.Assign(before, 1, 4, [1, 2, 3, 4, 5, 6, 7]);
+
+        Assert.Equal([(5, 6), (1, 4)], after.Pairs.Select(p => (p.Carrier, p.Rider)));
+        Assert.Equal([2, 3, 7], after.Unpaired);
+        Assert.Equal([5], after.PreferenceOverridden);
+    }
+
+    [Fact]
+    public void An_assignment_can_turn_a_pair_round()
+    {
+        var before = new PairingResult([new Pair(1, 2)], [], []);
+
+        PairingResult after = PairingRules.Assign(before, 2, 1, [1, 2]);
+
+        Pair pair = Assert.Single(after.Pairs);
+        Assert.Equal((2, 1), (pair.Carrier, pair.Rider));
+        Assert.Empty(after.Unpaired);
+    }
 }

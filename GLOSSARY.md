@@ -23,8 +23,8 @@ _Avoid_: host, 방장 (in player text)
 
 **Pair** (짝):
 Two players bound together, one as Carrier and one as Rider, from when Pairs
-are formed or a Late Pairing until a Pair Shuffle, a Role Swap, a member
-leaving, or the end of the Run.
+are formed, a Late Pairing, or a Pair Assignment until a Pair Shuffle, a Role
+Swap, a Pair Assignment, a member leaving, or the end of the Run.
 _Avoid_: partner, couple, team
 
 **Carrier** (업는 사람):
@@ -71,6 +71,12 @@ first, in their former roles. A member who is dead or passed out becomes the
 Rider and comes back on the Carrier's back; otherwise Role Preferences decide.
 The Shared Body starts where the higher of the two is.
 _Avoid_: re-pairing, late join pairing
+
+**Pair Assignment** (짝 지정):
+The Troop Leader binding two chosen players as a Pair, naming which one
+carries. Their former partners become Unpaired Players, and the next Pair
+Shuffle mixes the assigned Pair like any other.
+_Avoid_: manual pairing, forced pair
 
 **Campfire Shuffle**:
 A Pair Shuffle when a campfire is lit and the Run moves on to the next segment.

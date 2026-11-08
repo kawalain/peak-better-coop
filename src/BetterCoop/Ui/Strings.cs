@@ -118,6 +118,20 @@ internal static class Strings
 
     public static string MenuUnpaired => Korean ? "짝 없는 사람" : "Unpaired";
 
+    public static string AssignmentCountdown(int seconds) => Korean
+        ? $"코옵: {seconds}초 뒤 분대장이 정한 짝이 됩니다."
+        : $"Coop: the Troop Leader pairs you up in {seconds}...";
+
+    public static string MenuAssignCarrier => Korean ? "짝 지정: 업는 사람" : "Assign: Carrier";
+
+    public static string MenuAssignRider => Korean ? "짝 지정: 업힐 사람" : "Assign: Rider";
+
+    public static string MenuAssign => Korean ? "짝 지정" : "Assign Pair";
+
+    public static string MenuAssignUnavailable => Korean
+        ? "코옵: 두 사람이 서로 달라야 하고, 업는 사람은 깨어 있어야 하며, 둘 다 같은 버전의 모드가 있어야 합니다."
+        : "Coop: pick two different players with this version; the Carrier must be awake.";
+
     public static string SwapPlaces => Korean ? "자리 바꾸기" : "Swap Places";
 
     public static string CancelSwap => Korean ? "자리 바꾸기 취소" : "Cancel Swap";

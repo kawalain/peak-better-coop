@@ -38,8 +38,8 @@ the Troop Leader (host) allows an odd one.
 In the **Coop** page of the ESC menu, or in your mod manager's config editor
 under `in.kawala.bettercoop`. The Troop Leader's values apply to the room,
 except your own Role Preference and the Debug settings. The Troop Leader's
-Coop page can also shuffle the Pairs at once, swap any Pair's roles, and
-re-attach every Pair.
+Coop page can also shuffle the Pairs at once, swap any Pair's roles, pair two
+chosen players, and re-attach every Pair.
 
 | Setting | Default | |
 | --- | --- | --- |

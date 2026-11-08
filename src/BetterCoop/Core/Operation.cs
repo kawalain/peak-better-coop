@@ -11,10 +11,11 @@ internal enum OperationKind : byte
     RoleSwap = 3,
     LatePairing = 4,
     OrderedShuffle = 5,
+    PairAssignment = 6,
 }
 
 /// <summary>
-/// A Pair Shuffle, Role Swap, or Late Pairing the Troop Leader announced, published as a
+/// A Pair Shuffle, Role Swap, Late Pairing, or Pair Assignment the Troop Leader announced, published as a
 /// room property: every client counts down to <see cref="At"/> (server
 /// time), and a new Troop Leader picks up one that is not done.
 /// </summary>
@@ -43,10 +44,10 @@ internal sealed class Operation
     /// <summary>Server time the operation runs at.</summary>
     public double At { get; }
 
-    /// <summary>The Carrier of the Pair a Role Swap turns round, or one of the two a Late Pairing pairs, else -1.</summary>
+    /// <summary>The Carrier of the Pair a Role Swap turns round, one of the two a Late Pairing pairs, or the Carrier a Pair Assignment names, else -1.</summary>
     public int SwapCarrier { get; }
 
-    /// <summary>The Rider of the Pair a Role Swap turns round, or the other of the two a Late Pairing pairs, else -1.</summary>
+    /// <summary>The Rider of the Pair a Role Swap turns round, the other of the two a Late Pairing pairs, or the Rider a Pair Assignment names, else -1.</summary>
     public int SwapRider { get; }
 
     public bool Done { get; }
@@ -92,8 +93,8 @@ internal sealed class Operation
 /// <summary>
 /// The Troop Leader's rule of one operation at a time. A Pair Shuffle that
 /// comes during a Role Swap or Late Pairing waits for it; one that comes
-/// during another Pair Shuffle merges into it; a Role Swap or Late Pairing
-/// that comes during any operation is refused, and asked again later.
+/// during another Pair Shuffle merges into it; a Role Swap, Late Pairing,
+/// or Pair Assignment that comes during any operation is refused.
 /// </summary>
 internal sealed class OperationQueue
 {

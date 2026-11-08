@@ -554,6 +554,11 @@ internal static class TroopLeaderRows
     /// <summary>Timed Shuffle intervals the menu steps through, in minutes.</summary>
     private static readonly int[] Intervals = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60];
 
+    /// <summary>The players picked for a Pair Assignment, by actor; -1 for none yet.</summary>
+    private static int assignCarrier = -1;
+
+    private static int assignRider = -1;
+
     public static void Add(CoopMenuPage page)
     {
         page.AddHeader(() => Strings.MenuTroopLeader);
@@ -568,6 +573,22 @@ internal static class TroopLeaderRows
             () => Strings.MenuGo,
             CarryKeeper.RequestRecovery,
             visible: () => PairRoster.Formed);
+        page.AddAction(
+            () => Strings.MenuAssignCarrier,
+            () => PickName(assignCarrier),
+            () => assignCarrier = NextPick(assignCarrier),
+            visible: () => PairRoster.Formed);
+        page.AddAction(
+            () => Strings.MenuAssignRider,
+            () => PickName(assignRider),
+            () => assignRider = NextPick(assignRider),
+            visible: () => PairRoster.Formed);
+        page.AddAction(
+            () => Strings.MenuAssign,
+            () => Strings.MenuGo,
+            Assign,
+            visible: () => PairRoster.Formed,
+            available: () => !PairShuffle.Busy && PairShuffle.CanAssign(assignCarrier, assignRider));
 
         page.AddHeader(() => Strings.MenuRunRules);
         Toggle(page, () => Strings.RuleCampfireShuffle, CoopConfig.CampfireShuffle);
@@ -598,6 +619,40 @@ internal static class TroopLeaderRows
     /// </summary>
     private static void Toggle(CoopMenuPage page, Func<string> label, BepInEx.Configuration.ConfigEntry<bool> rule) =>
         page.AddAction(label, () => rule.Value ? Strings.On : Strings.Off, () => rule.Value = !rule.Value);
+
+    private static void Assign()
+    {
+        if (!PairShuffle.CanAssign(assignCarrier, assignRider))
+        {
+            CoopNotice.Info(Strings.MenuAssignUnavailable);
+            return;
+        }
+
+        Order(PairShuffle.Request(OperationKind.PairAssignment, assignCarrier, assignRider));
+    }
+
+    /// <summary>Players a Pair Assignment can name: in the room with this version.</summary>
+    private static List<int> Pickable() =>
+        PhotonNetwork.PlayerList
+            .Where(p => !p.IsInactive && Net.ModPresence.VersionOf(p) == MyPluginInfo.PLUGIN_VERSION)
+            .Select(p => p.ActorNumber)
+            .OrderBy(a => a)
+            .ToList();
+
+    private static int NextPick(int current)
+    {
+        List<int> actors = Pickable();
+        if (actors.Count == 0)
+        {
+            return -1;
+        }
+
+        int next = actors.FirstOrDefault(a => a > current);
+        return next == 0 ? actors[0] : next;
+    }
+
+    private static string PickName(int actor) =>
+        actor >= 0 && Pickable().Contains(actor) ? PlayerRows.NameOf(actor) : "-";
 
     private static void NextInterval()
     {

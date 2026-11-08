@@ -250,6 +250,11 @@ internal static class PairShuffle
         {
             after = LatePair(before, op, out plan);
         }
+        else if (before != null && op.Kind == OperationKind.PairAssignment)
+        {
+            after = Assign(before, op);
+            plan = after == null ? null : new HandoverPlan(op.Id, movesPlaces: false, []);
+        }
         else if (before != null)
         {
             after = op.IsShuffle ? Shuffle(before) : Swap(before, op);
@@ -362,6 +367,38 @@ internal static class PairShuffle
         return new PairingResult(pairs, unpaired, overridden);
     }
 
+    /// <summary>
+    /// The Pair the Troop Leader assigned, while both still run this version
+    /// and the Carrier is awake. The Carrier keeps their body and place; the
+    /// Rider comes to them, and the new Rider's statuses clear as at any pairing.
+    /// </summary>
+    private static PairingResult? Assign(PairingResult before, Operation op)
+    {
+        if (!CanAssign(op.SwapCarrier, op.SwapRider))
+        {
+            return null;
+        }
+
+        return PairingRules.Assign(before, op.SwapCarrier, op.SwapRider, PhotonNetwork.PlayerList.Select(p => p.ActorNumber));
+    }
+
+    /// <summary>Whether a Pair Assignment of these two can run now.</summary>
+    internal static bool CanAssign(int carrier, int rider)
+    {
+        if (carrier == rider || !IsEligible(carrier) || !IsEligible(rider) || CharacterOf(carrier) is not Character body)
+        {
+            return false;
+        }
+
+        return !body.data.dead && !body.data.passedOut && !body.data.fullyPassedOut;
+    }
+
+    private static bool IsEligible(int actor) =>
+        PhotonNetwork.CurrentRoom?.GetPlayer(actor) is PhotonPlayer player
+        && !player.IsInactive
+        && ModPresence.VersionOf(player) == MyPluginInfo.PLUGIN_VERSION
+        && CharacterOf(actor) != null;
+
     private static PairingResult? Swap(PairingResult before, Operation op)
     {
         Pair? pair = before.Pairs.FirstOrDefault(p => p.Carrier == op.SwapCarrier && p.Rider == op.SwapRider);
@@ -447,6 +484,7 @@ internal static class PairShuffle
             {
                 OperationKind.RoleSwap => Strings.RoleSwapCountdown(left),
                 OperationKind.LatePairing => Strings.LatePairingCountdown(left),
+                OperationKind.PairAssignment => Strings.AssignmentCountdown(left),
                 _ => Strings.ShuffleCountdown(left),
             });
         }

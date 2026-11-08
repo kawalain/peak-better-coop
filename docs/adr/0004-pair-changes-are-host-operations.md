@@ -38,7 +38,12 @@ not done and runs it.
   Carrier's back. A Pair that ends because a member left is kept in the room
   by the players' user ids, since a reconnecting player gets a new actor
   number; when both are Unpaired again they pair first, in their former roles,
-  and the left-behind member does not wait for them otherwise. It moves no items and leaves
+  and the left-behind member does not wait for them otherwise.
+- A Pair Assignment, which the Troop Leader orders from the Coop Menu, is an
+  operation too. It moves no items or places: the named Carrier keeps their
+  body, the Rider comes to it, and the two former partners are left Unpaired
+  for a Late Pairing. A Pair Shuffle or Role Swap the Troop Leader orders
+  there runs as the usual operation. It moves no items and leaves
   the new Rider's statuses to be cleared as at any pairing; its plan only takes
   the Shared Body to the higher member's place. A lone Unpaired Player waits
   rather than breaking up another Pair.
