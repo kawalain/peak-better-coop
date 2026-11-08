@@ -2,9 +2,12 @@ using ExitGames.Client.Photon;
 using HarmonyLib;
 using PeakCoop.Core;
 using PeakCoop.Net;
+using PeakCoop.Ui;
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
+using Zorro.ControllerSupport;
+using Zorro.Settings;
 
 namespace PeakCoop.Features;
 
@@ -14,10 +17,24 @@ namespace PeakCoop.Features;
 /// Carrier's. The Rider's client samples those actions and sends them to the
 /// Carrier, whose client plays them into the Shared Body.
 /// </summary>
+/// <remarks>
+/// Solo Pair (a debug mode) runs both halves on one client: the player's
+/// mouse goes through the Rider's path, is encoded, held back for a set
+/// latency instead of crossing the network, and replayed on the Carrier's path.
+/// </remarks>
 [HarmonyPatch]
 internal static class ControlSplit
 {
+    private enum Mode
+    {
+        None,
+        Carrier,
+        Rider,
+        Solo,
+    }
+
     private const float SendInterval = 1f / 30f;
+    private const int SoloPartner = -2;
 
     // Rider side: what the Rider produced so far.
     private static ButtonCounters primaryOut;
@@ -43,31 +60,74 @@ internal static class ControlSplit
     private static int lastSequenceIn = int.MinValue;
     private static int lookFrame = -1;
 
+    // Solo Pair: the Rider's look kept apart from the body, and the stand-in network.
+    private static readonly DelayQueue<byte[]> SoloWire = new();
+    private static Vector2 soloLook;
+    private static bool soloAnnounced;
+
     private static int partnerActor = -1;
 
-    /// <summary>The local player's live Pair: both members present and alive.</summary>
-    private static bool TryGetLivePair(out PairRole role, out Character partner)
+    /// <summary>Whether Solo Pair applies: switched on and alone in a room.</summary>
+    internal static bool SoloPairWanted =>
+        CoopConfig.SoloPair.Value && PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.PlayerCount == 1;
+
+    private static Mode CurrentMode(out Character partner)
     {
         Character local = Character.localCharacter;
-        role = PairRoster.RoleOf(local);
         partner = null!;
-        if (role == PairRole.None
-            || !PairRoster.TryGetPartner(local, out partner)
-            || local.data.dead
-            || partner.data.dead)
+        bool soloWanted = SoloPairWanted;
+        if (soloWanted != soloAnnounced)
+        {
+            // Announce the setting or the room changing, not every death or scene load.
+            soloAnnounced = soloWanted;
+            CoopNotice.Info(soloWanted ? Strings.SoloPairOn(CoopConfig.SoloPairLatency.Value) : Strings.SoloPairOff);
+        }
+
+        if (local == null || local.data.dead)
         {
             Forget();
+            return Mode.None;
+        }
+
+        PairRole role = PairRoster.RoleOf(local);
+        if (role != PairRole.None)
+        {
+            if (!PairRoster.TryGetPartner(local, out partner) || partner.data.dead)
+            {
+                Forget();
+                return Mode.None;
+            }
+
+            Enter(PairRoster.ActorOf(partner), role.ToString());
+            return role == PairRole.Carrier ? Mode.Carrier : Mode.Rider;
+        }
+
+        if (soloWanted)
+        {
+            partner = local;
+            if (Enter(SoloPartner, "Solo Pair"))
+            {
+                soloLook = local.data.lookValues;
+            }
+
+            return Mode.Solo;
+        }
+
+        Forget();
+        return Mode.None;
+    }
+
+    /// <summary>Starts a fresh link to a partner; true when it changed.</summary>
+    private static bool Enter(int actor, string label)
+    {
+        if (actor == partnerActor)
+        {
             return false;
         }
 
-        int actor = PairRoster.ActorOf(partner);
-        if (actor != partnerActor)
-        {
-            Forget();
-            partnerActor = actor;
-            Plugin.Verbose($"Control Split active as {role} with actor {actor}.");
-        }
-
+        Forget();
+        partnerActor = actor;
+        Plugin.Verbose($"Control Split active as {label} (partner {actor}).");
         return true;
     }
 
@@ -83,6 +143,7 @@ internal static class ControlSplit
         PrimaryIn.Reset();
         SecondaryIn.Reset();
         LookIn.Reset();
+        SoloWire.Clear();
         receivedAny = false;
         lastSequenceIn = int.MinValue;
     }
@@ -92,30 +153,41 @@ internal static class ControlSplit
     private static void SplitSampledInput(CharacterInput __instance, bool playerMovementActive)
     {
         Character local = Character.localCharacter;
-        if (local == null || local.input != __instance || !TryGetLivePair(out PairRole role, out _))
+        if (local == null || local.input != __instance)
         {
             return;
         }
 
-        if (role == PairRole.Rider)
+        switch (CurrentMode(out _))
         {
-            TakeRiderActions(__instance);
-        }
-        else
-        {
-            PlayRiderActions(__instance, playerMovementActive);
+            case Mode.Rider:
+                CaptureRiderActions(__instance);
+                DropCarrierActions(__instance);
+                break;
+            case Mode.Carrier:
+                PlayRiderActions(__instance, playerMovementActive);
+                break;
+            case Mode.Solo:
+                CaptureRiderActions(__instance);
+                CaptureSoloLook(local, __instance);
+                DeliverSoloWire();
+                PlayRiderActions(__instance, playerMovementActive);
+                break;
         }
     }
 
-    /// <summary>The Rider keeps look, ping, pause, and push-to-talk; the rest is sent or dropped.</summary>
-    private static void TakeRiderActions(CharacterInput input)
+    private static void CaptureRiderActions(CharacterInput input)
     {
         primaryOut = primaryOut.After(input.usePrimaryWasPressed, input.usePrimaryIsPressed, input.usePrimaryWasReleased);
         secondaryOut = secondaryOut.After(input.useSecondaryWasPressed, input.useSecondaryIsPressed, input.useSecondaryWasReleased);
         scrollForwardOut = scrollForwardOut.After(input.scrollForwardWasPressed, input.scrollForwardIsPressed, false);
         scrollBackwardOut = scrollBackwardOut.After(input.scrollBackwardWasPressed, input.scrollBackwardIsPressed, false);
         scrollTotalOut += input.scrollInput;
+    }
 
+    /// <summary>The Rider keeps look, ping, pause, and push-to-talk; the rest is the Carrier's.</summary>
+    private static void DropCarrierActions(CharacterInput input)
+    {
         input.movementInput = Vector2.zero;
         input.scrollInput = 0f;
         input.crouchIsPressed = input.crouchWasPressed = input.crouchToggleWasPressed = false;
@@ -130,6 +202,27 @@ internal static class ControlSplit
         input.scrollBackwardWasPressed = input.scrollForwardWasPressed = false;
         input.scrollBackwardIsPressed = input.scrollForwardIsPressed = false;
         input.emoteIsPressed = false;
+    }
+
+    /// <summary>Turns the mouse into the Rider's look, as the game's CameraLook would.</summary>
+    private static void CaptureSoloLook(Character local, CharacterInput input)
+    {
+        CharacterMovement movement = local.refs.movement;
+        bool mouse = InputHandler.GetCurrentUsedInputScheme() == InputScheme.KeyboardMouse;
+        float sensitivity = mouse ? movement.mouseSensSetting.Value : movement.controllerSensSetting.Value;
+        float invertX = movement.invertXSetting.Value == OffOnMode.OFF ? 1f : -1f;
+        float invertY = movement.invertYSetting.Value == OffOnMode.OFF ? 1f : -1f;
+        soloLook.x += input.lookInput.x * sensitivity * invertX;
+        soloLook.y = Mathf.Clamp(soloLook.y + (input.lookInput.y * sensitivity * invertY), -85f, 85f);
+    }
+
+    private static void DeliverSoloWire()
+    {
+        float delay = CoopConfig.SoloPairLatency.Value / 1000f;
+        while (SoloWire.TryDequeue(Time.unscaledTime, delay, out byte[] payload))
+        {
+            Accept(payload);
+        }
     }
 
     /// <summary>The Carrier's own look and mouse actions give way to the Rider's.</summary>
@@ -172,10 +265,13 @@ internal static class ControlSplit
     [HarmonyPatch(typeof(Character), nameof(Character.CalculateWorldMovementDir))]
     private static void FollowRiderLook(Character __instance)
     {
-        if (!__instance.IsLocal
-            || lookFrame == Time.frameCount
-            || !TryGetLivePair(out PairRole role, out _)
-            || role != PairRole.Carrier)
+        if (!__instance.IsLocal || lookFrame == Time.frameCount)
+        {
+            return;
+        }
+
+        Mode mode = CurrentMode(out _);
+        if (mode != Mode.Carrier && mode != Mode.Solo)
         {
             return;
         }
@@ -194,17 +290,18 @@ internal static class ControlSplit
     [HarmonyPrefix]
     [HarmonyPatch(typeof(CharacterItems), "DoSwitching")]
     private static bool RiderDoesNotSwitch(CharacterItems __instance) =>
-        !(__instance.character.IsLocal && TryGetLivePair(out PairRole role, out _) && role == PairRole.Rider);
+        !(__instance.character.IsLocal && CurrentMode(out _) == Mode.Rider);
 
     /// <summary>Called every frame after input: the Rider sends a snapshot.</summary>
     internal static void SendFromRider()
     {
-        if (!TryGetLivePair(out PairRole role, out Character carrier) || role != PairRole.Rider)
+        Mode mode = CurrentMode(out Character partner);
+        if (mode != Mode.Rider && mode != Mode.Solo)
         {
             return;
         }
 
-        Vector2 look = Character.localCharacter.data.lookValues;
+        Vector2 look = mode == Mode.Solo ? soloLook : Character.localCharacter.data.lookValues;
         var actions = new RiderActions
         {
             Yaw = look.x,
@@ -228,7 +325,16 @@ internal static class ControlSplit
         }
 
         actions.Sequence = ++sequenceOut;
-        var options = new RaiseEventOptions { TargetActors = [PairRoster.ActorOf(carrier)] };
+        lastSent = actions;
+        nextSend = Time.unscaledTime + SendInterval;
+
+        if (mode == Mode.Solo)
+        {
+            SoloWire.Enqueue(actions.Encode(), Time.unscaledTime);
+            return;
+        }
+
+        var options = new RaiseEventOptions { TargetActors = [PairRoster.ActorOf(partner)] };
         PhotonNetwork.RaiseEvent(
             RoomKeys.RiderActionsEvent,
             actions.Encode(),
@@ -239,19 +345,21 @@ internal static class ControlSplit
             // A click should not wait for the next network tick.
             PhotonNetwork.SendAllOutgoingCommands();
         }
-
-        lastSent = actions;
-        nextSend = Time.unscaledTime + SendInterval;
     }
 
     internal static void Receive(EventData photonEvent)
     {
-        if (photonEvent.Code != RoomKeys.RiderActionsEvent
-            || !TryGetLivePair(out PairRole role, out Character rider)
-            || role != PairRole.Carrier
-            || photonEvent.Sender != PairRoster.ActorOf(rider)
-            || !RiderActions.TryDecode(photonEvent.CustomData, out RiderActions actions)
-            || actions.Sequence <= lastSequenceIn)
+        if (photonEvent.Code == RoomKeys.RiderActionsEvent
+            && CurrentMode(out Character rider) == Mode.Carrier
+            && photonEvent.Sender == PairRoster.ActorOf(rider))
+        {
+            Accept(photonEvent.CustomData);
+        }
+    }
+
+    private static void Accept(object? payload)
+    {
+        if (!RiderActions.TryDecode(payload, out RiderActions actions) || actions.Sequence <= lastSequenceIn)
         {
             return;
         }

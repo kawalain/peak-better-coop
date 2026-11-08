@@ -16,6 +16,10 @@ internal static class CoopConfig
 
     public static ConfigEntry<bool> VerboseLog { get; private set; } = null!;
 
+    public static ConfigEntry<bool> SoloPair { get; private set; } = null!;
+
+    public static ConfigEntry<int> SoloPairLatency { get; private set; } = null!;
+
     public static void Bind(ConfigFile config)
     {
         AllowOddPlayerCount = config.Bind(
@@ -47,5 +51,19 @@ internal static class CoopConfig
             "Verbose Log",
             true,
             "Write detailed pairing, carry, and Control Split diagnostics to LogOutput.log.");
+
+        SoloPair = config.Bind(
+            "Debug",
+            "Solo Pair",
+            false,
+            "While alone in the room, play both Carrier and Rider: your mouse goes through the Rider's path (encoded, delayed, replayed) before it reaches your body. Also lets a solo Run depart.");
+
+        SoloPairLatency = config.Bind(
+            "Debug",
+            "Solo Pair Latency (ms)",
+            100,
+            new ConfigDescription(
+                "How long Solo Pair holds the Rider's actions back, standing in for the network.",
+                new AcceptableValueRange<int>(0, 1000)));
     }
 }

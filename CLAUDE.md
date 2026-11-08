@@ -48,7 +48,10 @@ python -I tools/dev_profile.py launch <profile_dir> <PeakGameDir>
 their dependencies. Setting `PeakCoopDeployDir` in `Directory.Build.user.props`
 to `<profile_dir>/BepInEx/plugins/PeakCoop` makes every build deploy there.
 `launch` copies the doorstop proxy into the game folder, the only change made
-there. Diagnostics land in `<profile_dir>/BepInEx/LogOutput.log`; players use
+there. To test the Control Split alone, turn on `[Debug] Solo Pair`: alone in a room,
+your mouse takes the Rider's path (encoded, delayed by the set latency,
+replayed) before it reaches your body, and a solo Run may depart.
+Diagnostics land in `<profile_dir>/BepInEx/LogOutput.log`; players use
 Gale and send theirs from their own profile.
 
 ## Test builds and versions

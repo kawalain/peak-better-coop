@@ -33,6 +33,14 @@ internal static class Strings
         ? "코옵: 방장이 Pair 업기 상태를 복구했습니다."
         : "Co-op: the host repaired every Pair's carry.";
 
+    public static string SoloPairOn(int latencyMs) => Korean
+        ? $"코옵: Solo Pair 테스트 모드 (마우스 지연 {latencyMs}ms)"
+        : $"Co-op: Solo Pair test mode (mouse delayed {latencyMs} ms)";
+
+    public static string SoloPairOff => Korean
+        ? "코옵: Solo Pair 테스트 모드가 꺼졌습니다."
+        : "Co-op: Solo Pair test mode is off.";
+
     public static string OddPlayerCount(int count) => Korean
         ? $"코옵: 출발하려면 짝수 인원이 필요합니다. (현재 {count}명)"
         : $"Co-op: an even number of players is needed to depart. ({count} in the room)";

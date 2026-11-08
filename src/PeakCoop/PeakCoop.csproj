@@ -26,6 +26,8 @@
     <Reference Include="$(PeakManagedDir)\Unity.InputSystem.dll" Private="false" />
     <Reference Include="$(PeakManagedDir)\Photon*.dll" Private="false" />
     <Reference Include="$(PeakManagedDir)\Zorro.Core.Runtime.dll" Private="false" />
+    <Reference Include="$(PeakManagedDir)\Zorro.Settings.Runtime.dll" Private="false" />
+    <Reference Include="$(PeakManagedDir)\Zorro.ControllerSupport.dll" Private="false" />
   </ItemGroup>
 
   <ItemGroup>
