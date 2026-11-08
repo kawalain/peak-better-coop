@@ -1,79 +1,26 @@
 using BepInEx;
-using UnityEngine;
+using BepInEx.Logging;
+using HarmonyLib;
 
-[BepInPlugin(
-    PluginGuid,
-    PluginName,
-    PluginVersion)]
-public sealed class CoopMod : BaseUnityPlugin
+namespace PeakCoop;
+
+[BepInPlugin(MyPluginInfo.PLUGIN_GUID, MyPluginInfo.PLUGIN_NAME, MyPluginInfo.PLUGIN_VERSION)]
+public sealed class Plugin : BaseUnityPlugin
 {
-    public const string PluginGuid =
-        "com.peak.coopmod";
+    internal static ManualLogSource Log { get; private set; } = null!;
 
-    public const string PluginName =
-        "Co-op Mod";
-
-    public const string PluginVersion =
-        "0.0.7";
+    private Harmony? harmony;
 
     private void Awake()
     {
-        Debug.Log(
-            "[CoopMod] Starting Co-op Mod v" +
-            PluginVersion);
-
-        PairPlayerStartLog
-            .EnsureCreated();
-
-        OnlyEven
-            .Initialize(this);
-
-        Piggyback
-            .Initialize(this);
-
-        SeparateRole
-            .Initialize(this);
-
-        ShowUI
-            .Initialize(this);
-
-        ShareStamina
-            .Initialize(this);
-
-        ShareDeath
-            .Initialize(this);
-
-        ShareAlive
-            .Initialize(this);
-
-        Debug.Log(
-            "[CoopMod] All systems initialized.");
+        Log = Logger;
+        harmony = new Harmony(MyPluginInfo.PLUGIN_GUID);
+        harmony.PatchAll(typeof(Plugin).Assembly);
+        Log.LogInfo($"{MyPluginInfo.PLUGIN_NAME} {MyPluginInfo.PLUGIN_VERSION} loaded.");
     }
 
     private void OnDestroy()
     {
-        ShareAlive
-            .Shutdown();
-
-        ShareDeath
-            .Shutdown();
-
-        ShareStamina
-            .Shutdown();
-
-        ShowUI
-            .Shutdown();
-
-        SeparateRole
-            .Shutdown();
-
-        Piggyback
-            .Shutdown();
-
-        OnlyEven
-            .Shutdown();
-
-        Debug.Log(
-            "[CoopMod] All systems shutdown.");
+        harmony?.UnpatchSelf();
     }
 }

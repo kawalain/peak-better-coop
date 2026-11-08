@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+*.user
+
+# Machine-local build settings (game path, deploy target)
+Directory.Build.user.props
+
+# Decompiled game code: reference only, never committed
+decompiled/

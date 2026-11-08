@@ -1,0 +1,17 @@
+<Project>
+  <!--
+    Machine-local overrides (PeakGameDir, PeakCoopDeployDir) live in the
+    git-ignored Directory.Build.user.props next to this file.
+  -->
+  <Import Project="$(MSBuildThisFileDirectory)Directory.Build.user.props"
+          Condition="Exists('$(MSBuildThisFileDirectory)Directory.Build.user.props')" />
+
+  <PropertyGroup>
+    <PeakGameDir Condition="'$(PeakGameDir)' == ''">D:\SteamLibrary\steamapps\common\PEAK</PeakGameDir>
+    <PeakManagedDir>$(PeakGameDir)\PEAK_Data\Managed</PeakManagedDir>
+
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>
