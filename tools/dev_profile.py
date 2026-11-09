@@ -19,7 +19,8 @@ twins starts two Twins, copies of the game for testing apart from the player's
 own (development builds only; see GLOSSARY.md): the host Twin opens a room and
 the guest Twin joins it, by the room card ~/BetterCoopTwins/room.txt. Each runs
 from its own copy of <profile_dir> under ~/BetterCoopTwins (host, guest), with
-its own config and logs, started from PEAK.exe directly in a small window.
+its own config (Verbose Log on) and logs, started from PEAK.exe directly in a
+small window.
 Steam must be running. --plugin puts that BetterCoop.dll, such as one just
 built, in both copies; --only starts one of them again, as after a test closed it.
 
@@ -137,6 +138,11 @@ def twin(profile: Path, game: Path, role: str, plugin: Path | None, control: boo
         return skipped
 
     shutil.copytree(profile, twin_dir, ignore=leave_out, dirs_exist_ok=True)
+    # A Twin is for testing: its log says everything the mod does.
+    config = twin_dir / "BepInEx" / "config" / "in.kawala.bettercoop.cfg"
+    if config.exists():
+        text = config.read_text(encoding="utf-8")
+        config.write_text(text.replace("Verbose Log = false", "Verbose Log = true"), encoding="utf-8")
     if plugin is not None:
         for installed in (twin_dir / "BepInEx" / "plugins").rglob("BetterCoop.dll"):
             shutil.copy2(plugin, installed)

@@ -54,6 +54,7 @@ internal static partial class ControlCommands
         ["warp"] = new("{x, y, z} or {to: actor}: moves this copy's scout there, as the game's own warp.", Warp),
         ["menu"] = new("{action: pause|back}: opens the pause menu, or goes back as the pause key does.", Menu),
         ["scroll"] = new("{to}: scrolls the open paper form to the first text containing 'to'.", Scroll),
+        ["depart"] = new("At the Airport: boards for the Run as the boarding pass does, through the mod's own checks.", _ => Depart()),
         ["order"] = new("{what, ...}: a Roster order, under the Roster's rules; without what, lists them.", Order),
     };
 
@@ -353,6 +354,16 @@ internal static partial class ControlCommands
         }
 
         throw new ArgumentException($"no open paper shows '{to}'");
+    }
+
+    private static JToken Depart()
+    {
+        AirportCheckInKiosk kiosk = UnityEngine.Object.FindAnyObjectByType<AirportCheckInKiosk>()
+            ?? throw new InvalidOperationException("no check-in kiosk here; depart from the Airport");
+        BoardingPass pass = GUIManager.instance.boardingPass;
+        pass.kiosk = kiosk;
+        pass.StartGame();
+        return "boarding";
     }
 
     private static JToken Warp(JObject args)
