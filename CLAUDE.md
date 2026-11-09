@@ -75,10 +75,14 @@ project file).
   with it.
 - Twins: `python -I tools/dev_profile.py twins <profile_dir> <PeakGameDir>
   [--plugin <BetterCoop.dll>] [--guests 1-3] [--unmodded <guest>] [--only
-  <role>] [--control]` copies the profile to `~/BetterCoopTwins/host`, `guest`,
-  `guest2`, and `guest3` as asked and starts each in a small window, apart from
-  the player's own game: the host Twin opens a room without a Steam lobby and
-  the guests join it by the room card `~/BetterCoopTwins/room.txt`. An
+  <role>] [--control] [--visible]` copies the profile to
+  `~/BetterCoopTwins/host`, `guest`, `guest2`, and `guest3` as asked and starts
+  each headless (off screen, silent, still rendering) unless `--visible`, apart
+  from the player's own game: the host Twin opens a room without a Steam lobby
+  and the guests join it by the room card `~/BetterCoopTwins/room.txt`. Twins
+  run from `BetterCoopTwinGame` at the root of the game's drive, a hard-linked
+  game folder under another product name, so they never write the player's
+  settings. `tools/twin_checks.py` runs the required checks in four Twins. An
   `--unmodded` guest loads the mod without patching or publishing anything, so
   it stands in for an Unmodded Player (only its tools run). Test in Twins,
   never in the player's own game.
@@ -87,7 +91,7 @@ project file).
   scout id and name of its own. The mod knows players by `KnownPlayers.IdOf`,
   never by `Player.UserId`, so they stay apart. Twins leave the account and the
   player's files alone (no achievements, stats, rich presence, Steam lobby,
-  quicksave, or saved settings), though Unity may still save a window size.
+  quicksave, or saved settings).
 - The Control Line lets a tool watch and steer a running copy: its state (room,
   scouts, Pairs, Run Rules, Carry Record, Run Report), log, and screen; Roster
   orders through the Roster's own `LiveRoom`; warps; pressing what is on

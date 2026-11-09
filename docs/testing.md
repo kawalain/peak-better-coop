@@ -14,6 +14,11 @@ python -I tools/dev_profile.py twins <profile_dir> <PeakGameDir> --plugin src/Be
 ```
 
 The host Twin opens a room and the guest Twin joins it; both log verbosely.
+Twins run headless: each window sits off every screen and off the taskbar, with
+its sound off and 30 frames a second, and still renders for screenshots;
+`--visible` shows them. They run from `BetterCoopTwinGame` at the root of the
+game's drive, a hard-linked copy of the game folder under another product name,
+so their resolution, sound and other settings never reach the player's.
 `tools/peak_mcp.py` reaches them as `host` and `guest`. For a party of four,
 add `--guests 3` (`guest2`, `guest3`); `--unmodded guest3` makes that guest an
 Unmodded Player. Photon makes the player with the lowest actor number Troop

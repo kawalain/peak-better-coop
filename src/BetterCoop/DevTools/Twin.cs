@@ -42,6 +42,12 @@ internal static class Twin
     /// <summary>The launch argument that makes this Twin stand in for an Unmodded Player.</summary>
     public const string UnmoddedArgument = "--bettercoop-twin-unmodded";
 
+    /// <summary>The launch argument that puts this Twin's window off screen and silences it; it still renders, for screenshots.</summary>
+    public const string HeadlessArgument = "--bettercoop-twin-headless";
+
+    /// <summary>Set while a test keeps this Twin out of the room: it neither joins nor opens one.</summary>
+    public static bool Held { get; set; }
+
     /// <summary>
     /// Whether this copy is a Twin standing in for an Unmodded Player: only
     /// the development tools run, and nothing of the mod reaches the room.
@@ -108,9 +114,12 @@ internal static class Twin
             LetOneAccountJoinTwice(harmony);
             runtime.AddComponent<TwinHost>();
         }
-        else
+
+        // The opening Twin, once it has left a room the others are still in, joins it again as they do.
+        runtime.AddComponent<TwinJoiner>();
+        if (arguments.Contains(HeadlessArgument))
         {
-            runtime.AddComponent<TwinJoiner>();
+            runtime.AddComponent<TwinScreen>();
         }
 
         Plugin.Log.LogWarning($"Twin: this copy is {label} ({Role}{(Unmodded ? ", Unmodded" : string.Empty)}), scout id {Id}; it {(Hosts ? "opens" : "joins")} the room on {RoomCard}.");
@@ -194,6 +203,145 @@ internal static class Twin
 
     /// <summary>Does nothing in place of the method it stands in for; its result is the default.</summary>
     private static bool Skip() => false;
+
+    /// <summary>
+    /// Goes past the game's first-time setup page, which a Twin meets at every
+    /// start: it keeps no settings, so the game never learns it was shown.
+    /// </summary>
+    internal static void PassFirstTimeSetup()
+    {
+        MainMenuFirstTimeSetupPage? setup = UnityEngine.Object.FindAnyObjectByType<MainMenuFirstTimeSetupPage>();
+        if (setup != null && setup.isActiveAndEnabled)
+        {
+            setup.ContinueButton.onClick.Invoke();
+        }
+    }
+
+    /// <summary>The room on the room card, or empty when there is none.</summary>
+    internal static string CardRoom()
+    {
+        try
+        {
+            return File.Exists(RoomCard) ? File.ReadLines(RoomCard).FirstOrDefault()?.Trim() ?? string.Empty : string.Empty;
+        }
+        catch (IOException)
+        {
+            return string.Empty;
+        }
+    }
+}
+
+/// <summary>
+/// A headless Twin: its window off every screen and the taskbar and its sound
+/// off, while the game goes on rendering, so screenshots still work. It runs
+/// at a steady low frame rate, so that several Twins leave the computer to the
+/// player.
+/// </summary>
+internal sealed class TwinScreen : MonoBehaviour
+{
+    private const float Every = 1f;
+
+    private const int FrameRate = 30;
+
+    private float next;
+
+    private void Start()
+    {
+        Application.runInBackground = true;
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = FrameRate;
+    }
+
+    private void Update()
+    {
+        if (Time.unscaledTime < next)
+        {
+            return;
+        }
+
+        next = Time.unscaledTime + Every;
+        try
+        {
+            // The game sets neither of these, but a scene change may show the window again.
+            AudioListener.volume = 0f;
+            Application.targetFrameRate = FrameRate;
+            uint process = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+            EnumWindows((window, _) =>
+            {
+                GetWindowThreadProcessId(window, out uint owner);
+                if (owner == process && IsWindowVisible(window))
+                {
+                    PutAway(window);
+                }
+
+                return true;
+            }, IntPtr.Zero);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("Twin.Screen", exception);
+        }
+    }
+
+    // A hidden or minimized window stops presenting, and the screenshot comes
+    // out blank; a window off every screen and off the taskbar still renders.
+    private const int Away = -20000;
+
+    private const int ExStyle = -20;
+
+    private const long ToolWindow = 0x80, AppWindow = 0x40000, NoActivate = 0x8000000;
+
+    private const uint NoSize = 0x1, NoZOrder = 0x4, NoActivateMove = 0x10, FrameChanged = 0x20;
+
+    private static void PutAway(IntPtr window)
+    {
+        long style = GetWindowLongPtr(window, ExStyle).ToInt64();
+        long away = (style | ToolWindow | NoActivate) & ~AppWindow;
+        if (away != style)
+        {
+            // The taskbar drops a button only for a window shown again after the change.
+            ShowWindow(window, 0);
+            SetWindowLongPtr(window, ExStyle, new IntPtr(away));
+            ShowWindow(window, 4);
+        }
+
+        if (GetWindowRect(window, out Rect rect) && rect.Left != Away)
+        {
+            SetWindowPos(window, IntPtr.Zero, Away, Away, 0, 0, NoSize | NoZOrder | NoActivateMove | FrameChanged);
+        }
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    private struct Rect
+    {
+        public int Left, Top, Right, Bottom;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr GetWindowLongPtr(IntPtr window, int index);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr SetWindowLongPtr(IntPtr window, int index, IntPtr value);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool GetWindowRect(IntPtr window, out Rect rect);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool SetWindowPos(IntPtr window, IntPtr after, int x, int y, int width, int height, uint flags);
+
+    private delegate bool EnumWindowsProc(IntPtr window, IntPtr data);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool EnumWindows(EnumWindowsProc callback, IntPtr data);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern uint GetWindowThreadProcessId(IntPtr window, out uint process);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool IsWindowVisible(IntPtr window);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr window, int command);
 }
 
 /// <summary>
@@ -210,7 +358,7 @@ internal sealed class TwinJoiner : MonoBehaviourPunCallbacks
 
     private void Update()
     {
-        if (Time.unscaledTime < next || PhotonNetwork.InRoom || NetworkingUtilities.EnteringRoom)
+        if (Time.unscaledTime < next || Twin.Held || PhotonNetwork.InRoom || NetworkingUtilities.EnteringRoom)
         {
             return;
         }
@@ -218,7 +366,8 @@ internal sealed class TwinJoiner : MonoBehaviourPunCallbacks
         next = Time.unscaledTime + Every;
         try
         {
-            string room = File.Exists(Twin.RoomCard) ? File.ReadLines(Twin.RoomCard).FirstOrDefault()?.Trim() ?? string.Empty : string.Empty;
+            Twin.PassFirstTimeSetup();
+            string room = Twin.CardRoom();
             MainMenuJoinRoomPage? page = FindAnyObjectByType<MainMenuJoinRoomPage>(FindObjectsInactive.Include);
             if (room.Length == 0 || page == null || !PhotonNetwork.IsConnectedAndReady)
             {
@@ -252,7 +401,9 @@ internal sealed class TwinJoiner : MonoBehaviourPunCallbacks
 
 /// <summary>
 /// In the main menu, opens a room as the game does once a Steam lobby is made,
-/// but without the lobby, and keeps its name on the room card while in it.
+/// but without the lobby, and writes its name on the room card. The card stays
+/// when this Twin leaves, as the room goes on with the others; starting the
+/// opening Twin again clears it.
 /// </summary>
 internal sealed class TwinHost : MonoBehaviourPunCallbacks
 {
@@ -270,7 +421,9 @@ internal sealed class TwinHost : MonoBehaviourPunCallbacks
         next = Time.unscaledTime + Every;
         try
         {
-            if (!PhotonNetwork.IsConnectedAndReady || FindAnyObjectByType<MainMenuMainPage>() == null)
+            Twin.PassFirstTimeSetup();
+            // A room on the card is still there for the others: the joiner takes this Twin back to it.
+            if (Twin.Held || Twin.CardRoom().Length > 0 || !PhotonNetwork.IsConnectedAndReady || FindAnyObjectByType<MainMenuMainPage>() == null)
             {
                 return;
             }
@@ -295,18 +448,6 @@ internal sealed class TwinHost : MonoBehaviourPunCallbacks
         {
             File.WriteAllText(Twin.RoomCard, PhotonNetwork.CurrentRoom.Name);
             Plugin.Log.LogWarning($"Twin: opened {PhotonNetwork.CurrentRoom.Name}.");
-        }
-        catch (Exception exception)
-        {
-            Guard.Report("Twin.Card", exception);
-        }
-    }
-
-    public override void OnLeftRoom()
-    {
-        try
-        {
-            File.Delete(Twin.RoomCard);
         }
         catch (Exception exception)
         {
