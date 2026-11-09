@@ -1,5 +1,6 @@
 using BepInEx.Configuration;
 using BetterCoop.Core;
+using BetterCoop.Ui;
 
 namespace BetterCoop;
 
@@ -41,86 +42,86 @@ internal static class CoopConfig
             "Party",
             "Allow Odd Player Count",
             false,
-            "Let a Run depart with an odd number of players; the extra player stays an Unpaired Player. The Troop Leader's value applies.");
+            Strings.English("config.allowOddPlayerCount"));
 
         RolePreference = config.Bind(
             "Pair",
             "Role Preference",
             Core.RolePreference.Random,
-            "Your wish when Pairs are formed: Carrier (keyboard), Rider (mouse), or Random for either. Conflicts are settled at random.");
+            Strings.English("config.rolePreference"));
 
         FollowRolePreferences = config.Bind(
             "Pair",
             "Honour Role Preferences",
             true,
-            "When Pairs are formed, shuffled, or paired late, give players their Role Preference where it fits. Off: roles are drawn at random. A Pair Plan or Pair Assignment always comes first. The Troop Leader's value applies.");
+            Strings.English("config.followRolePreferences"));
 
         AllowSwapRequests = config.Bind(
             "Pair",
             "Allow Role Swaps",
             true,
-            "Let the two of a Pair trade Carrier and Rider when both ask for it. The Troop Leader can always set roles on the Roster. The Troop Leader's value applies.");
+            Strings.English("config.allowSwapRequests"));
 
         LatePairing = config.Bind(
             "Pair",
             "Late Pairing",
             true,
-            "During a Run, pair two players without a partner as soon as there are two. Off: they climb alone until the next Pair Shuffle or Pair Assignment. The Troop Leader's value applies.");
+            Strings.English("config.latePairing"));
 
         RiderPicksFromBackpack = config.Bind(
             "Pair",
             "Rider Picks From Backpack",
             true,
-            "In a backpack wheel the Carrier opens, the Rider picks with the mouse while the Carrier holds the key. Off: the Carrier picks, and only the Carrier sees the wheel. The Troop Leader's value applies.");
+            Strings.English("config.riderPicksFromBackpack"));
 
         RescueCarry = config.Bind(
             "Balance",
             "Rescue Carry",
             true,
-            "Let a Pair carry a passed-out scout on the Rider's back, and anyone without a partner carry a passed-out Pair, so the time they have left stops running out. Off: a Pair can only help a passed-out scout where they lie. The Troop Leader's value applies.");
+            Strings.English("config.rescueCarry"));
 
         CarryWeight = config.Bind(
             "Balance",
             "Carry Weight",
             false,
-            "Apply the game's weight for carrying a person to every Carrier. The Troop Leader's value applies.");
+            Strings.English("config.carryWeight"));
 
         CampfireShuffle = config.Bind(
             "Shuffle",
             "Campfire Shuffle",
             true,
-            "Form the Pairs anew when a campfire is lit and the Run moves on to the next segment. The Troop Leader's value applies.");
+            Strings.English("config.campfireShuffle"));
 
         TimedShuffle = config.Bind(
             "Shuffle",
             "Timed Shuffle",
             false,
-            "Form the Pairs anew at a fixed interval. The Troop Leader's value applies.");
+            Strings.English("config.timedShuffle"));
 
         TimedShuffleInterval = config.Bind(
             "Shuffle",
             "Timed Shuffle Interval",
             ShuffleInterval.DefaultMinutes,
             new ConfigDescription(
-                $"How often a Timed Shuffle comes, in minutes ({ShuffleInterval.MinMinutes}-{ShuffleInterval.MaxMinutes}). The Troop Leader's value applies.",
+                Strings.English("config.timedShuffleInterval", ("min", ShuffleInterval.MinMinutes), ("max", ShuffleInterval.MaxMinutes)),
                 new AcceptableValueRange<int>(ShuffleInterval.MinMinutes, ShuffleInterval.MaxMinutes)));
 
         HandOverPlace = config.Bind(
             "Shuffle",
             "Hand Over Place",
             true,
-            "When Pairs change, each new Carrier moves to where the Shared Body they take over stood. Riders always move to their new Carrier. The Troop Leader's value applies.");
+            Strings.English("config.handOverPlace"));
 
         HandOverItems = config.Bind(
             "Shuffle",
             "Hand Over Items",
             true,
-            "When Pairs change, each new Carrier takes over the items of the Shared Body they take over; the items swap, so nothing is lost. Statuses are always handed over. The Troop Leader's value applies.");
+            Strings.English("config.handOverItems"));
 
         VerboseLog = config.Bind(
             "Debug",
             "Verbose Log",
             false,
-            "Write detailed pairing, carry, and Control Split diagnostics to LogOutput.log.");
+            Strings.English("config.verboseLog"));
     }
 }

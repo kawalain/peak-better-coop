@@ -143,14 +143,14 @@ internal sealed class RunReportPage : PaperPage
             .Select(b => new BadgeCard(
                 b.Kind,
                 Strings.BadgeName(b.Kind),
-                string.Join(" & ", b.Ids.Select(id => Name(record, id))),
+                b.Ids.Select(id => Name(record, id)).Aggregate(Strings.Both),
                 Strings.BadgeAmount(b.Kind, b.Amount)))
             .ToList();
         foreach ((int segment, _, IReadOnlyList<CarryRecord.Stretch> pairs) in segments)
         {
             segmentEntries[segment] = pairs
                 .Select(p => new TableEntry(
-                    [$"{Name(record, p.Carrier)} → {Name(record, p.Rider)}", Strings.Duration(p.Seconds)],
+                    [Strings.Carries(Name(record, p.Carrier), Name(record, p.Rider)), Strings.Duration(p.Seconds)],
                     faint: !Present(p.Carrier) || !Present(p.Rider)))
                 .ToList();
         }

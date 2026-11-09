@@ -38,6 +38,11 @@
     <InternalsVisibleTo Include="BetterCoop.Tests" />
   </ItemGroup>
 
+  <!-- Every sentence a player sees, in every language: read by Ui/Strings.cs. -->
+  <ItemGroup>
+    <EmbeddedResource Include="Ui\Locale\strings.json" LogicalName="BetterCoop.strings.json" />
+  </ItemGroup>
+
   <!--
     Development tools (the Zoo, the Twin, the Control Line) live in
     DevTools/ and reach the plugin only through DevHooks.cs. Any build but

@@ -522,7 +522,7 @@ internal sealed class PostmarkFace : StampFace
     public override void Show(string word)
     {
         PaperText.Set(text, word);
-        dater.Set(DateTime.Now.ToString("hh:mm tt", System.Globalization.CultureInfo.InvariantCulture));
+        dater.Set(Strings.PostmarkTime(DateTime.Now));
         if (rim.Show(ring, template, Words, LetterSize, Ring / 2f - 15f, top(), bottom()))
         {
             Paint();

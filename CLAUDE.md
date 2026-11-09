@@ -148,5 +148,17 @@ in commands, logs, or replies.
 button replay and look smoothing, the Rider snapshot format) and is, with
 `DevTools/FakeRoom.cs`, the only code the tests reach. `Features/` holds one Harmony feature per file, named
 after its glossary term; `Net/` holds Photon keys and presence; `Ui/` holds
-notices and their Korean/English text. Every feature looks up Pairs through
+notices and the paper forms. Every feature looks up Pairs through
 `PairRoster` (ADR 0001), never through the game's carry state.
+
+## Player text
+
+Every sentence a player can see, the BepInEx setting descriptions included,
+lives in `src/BetterCoop/Ui/Locale/strings.json`: one key, one sentence per
+language code, following the game's language and falling back to English.
+Code reaches it only through `Ui/Strings.cs`; no other file writes player
+words. A key needs `en` and `ko` (`config.*` keys are English only), keeps
+English's `{placeholders}`, and is named by code; `TextTableTests` checks all
+of it. Another language is added by giving keys its code's sentences. Word it
+in the game's own terms and the glossary's, with Korean in formal endings and
+a player as `{name} 님`.

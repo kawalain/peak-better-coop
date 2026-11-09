@@ -58,9 +58,9 @@ internal static class CoopNotice
     {
 
         Plugin.Log.LogInfo($"[Notice] {message}");
-        if (!NoticeBoard.TryShow(kind, Strings.Unprefixed(message)))
+        if (!NoticeBoard.TryShow(kind, message))
         {
-            InGameLog(message, kind == NoticeKind.Caution);
+            InGameLog(Strings.Prefixed(message), kind == NoticeKind.Caution);
         }
     }
 

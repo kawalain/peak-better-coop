@@ -140,7 +140,7 @@ internal sealed class RosterPage : PaperPage
         {
             // The room's values are in another protocol (ADR 0009): nothing on it can be read.
             list.Header(() => Strings.MenuYou);
-            list.Note(() => Strings.Unprefixed(Strings.Resting(room.NameOf(room.TroopLeader), room.ModVersionOf(room.TroopLeader), MyPluginInfo.PLUGIN_VERSION)));
+            list.Note(() => Strings.Resting(room.NameOf(room.TroopLeader), room.ModVersionOf(room.TroopLeader), MyPluginInfo.PLUGIN_VERSION));
             Makers.Add(list);
             return;
         }
@@ -458,8 +458,8 @@ internal static class PlayerRows
         list.Field(() => Strings.MenuYourRole, () => Strings.RoleOf(room.PairOf(room.Me)?.Carrier == room.Me), visible: paired);
         list.Field(
             () => Strings.MenuPartner,
-            () => "—",
-            about: () => $"{Strings.MenuNoPartner}. {Strings.AboutNoPartner}",
+            () => Strings.None,
+            about: () => Strings.Sentences(Strings.MenuNoPartner, Strings.AboutNoPartner),
             visible: () => room.Formed && !paired());
         list.Field(
             () => Strings.MenuNextShuffle,
@@ -503,8 +503,8 @@ internal static class ReportRows
             open,
             about: () => Strings.AboutRunReport,
             value: () => room.Report is RunReport report
-                ? $"{Strings.EndingName(report.Ending)} · {Strings.Duration(report.Seconds)}"
-                : $"{Strings.EndingName(RunEnding.Underway)} · {Strings.Duration(room.RunSeconds)}",
+                ? Strings.Then(Strings.EndingName(report.Ending), Strings.Duration(report.Seconds))
+                : Strings.Then(Strings.EndingName(RunEnding.Underway), Strings.Duration(room.RunSeconds)),
             face: new SealFace(StampShape.MuteOval, FormDrawing.StampViolet, seed: 9));
     }
 }

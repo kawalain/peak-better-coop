@@ -255,7 +255,7 @@ internal sealed class ZooPage : PaperPage
         list.Stamp(
             () => T("전보", "Telegram"),
             () => T("재생", "Play"),
-            () => CoopNotice.Info(T("코옵: 분대장이 30초 뒤 짝을 섞습니다.", "Coop: the Troop Leader shuffles Pairs in 30 seconds.")));
+            () => CoopNotice.Info(T("분대장이 30초 뒤 짝을 섞습니다.", "The Troop Leader shuffles Pairs in 30 seconds.")));
         list.Stamp(
             () => T("메모", "Memo"),
             () => T("재생", "Play"),
@@ -365,7 +365,7 @@ internal sealed class ZooPage : PaperPage
         }
     }
 
-    private static string T(string korean, string english) => Strings.Korean ? korean : english;
+    private static string T(string korean, string english) => Strings.LanguageCode == "ko" ? korean : english;
 
     private void OpenReport()
     {
@@ -463,7 +463,7 @@ internal sealed class ZooLetter : MonoBehaviour
 
         public bool? Carries { get; }
 
-        public string Label() => Strings.Korean ? korean : english;
+        public string Label() => Strings.LanguageCode == "ko" ? korean : english;
     }
 
     public static readonly Scene[] Scenes =

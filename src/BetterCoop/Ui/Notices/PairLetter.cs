@@ -235,7 +235,7 @@ internal sealed class PairLetter : MonoBehaviour
 
             RectTransform caption = ScoutPhoto.Caption(theirs);
             TMP_Text unknown = PaperText.Make(caption.gameObject, template, PaperText.Value, TextAlignmentOptions.Top);
-            unknown.text = known ? "—" : Strings.LetterUnknown;
+            unknown.text = known ? Strings.None : Strings.LetterUnknown;
             unknown.color = PaperList.Faded(PaperText.Ink, 0.6f);
         }
 

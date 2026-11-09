@@ -1,419 +1,427 @@
+using System;
+using System.Globalization;
+using System.IO;
 using BetterCoop.Core;
 
 namespace BetterCoop.Ui;
 
 /// <summary>
-/// Player-facing text in Korean and English, following the game language.
-/// Korean matches the game's own Korean: formal endings (합니다체) and the
-/// Korean terms in GLOSSARY.md.
+/// Player-facing text in the game's language. Every sentence lives in the
+/// one strings file, <c>Ui/Locale/strings.json</c>, built into the plugin;
+/// this class only picks the key and fills its placeholders, so adding a
+/// language means adding its sentences there and nothing here.
 /// </summary>
 internal static class Strings
 {
-    internal static bool Korean => LocalizedText.CURRENT_LANGUAGE == LocalizedText.Language.Korean;
+    /// <summary>The strings file's name inside the plugin.</summary>
+    internal const string Resource = "BetterCoop.strings.json";
 
-    public static string ModDisabled => Korean
-        ? "코옵: 지금 게임 버전과 맞지 않아 모드를 껐습니다."
-        : "Coop: the mod is off because it does not match this game version.";
+    private static TextTable? table;
 
-    public static string ModDisabledByCoopMod => Korean
-        ? "코옵: Co-op Mod와 함께 쓸 수 없어 모드를 껐습니다. Co-op Mod를 지워 주세요."
-        : "Coop: the mod is off because Co-op Mod is also installed. Remove Co-op Mod to play.";
+    private static TextTable Table => table ??= Load();
 
-    public static string PairFormed(string carrier, string rider) => Korean
-        ? $"코옵: {carrier} 님이 {rider} 님을 업습니다. {carrier} 님은 키보드, {rider} 님은 마우스로 조작합니다."
-        : $"Coop: {carrier} (Carrier, keyboard) carries {rider} (Rider, mouse).";
+    /// <summary>The strings file's code for the game's language, as the player set it.</summary>
+    internal static string LanguageCode => CodeOf(LocalizedText.CURRENT_LANGUAGE);
 
-    public static string PreferenceOverridden(string player) => Korean
-        ? $"코옵: 원하는 역할이 겹쳐 {player} 님은 다른 역할을 맡습니다."
-        : $"Coop: roles clashed, so {player} takes the other role.";
+    private static string CodeOf(LocalizedText.Language language) => language switch
+    {
+        LocalizedText.Language.French => "fr",
+        LocalizedText.Language.Italian => "it",
+        LocalizedText.Language.German => "de",
+        LocalizedText.Language.SpanishSpain => "es-ES",
+        LocalizedText.Language.SpanishLatam => "es-419",
+        LocalizedText.Language.BRPortuguese => "pt-BR",
+        LocalizedText.Language.Russian => "ru",
+        LocalizedText.Language.Ukrainian => "uk",
+        LocalizedText.Language.SimplifiedChinese => "zh-Hans",
+        LocalizedText.Language.TraditionalChinese => "zh-Hant",
+        LocalizedText.Language.Japanese => "ja",
+        LocalizedText.Language.Korean => "ko",
+        LocalizedText.Language.Polish => "pl",
+        LocalizedText.Language.Turkish => "tr",
+        _ => TextTable.Fallback,
+    };
 
-    public static string Unpaired(string player) => Korean
-        ? $"코옵: {player} 님은 지금은 짝 없이 올라갑니다."
-        : $"Coop: {player} plays without a Pair for now.";
+    private static TextTable Load()
+    {
+        try
+        {
+            using Stream? stream = typeof(Strings).Assembly.GetManifestResourceStream(Resource);
+            if (stream == null)
+            {
+                Plugin.Log.LogError($"The plugin has no {Resource}; text shows as its keys.");
+                return TextTable.Empty;
+            }
 
-    public static string PairDissolved(string carrier, string rider) => Korean
-        ? $"코옵: {carrier} 님과 {rider} 님의 짝이 풀렸습니다."
-        : $"Coop: the Pair of {carrier} and {rider} has ended.";
+            using var reader = new StreamReader(stream);
+            return TextTable.Parse(reader.ReadToEnd());
+        }
+        catch (Exception exception)
+        {
+            Plugin.Log.LogError($"Could not read {Resource}; text shows as its keys. {exception.Message}");
+            return TextTable.Empty;
+        }
+    }
 
-    public static string ShuffleCountdown(int seconds) => Korean
-        ? $"코옵: {seconds}초 뒤 짝을 섞습니다."
-        : $"Coop: shuffling Pairs in {seconds}...";
+    /// <summary>A key's sentence in the game's language.</summary>
+    private static string T(string key) => Table.Get(key, LanguageCode);
 
-    public static string RoleSwapCountdown(int seconds) => Korean
-        ? $"코옵: {seconds}초 뒤 자리를 바꿉니다."
-        : $"Coop: swapping places in {seconds}...";
+    /// <summary>A key's sentence in the game's language, its placeholders filled.</summary>
+    private static string T(string key, params (string Name, object? Value)[] values) => TextTable.Fill(T(key), values);
 
-    public static string LatePairingCountdown(int seconds) => Korean
-        ? $"코옵: {seconds}초 뒤 짝을 이어 줍니다."
-        : $"Coop: pairing you up in {seconds}...";
+    /// <summary>A key's sentence in English, for text that does not follow the game's language.</summary>
+    internal static string English(string key, params (string Name, object? Value)[] values) =>
+        TextTable.Fill(Table.Get(key, TextTable.Fallback), values);
 
-    public static string Roster => Korean ? "편성표" : "Roster";
+    /// <summary>
+    /// A notice as the game's own player log shows it, marked as the mod's:
+    /// the log is the fallback when the paper cannot be shown, and all there
+    /// is while the mod is off.
+    /// </summary>
+    public static string Prefixed(string message) => T("notice.prefix") + message;
 
-    public static string MenuRolePreference => Korean ? "원하는 역할" : "Role Preference";
+    public static string ModDisabled => T("notice.modDisabled");
+
+    public static string ModDisabledByCoopMod => T("notice.modDisabledByCoopMod");
+
+    public static string PairFormed(string carrier, string rider) => T("notice.pairFormed", ("carrier", carrier), ("rider", rider));
+
+    public static string PreferenceOverridden(string player) => T("notice.preferenceOverridden", ("player", player));
+
+    public static string Unpaired(string player) => T("notice.unpaired", ("player", player));
+
+    public static string PairDissolved(string carrier, string rider) => T("notice.pairDissolved", ("carrier", carrier), ("rider", rider));
+
+    public static string ShuffleCountdown(int seconds) => T("notice.shuffleCountdown", ("seconds", seconds));
+
+    public static string RoleSwapCountdown(int seconds) => T("notice.roleSwapCountdown", ("seconds", seconds));
+
+    public static string LatePairingCountdown(int seconds) => T("notice.latePairingCountdown", ("seconds", seconds));
+
+    public static string Roster => T("roster.title");
+
+    public static string MenuRolePreference => T("roster.rolePreference");
 
     public static string RoleName(Core.RolePreference preference) => preference switch
     {
-        Core.RolePreference.Carrier => Korean ? "업는 사람" : "Carrier",
-        Core.RolePreference.Rider => Korean ? "업힌 사람" : "Rider",
-        _ => Korean ? "상관없음" : "Either",
+        Core.RolePreference.Carrier => T("role.carrier"),
+        Core.RolePreference.Rider => T("role.rider"),
+        _ => T("role.either"),
     };
 
     /// <summary>The Roster's printed head: what form it is.</summary>
-    public static string FormTitle => Korean ? "BetterCoop 서식 제1호" : "BetterCoop Form No. 1";
+    public static string FormTitle => T("roster.form");
 
-    public static string FormMembers(int count) => Korean ? $"대원 {count}명" : count == 1 ? "1 scout" : $"{count} scouts";
+    public static string FormMembers(int count) => T(count == 1 ? "roster.scouts.one" : "roster.scouts.other", ("count", count));
 
-    public static string MenuYou => Korean ? "나의 짝" : "Your Pair";
+    public static string MenuYou => T("roster.yourPair");
 
-    public static string MenuPartner => Korean ? "짝" : "Partner";
+    public static string MenuPartner => T("roster.partner");
 
-    public static string MenuYourRole => Korean ? "나의 역할" : "Your role";
+    public static string MenuYourRole => T("roster.yourRole");
 
-    public static string RoleOf(bool carrying) => carrying
-        ? Korean ? "업는 사람" : "Carrier"
-        : Korean ? "업힌 사람" : "Rider";
+    public static string RoleOf(bool carrying) => T(carrying ? "role.carrier" : "role.rider");
 
-    public static string MenuNoPartner => Korean ? "지금은 짝이 없습니다" : "You have no partner for now";
+    public static string MenuNoPartner => T("roster.noPartner");
 
-    public static string MenuNextShuffle => Korean ? "다음 짝 섞기" : "Next shuffle";
+    public static string MenuNextShuffle => T("roster.nextShuffle");
 
-    public static string MenuShuffleNow => Korean ? "진행 중" : "Now";
+    public static string MenuShuffleNow => T("roster.shuffleUnderway");
 
-    public static string MenuShuffleOff => Korean ? "꺼짐" : "Off";
+    public static string MenuShuffleOff => T("roster.shuffleOff");
 
     public static string Clock(double seconds)
     {
-        int whole = (int)System.Math.Ceiling(seconds);
+        int whole = (int)Math.Ceiling(seconds);
         return $"{whole / 60}:{whole % 60:00}";
     }
 
     /// <summary>A length of time as hours, minutes, and seconds, the hours left out while there are none.</summary>
     public static string Duration(double seconds)
     {
-        int whole = (int)System.Math.Floor(System.Math.Max(0, seconds));
+        int whole = (int)Math.Floor(Math.Max(0, seconds));
         return whole >= 3600
             ? $"{whole / 3600}:{whole / 60 % 60:00}:{whole % 60:00}"
             : $"{whole / 60}:{whole % 60:00}";
     }
 
-    public static string Metres(double metres) => $"{System.Math.Floor(metres):0} m";
+    public static string Metres(double metres) => T("unit.metres", ("metres", Math.Floor(metres).ToString("0", CultureInfo.InvariantCulture)));
 
-    public static string MenuCarryRecord => Korean ? "업기 기록" : "Carry Record";
+    public static string MenuCarryRecord => T("roster.carryRecord");
 
-    public static string AboutCarryRecord => Korean
-        ? "이번 원정에서 업고, 업히고, 업은 채 오르고, 쓰러진 대원을 구조해 업은 만큼입니다. 짝이 없거나 쓰러져 있던 시간은 구조 말고는 세지 않습니다."
-        : "How long each scout carried and rode this Run, how high they climbed carrying, and how long they carried a rescued scout. Time unpaired or down counts only for rescues.";
+    public static string AboutCarryRecord => T("roster.aboutCarryRecord");
 
-    public static string CarryRecordEmpty => Korean ? "아직 적힌 기록이 없습니다." : "Nothing recorded yet.";
+    public static string CarryRecordEmpty => T("roster.carryRecordEmpty");
 
-    public static string HeadScout => Korean ? "대원" : "Scout";
+    public static string HeadScout => T("head.scout");
 
-    public static string HeadCarried => Korean ? "업은 시간" : "Carried";
+    public static string HeadCarried => T("head.carried");
 
-    public static string HeadRidden => Korean ? "업힌 시간" : "Rode";
+    public static string HeadRidden => T("head.ridden");
 
-    public static string HeadClimbed => Korean ? "오른 높이" : "Climbed";
+    public static string HeadClimbed => T("head.climbed");
 
-    public static string HeadRescuing => Korean ? "구조 시간" : "Rescued";
+    public static string HeadRescuing => T("head.rescuing");
 
-    public static string MenuRunReport => Korean ? "원정 보고서" : "Run Report";
+    public static string MenuRunReport => T("roster.runReport");
 
-    public static string ReportFormTitle => Korean ? "BetterCoop 서식 제2호" : "BetterCoop Form No. 2";
+    public static string ReportFormTitle => T("report.form");
 
-    public static string MenuReadReport => Korean ? "보고서 보기" : "Read the report";
+    public static string MenuReadReport => T("roster.readReport");
 
-    public static string StampRead => Korean ? "열람" : "Read";
+    public static string StampRead => T("stamp.read");
 
-    public static string AboutRunReport => Korean
-        ? "원정 중에는 지금까지의 기록이, 원정이 끝나면 결과와 공로 배지가 실립니다. 다음 원정이 출발하면 새로 씁니다."
-        : "During a Run it shows the record so far; once the Run ends, its result and Merit Badges. The next Run starts a new one.";
+    public static string AboutRunReport => T("roster.aboutRunReport");
 
-    public static string ReportUnderway => Korean
-        ? "아직 원정 중입니다. 분대장이 짝이 바뀔 때와 15초마다 기록을 새로 적습니다."
-        : "The Run is still under way. The Troop Leader writes the record anew every 15 seconds and whenever the Pairs change.";
+    public static string ReportUnderway => T("report.underway");
 
-    public static string ReportGone => Korean
-        ? "다음 원정이 출발해 보고서가 사라졌습니다."
-        : "The next Run has departed, and the report with it.";
+    public static string ReportGone => T("report.gone");
 
-    public static string ReportResult => Korean ? "결과" : "Result";
+    public static string ReportResult => T("report.result");
 
-    public static string ReportEnding => Korean ? "원정 결과" : "Outcome";
+    public static string ReportEnding => T("report.ending");
 
-    public static string ReportRunTime => Korean ? "원정 시간" : "Run time";
+    public static string ReportRunTime => T("report.runTime");
 
     public static string EndingName(RunEnding ending) => ending switch
     {
-        RunEnding.Summit => Korean ? "정상 도착" : "Reached the Peak",
-        RunEnding.Lost => Korean ? "전원 조난" : "Everyone was lost",
-        RunEnding.Underway => Korean ? "원정 중" : "Under way",
-        _ => Korean ? "공항 귀환" : "Back at the Airport",
+        RunEnding.Summit => T("ending.summit"),
+        RunEnding.Lost => T("ending.lost"),
+        RunEnding.Underway => T("ending.underway"),
+        _ => T("ending.airport"),
     };
 
-    public static string MenuMeritBadges => Korean ? "공로 배지" : "Merit Badges";
+    public static string MenuMeritBadges => T("report.meritBadges");
 
-    public static string NoBadges => Korean ? "배지를 받은 대원이 없습니다." : "No one earned a badge.";
+    public static string NoBadges => T("report.noBadges");
 
     public static string BadgeName(MeritBadgeKind kind) => kind switch
     {
-        MeritBadgeKind.SteadyBack => Korean ? "든든한 등" : "Steady Back",
-        MeritBadgeKind.ComfyPassenger => Korean ? "편안한 승객" : "Comfy Passenger",
-        MeritBadgeKind.RescueRanger => Korean ? "구조대장" : "Rescue Ranger",
-        _ => Korean ? "단짝" : "Best Buddies",
+        MeritBadgeKind.SteadyBack => T("badge.steadyBack"),
+        MeritBadgeKind.ComfyPassenger => T("badge.comfyPassenger"),
+        MeritBadgeKind.RescueRanger => T("badge.rescueRanger"),
+        _ => T("badge.bestBuddies"),
     };
 
     /// <summary>What won a Merit Badge, as it counts: time.</summary>
-    public static string BadgeAmount(MeritBadgeKind kind, double amount) => kind switch
-    {
-        MeritBadgeKind.SteadyBack => $"{HeadCarried} {Duration(amount)}",
-        MeritBadgeKind.ComfyPassenger => $"{HeadRidden} {Duration(amount)}",
-        MeritBadgeKind.RescueRanger => $"{HeadRescuing} {Duration(amount)}",
-        _ => $"{HeadTogether} {Duration(amount)}",
-    };
+    public static string BadgeAmount(MeritBadgeKind kind, double amount) => T(
+        "badge.amount",
+        ("what", kind switch
+        {
+            MeritBadgeKind.SteadyBack => HeadCarried,
+            MeritBadgeKind.ComfyPassenger => HeadRidden,
+            MeritBadgeKind.RescueRanger => HeadRescuing,
+            _ => HeadTogether,
+        }),
+        ("time", Duration(amount)));
 
-    public static string ReportBySegment => Korean ? "구간별 짝" : "Pairs by segment";
+    public static string ReportBySegment => T("report.bySegment");
 
-    public static string HeadPair => Korean ? "업은 사람 → 업힌 사람" : "Carrier → Rider";
+    public static string HeadPair => T("head.pair");
 
-    public static string HeadTogether => Korean ? "함께한 시간" : "Together";
+    public static string HeadTogether => T("head.together");
 
     /// <summary>A scout in a record who is no longer in the room.</summary>
-    public static string Left(string name) => Korean ? $"{name} (떠남)" : $"{name} (left)";
+    public static string Left(string name) => T("report.left", ("name", name));
 
-    public static string MenuPairsForm => Korean ? "짝은 섬에 도착하면 편성됩니다" : "Pairs form on the island";
+    /// <summary>Two names that share one thing, such as a Merit Badge.</summary>
+    public static string Both(string first, string second) => T("symbol.and", ("first", first), ("second", second));
 
-    public static string MenuPairs => Korean ? "짝 명단" : "Pairs";
+    /// <summary>Who carried whom.</summary>
+    public static string Carries(string carrier, string rider) => T("symbol.carries", ("carrier", carrier), ("rider", rider));
 
-    public static string MenuPairPlan => Korean ? "짝 계획 (출발 후)" : "Pair Plan (after departure)";
+    /// <summary>Two short values side by side, as a Run's ending and its time.</summary>
+    public static string Then(string first, string second) => T("symbol.then", ("first", first), ("second", second));
 
-    public static string MenuPlanHelp => Korean
-        ? "출발 전에 짝을 미리 정해 둘 수 있습니다. 섬에 도착하면 이 계획대로 짝을 편성하고, 계획에 없는 대원은 제비뽑기로 짝을 짓습니다."
-        : "Set the Pairs before departure. On arrival the Pairs form as planned; anyone left out is paired by lot.";
+    /// <summary>Two sentences one after the other, the first without its full stop.</summary>
+    public static string Sentences(string first, string second) => T("symbol.sentences", ("first", first), ("second", second));
 
-    public static string MenuPlanFromLastRun => Korean
-        ? "지난 원정을 함께한 대원들이라 그때의 짝으로 초안을 채워 두었습니다. 통보해야 계획이 됩니다."
-        : "The same scouts as last Run, so the draft starts from the Pairs that Run ended with. Announce it to make it the plan.";
+    /// <summary>A value that is not there, such as a partner's name with no partner.</summary>
+    public static string None => T("symbol.none");
 
-    public static string MenuPlanNone => Korean
-        ? "분대장이 아직 짝 계획을 세우지 않았습니다. 섬에 도착하면 제비뽑기로 짝을 짓습니다."
-        : "The Troop Leader has not planned the Pairs yet; on arrival they are drawn by lot.";
+    public static string MenuPairsForm => T("roster.pairsForm");
 
-    public static string AboutPlan => Korean
-        ? "통보하면 모두에게 알리고, 섬에 도착할 때 이대로 짝을 편성합니다."
-        : "Announced, everyone is told, and the Pairs form this way on arrival.";
+    public static string MenuPairs => T("roster.pairs");
 
-    public static string PlanAnnounced => Korean
-        ? "코옵: 분대장이 짝 계획을 통보했습니다. ESC → 편성표에서 확인할 수 있습니다."
-        : "Coop: the Troop Leader has planned the Pairs. See ESC → Roster.";
+    public static string MenuPairPlan => T("roster.pairPlan");
 
-    public static string MenuPairNumber(int number) => Korean ? $"{number}조" : $"Pair {number}";
+    public static string MenuPlanHelp => T("roster.planHelp");
 
-    public static string MenuTroopLeader => Korean ? "분대장 지시" : "Troop Leader's orders";
+    public static string MenuPlanFromLastRun => T("roster.planFromLastRun");
 
-    public static string MenuTroopLeaderSign => Korean ? "분대장 확인" : "Troop Leader";
+    public static string MenuPlanNone => T("roster.planNone");
 
-    public static string MenuShuffleNowLabel => Korean ? "지금 짝 섞기" : "Shuffle Pairs now";
+    public static string AboutPlan => T("roster.aboutPlan");
 
-    public static string MenuShufflePlanLabel => Korean ? "제비뽑기로 짝 계획" : "Draw a plan by lot";
+    public static string PlanAnnounced => T("notice.planAnnounced");
 
-    public static string AboutShufflePlan => Korean
-        ? "짝 계획 초안을 제비뽑기로 채웁니다. 통보해야 계획이 됩니다."
-        : "Fills the draft with Pairs drawn by lot; announce it to make it the plan.";
+    public static string MenuPairNumber(int number) => T("roster.pairNumber", ("number", number));
 
-    public static string MenuRecover => Korean ? "모든 짝 다시 업히기" : "Re-carry every Pair";
+    public static string MenuTroopLeader => T("roster.troopLeaderOrders");
 
-    public static string StampShuffle => Korean ? "섞기" : "Shuffle";
+    public static string MenuTroopLeaderSign => T("roster.troopLeaderSign");
 
-    public static string StampRestore => Korean ? "복구" : "Restore";
+    public static string MenuShuffleNowLabel => T("roster.shuffleNow");
 
-    public static string StampReally => Korean ? "정말로?" : "Really?";
+    public static string MenuShufflePlanLabel => T("roster.shufflePlan");
 
-    public static string ReportArrived => Korean
-        ? "코옵: 원정 보고서가 도착했습니다. ESC → 편성표에서 볼 수 있습니다."
-        : "Coop: the Run Report is in. See ESC → Roster.";
+    public static string AboutShufflePlan => T("roster.aboutShufflePlan");
 
-    public static string StampCallOff => Korean ? "취소" : "Call off";
+    public static string MenuRecover => T("roster.recover");
 
-    public static string MenuCallOffLabel => Korean ? "다가오는 짝 섞기 취소" : "Call off the coming shuffle";
+    public static string StampShuffle => T("stamp.shuffle");
 
-    public static string AboutCallOff => Korean
-        ? "곧 있을 짝 섞기를 취소합니다. 시간마다 짝 섞기는 처음부터 다시 셉니다."
-        : "Calls off the Pair Shuffle that is coming; the Timed Shuffle counts again from the start.";
+    public static string StampRestore => T("stamp.restore");
 
-    public static string CallOffUnavailable => Korean
-        ? "코옵: 지금은 취소할 짝 섞기가 없습니다."
-        : "Coop: there is no Pair Shuffle to call off now.";
+    public static string StampReally => T("stamp.really");
 
-    public static string ShuffleCalledOff => Korean
-        ? "코옵: 분대장이 다가오는 짝 섞기를 취소했습니다."
-        : "Coop: the Troop Leader called off the coming Pair Shuffle.";
+    public static string ReportArrived => T("notice.reportArrived");
+
+    public static string StampCallOff => T("stamp.callOff");
+
+    public static string MenuCallOffLabel => T("roster.callOff");
+
+    public static string AboutCallOff => T("roster.aboutCallOff");
+
+    public static string CallOffUnavailable => T("notice.callOffUnavailable");
+
+    public static string ShuffleCalledOff => T("notice.shuffleCalledOff");
 
     /// <summary>A Role Swap or Late Pairing called off because the Troop Leader turned off the rule that started it.</summary>
-    public static string CalledOffByRule(OperationKind kind) => kind == OperationKind.RoleSwap
-        ? Korean
-            ? "코옵: 분대장이 자리 바꾸기 요청을 막아, 다가오던 자리 바꾸기를 취소했습니다."
-            : "Coop: the Troop Leader stopped Role Swap requests, so the coming Role Swap is called off."
-        : Korean
-            ? "코옵: 분대장이 짝 이어주기를 꺼서, 다가오던 짝 이어주기를 취소했습니다."
-            : "Coop: the Troop Leader turned Late Pairing off, so the coming Late Pairing is called off.";
+    public static string CalledOffByRule(OperationKind kind) => T(kind == OperationKind.RoleSwap
+        ? "notice.roleSwapCalledOffByRule"
+        : "notice.latePairingCalledOffByRule");
 
-    public static string ShuffleCalledOffUntil(string clock) => Korean
-        ? $"코옵: 분대장이 다가오는 짝 섞기를 취소했습니다. 다음 짝 섞기는 {clock} 뒤입니다."
-        : $"Coop: the Troop Leader called off the coming Pair Shuffle. The next one is in {clock}.";
+    public static string ShuffleCalledOffUntil(string clock) => T("notice.shuffleCalledOffUntil", ("clock", clock));
 
-    public static string LetterCalledOff => Korean ? "취소" : "Called off";
+    public static string LetterCalledOff => T("letter.calledOff");
 
-    public static string LetterStays => Korean ? "지금 짝 그대로 오릅니다" : "Climbing on as you were";
+    public static string LetterStays => T("letter.stays");
 
-    public static string Serial(int number) => $"No. {number:D7}";
-
-    /// <summary>A notice's words without the "Coop:" the game's log needs to tell them from its own.</summary>
-    public static string Unprefixed(string message)
-    {
-        foreach (string prefix in new[] { "코옵: ", "Coop: " })
-        {
-            if (message.StartsWith(prefix, System.StringComparison.Ordinal))
-            {
-                return message.Substring(prefix.Length);
-            }
-        }
-
-        return message;
-    }
+    public static string Serial(int number) => T("roster.serial", ("number", number.ToString("D7", CultureInfo.InvariantCulture)));
 
     public static string NoticeHeading(Core.NoticeKind kind) => kind switch
     {
-        Core.NoticeKind.Memo => Korean ? "메모" : "Memo",
-        Core.NoticeKind.Tag => Korean ? "꼬리표" : "Baggage tag",
-        Core.NoticeKind.Caution => Korean ? "주의 통지" : "Notice",
-        _ => Korean ? "전보" : "Telegram",
+        Core.NoticeKind.Memo => T("notice.kind.memo"),
+        Core.NoticeKind.Tag => T("notice.kind.tag"),
+        Core.NoticeKind.Caution => T("notice.kind.caution"),
+        _ => T("notice.kind.telegram"),
     };
 
     /// <summary>The word on the rubber stamp of a caution.</summary>
-    public static string CautionStamp => Korean ? "주의" : "Caution";
+    public static string CautionStamp => T("notice.cautionStamp");
 
     /// <summary>The Pair letter's heading: what is changing.</summary>
     public static string LetterHeading(Core.OperationKind kind) => kind switch
     {
-        Core.OperationKind.RoleSwap => Korean ? "역할 교대 통지" : "Role swap orders",
-        Core.OperationKind.LatePairing => Korean ? "짝 배정 통지" : "Pairing orders",
-        Core.OperationKind.PairAssignment => Korean ? "분대장 편성 통지" : "Troop Leader's orders",
-        Core.OperationKind.None => Korean ? "짝 편성 통지" : "Pair orders",
-        _ => Korean ? "짝 섞기 통지" : "Shuffle orders",
+        Core.OperationKind.RoleSwap => T("letter.heading.roleSwap"),
+        Core.OperationKind.LatePairing => T("letter.heading.latePairing"),
+        Core.OperationKind.PairAssignment => T("letter.heading.assignment"),
+        Core.OperationKind.None => T("letter.heading.formation"),
+        _ => T("letter.heading.shuffle"),
     };
 
     /// <summary>The countdown on a Pair letter, saying what the change does to the reader.</summary>
-    public static string LetterSoon(PairChangeForMe change, int seconds) => change switch
-    {
-        PairChangeForMe.Gains => Korean ? $"{seconds}초 뒤 짝이 생깁니다" : $"Paired up in {seconds}",
-        PairChangeForMe.Swaps => Korean ? $"{seconds}초 뒤 자리를 바꿉니다" : $"Swapping places in {seconds}",
-        PairChangeForMe.Loses => Korean ? $"{seconds}초 뒤 짝이 풀립니다" : $"Pair ends in {seconds}",
-        PairChangeForMe.Mixed => Korean ? $"{seconds}초 뒤 짝을 섞습니다" : $"Shuffling Pairs in {seconds}",
-        _ => Korean ? $"{seconds}초 뒤 짝이 바뀝니다" : $"New partner in {seconds}",
-    };
+    public static string LetterSoon(PairChangeForMe change, int seconds) => T(
+        change switch
+        {
+            PairChangeForMe.Gains => "letter.soon.gains",
+            PairChangeForMe.Swaps => "letter.soon.swaps",
+            PairChangeForMe.Loses => "letter.soon.loses",
+            PairChangeForMe.Mixed => "letter.soon.mixed",
+            _ => "letter.soon.changes",
+        },
+        ("seconds", seconds));
 
     /// <summary>The last line of a Pair letter once the change is made.</summary>
     public static string LetterDoneFor(PairChangeForMe change) => change switch
     {
-        PairChangeForMe.Swaps => Korean ? "자리를 바꿔 오릅니다" : "Climbing on, places swapped",
+        PairChangeForMe.Swaps => T("letter.doneSwapped"),
         PairChangeForMe.Loses => LetterAlone,
-        PairChangeForMe.Mixed => LetterDone,
         _ => LetterDone,
     };
 
-    public static string LetterDone => Korean ? "새 짝과 함께 오릅니다" : "Climbing with your partner";
+    public static string LetterDone => T("letter.done");
 
-    public static string LetterAlone => Korean ? "이번에는 짝 없이 오릅니다" : "Climbing alone for now";
+    public static string LetterAlone => T("letter.alone");
 
     /// <summary>The postmark's word once the change is made.</summary>
-    public static string LetterArrived => Korean ? "도착" : "Arrived";
+    public static string LetterArrived => T("letter.arrived");
 
     /// <summary>The partner not yet known, as before a Pair Shuffle.</summary>
-    public static string LetterUnknown => Korean ? "누구일까요?" : "Who?";
+    public static string LetterUnknown => T("letter.unknown");
 
-    public static string LetterYou => Korean ? "나" : "You";
+    public static string LetterYou => T("letter.you");
 
-    public static string LetterTo(string player) => Korean ? $"받는 이: {player} 대원" : $"To: Scout {player}";
+    public static string LetterTo(string player) => T("letter.to", ("player", player));
 
-    public static string LetterRoleUnknown => Korean ? "역할 미정" : "Role to come";
+    public static string LetterRoleUnknown => T("letter.roleUnknown");
 
     /// <summary>The heading printed on a slip that asks before going on.</summary>
-    public static string SlipQuery => Korean ? "확인 요청" : "Query";
+    public static string SlipQuery => T("slip.query");
 
-    public static string StampNotify => Korean ? "통보" : "Notified";
+    public static string StampNotify => T("stamp.notify");
 
     /// <summary>The post office round a postmark's top.</summary>
-    public static string PostmarkOffice => Korean ? "섬 분대 우체국" : "ISLAND TROOP P.O.";
+    public static string PostmarkOffice => T("postmark.office");
 
     /// <summary>The date round a postmark's foot.</summary>
     /// <remarks>Figures are kept to two places, as a dater's wheels set them.</remarks>
-    public static string PostmarkDate(System.DateTime day) => Korean
-        ? day.ToString("yyyy. MM. dd.", System.Globalization.CultureInfo.InvariantCulture)
-        : day.ToString("MMM dd yyyy", System.Globalization.CultureInfo.InvariantCulture).ToUpperInvariant();
+    public static string PostmarkDate(DateTime day) =>
+        day.ToString(T("postmark.date"), CultureInfo.InvariantCulture).ToUpperInvariant();
 
-    public static string StampDiscard => Korean ? "버리기" : "Discard";
+    /// <summary>The time in a postmark's middle, on a twelve-hour dial.</summary>
+    public static string PostmarkTime(DateTime time) => T(
+        "postmark.time",
+        ("hour", time.ToString("hh", CultureInfo.InvariantCulture)),
+        ("minute", time.ToString("mm", CultureInfo.InvariantCulture)),
+        ("half", T(time.Hour < 12 ? "postmark.am" : "postmark.pm")));
 
-    public static string StampKeep => Korean ? "계속 쓰기" : "Keep";
+    public static string StampDiscard => T("stamp.discard");
 
-    public static string DiscardDraft => Korean ? "초안을 버리겠습니까?" : "Throw the draft away?";
+    public static string StampKeep => T("stamp.keep");
 
-    public static string DiscardDraftNote => Korean
-        ? "통보하지 않은 짝 명단 초안이 있습니다.\n버리면 지금의 짝 명단으로 돌아갑니다."
-        : "The Pairs you laid out have not been announced.\nThrown away, the list goes back to the Pairs as they are.";
+    public static string DiscardDraft => T("roster.discardDraft");
 
-    public static string MenuDraft => Korean
-        ? "초안입니다. 통보하기 전에는 아무도 바뀌지 않습니다."
-        : "This is a draft. Nobody changes until you announce it.";
+    public static string DiscardDraftNote => T("roster.discardDraftNote");
 
-    public static string StampAsk => Korean ? "요청" : "Request";
+    public static string MenuDraft => T("roster.draft");
 
-    public static string StampAsked => Korean ? "요청함" : "Asked";
+    public static string StampAsk => T("stamp.ask");
 
-    public static string StampAgree => Korean ? "동의" : "Agree";
+    public static string StampAsked => T("stamp.asked");
+
+    public static string StampAgree => T("stamp.agree");
 
     /// <summary>Round the top of the Role Swap's notary seal.</summary>
-    public static string SealNotary => Korean ? "분대 공증" : "TROOP NOTARY";
+    public static string SealNotary => T("seal.notary");
 
     /// <summary>Round the foot of the troop's seals.</summary>
-    public static string SealTroop => "BETTERCOOP";
+    public static string SealTroop => T("seal.troop");
 
     /// <summary>Round the top of the Pair Shuffle's stamp.</summary>
-    public static string SealOrders => Korean ? "분대 명령" : "TROOP ORDERS";
+    public static string SealOrders => T("seal.orders");
 
     /// <summary>Round the Recover stamp, as an inspector's mark.</summary>
-    public static string SealInspected => Korean ? "점검 필" : "INSPECTED";
+    public static string SealInspected => T("seal.inspected");
 
-    public static string AboutSwapWaiting => Korean
-        ? "짝의 동의를 기다립니다. 30초 안에 짝도 찍으면 바뀝니다. 다시 찍으면 요청을 거둡니다."
-        : "Waiting for your partner; if they agree within 30 seconds, you trade. Press again to withdraw.";
+    public static string AboutSwapWaiting => T("roster.aboutSwapWaiting");
 
-    public static string AboutSwapOffered(string partner) => Korean
-        ? $"{partner} 님이 자리를 바꾸자고 합니다. 찍으면 동의하고 바로 바뀝니다."
-        : $"{partner} asks to swap places. Stamp to agree, and you trade at once.";
+    public static string AboutSwapOffered(string partner) => T("roster.aboutSwapOffered", ("partner", partner));
 
-    public static string StampCancel => Korean ? "취소" : "Cancel";
+    public static string StampCancel => T("stamp.cancel");
 
-    public static string MenuTooSoon => Korean
-        ? "코옵: 방금 한 일입니다. 잠시 뒤 다시 해 주세요."
-        : "Coop: that was just done; try again in a moment.";
+    public static string MenuTooSoon => T("notice.tooSoon");
 
-    public static string ShuffleQueued => Korean
-        ? "코옵: 진행 중인 짝 변경이 끝나면 짝을 섞습니다."
-        : "Coop: the Pairs will be shuffled once the Pair change under way is done.";
+    public static string ShuffleQueued => T("notice.shuffleQueued");
 
-    public static string PlanUnavailable => Korean
-        ? "코옵: 지금은 짝 계획을 정할 수 없습니다. 짝 계획은 공항에서 방에 있는 대원으로만 정합니다."
-        : "Coop: the Pair Plan cannot be set now. It is set at the Airport, from scouts in the room.";
+    public static string PlanUnavailable => T("notice.planUnavailable");
 
-    public static string MenuBusy => Korean
-        ? "코옵: 다른 짝 변경이 진행 중이라 지금은 할 수 없습니다."
-        : "Coop: another Pair change is under way; try again in a moment.";
+    public static string MenuBusy => T("notice.busy");
 
-    public static string MenuRunRules => Korean ? "원정 규칙" : "Run Rules";
+    public static string MenuRunRules => T("roster.runRules");
 
-    public static string MenuRulesRead => Korean
-        ? "분대장이 정한 이번 원정의 규칙입니다. 바뀌면 전보로 알려 드립니다."
-        : "The rules the Troop Leader set for this Run. A telegram tells you when they change.";
+    public static string MenuRulesRead => T("roster.rulesRead");
 
     /// <summary>A rule's name, as the Roster prints it.</summary>
     public static string RuleName(RunRule rule) => rule switch
@@ -432,242 +440,158 @@ internal static class Strings
         _ => rule.ToString(),
     };
 
-    public static string RuleLeaderOnly => Korean ? "원정 규칙은 분대장이 정합니다." : "The Troop Leader sets the Run Rules.";
+    public static string RuleLeaderOnly => T("roster.rulesLeaderOnly");
 
-    public static string RuleTurnedOn(string rule) => Korean ? $"{rule} 켬" : $"{rule} on";
+    public static string RuleTurnedOn(string rule) => T("notice.ruleOn", ("rule", rule));
 
-    public static string RuleTurnedOff(string rule) => Korean ? $"{rule} 끔" : $"{rule} off";
+    public static string RuleTurnedOff(string rule) => T("notice.ruleOff", ("rule", rule));
 
-    public static string RuleSetTo(string rule, string value) => Korean ? $"{rule} {value}" : $"{rule} {value}";
+    public static string RuleSetTo(string rule, string value) => T("notice.ruleSetTo", ("rule", rule), ("value", value));
 
-    public static string RulesChanged(string changes) => Korean
-        ? $"코옵: 분대장이 원정 규칙을 바꿨습니다. {changes}"
-        : $"Coop: the Troop Leader changed the Run Rules. {changes}";
+    public static string RulesChanged(string changes) => T("notice.rulesChanged", ("changes", changes));
 
-    public static string Minutes(int minutes) => Korean ? $"{minutes}분" : $"{minutes} min";
+    public static string Minutes(int minutes) => T("unit.minutes", ("minutes", minutes));
 
-    public static string RuleCampfireShuffle => Korean ? "모닥불에서 짝 섞기" : "Campfire Shuffle";
+    public static string RuleCampfireShuffle => T("rule.campfireShuffle");
 
-    public static string RuleTimedShuffle => Korean ? "시간마다 짝 섞기" : "Timed Shuffle";
+    public static string RuleTimedShuffle => T("rule.timedShuffle");
 
-    public static string RuleTimedShuffleInterval => Korean ? "짝 섞기 간격" : "Timed Shuffle Interval";
+    public static string RuleTimedShuffleInterval => T("rule.timedShuffleInterval");
 
-    public static string RuleHandOverPlace => Korean ? "몸 인계: 자리" : "Hand Over Place";
+    public static string RuleHandOverPlace => T("rule.handOverPlace");
 
-    public static string RuleHandOverItems => Korean ? "몸 인계: 아이템" : "Hand Over Items";
+    public static string RuleHandOverItems => T("rule.handOverItems");
 
-    public static string RuleCarryWeight => Korean ? "업은 사람 무게" : "Carry Weight";
+    public static string RuleCarryWeight => T("rule.carryWeight");
 
-    public static string RuleRescueCarry => Korean ? "구조 업기" : "Rescue Carry";
+    public static string RuleRescueCarry => T("rule.rescueCarry");
 
-    public static string RuleRiderPicksFromBackpack => Korean ? "가방은 업힌 사람이 고르기" : "Rider Picks From Backpack";
+    public static string RuleRiderPicksFromBackpack => T("rule.riderPicksFromBackpack");
 
-    public static string RuleAllowOddPlayerCount => Korean ? "홀수 인원 출발 허용" : "Allow Odd Player Count";
+    public static string RuleAllowOddPlayerCount => T("rule.allowOddPlayerCount");
 
-    public static string RuleFollowRolePreferences => Korean ? "원하는 역할 따르기" : "Honour Role Preferences";
+    public static string RuleFollowRolePreferences => T("rule.followRolePreferences");
 
-    public static string RuleAllowSwapRequests => Korean ? "대원끼리 자리 바꾸기" : "Allow Role Swaps";
+    public static string RuleAllowSwapRequests => T("rule.allowSwapRequests");
 
-    public static string RuleLatePairing => Korean ? "짝 이어주기" : "Late Pairing";
+    public static string RuleLatePairing => T("rule.latePairing");
 
-    public static string RulesPairs => Korean ? "짝" : "Pairs";
+    public static string RulesPairs => T("rules.group.pairs");
 
-    public static string RulesShuffles => Korean ? "짝 섞기" : "Shuffles";
+    public static string RulesShuffles => T("rules.group.shuffles");
 
-    public static string RulesHandover => Korean ? "몸 인계" : "Body Handover";
+    public static string RulesHandover => T("rules.group.handover");
 
-    public static string RulesCarrying => Korean ? "업기" : "Carrying";
+    public static string RulesCarrying => T("rules.group.carrying");
 
-    public static string AboutFollowRolePreferences => Korean
-        ? "짝을 정할 때 대원이 원하는 역할을 되도록 들어줍니다. 끄면 역할을 제비뽑기로 정합니다."
-        : "Scouts get the role they wish for where it fits; off, roles are drawn by lot.";
+    public static string AboutFollowRolePreferences => T("rule.followRolePreferences.about");
 
-    public static string AboutAllowSwapRequests => Korean
-        ? "짝 둘이 함께 요청하면 업는 사람과 업힌 사람을 바꿀 수 있습니다."
-        : "The two of a Pair may trade Carrier and Rider when both ask.";
+    public static string AboutAllowSwapRequests => T("rule.allowSwapRequests.about");
 
-    public static string AboutLatePairing => Korean
-        ? "짝 없는 대원이 둘 생기면 바로 짝을 지어 줍니다. 끄면 다음 짝 섞기까지 혼자 오릅니다."
-        : "Two scouts without a partner are paired at once; off, they climb alone until the next shuffle.";
+    public static string AboutLatePairing => T("rule.latePairing.about");
 
-    public static string AboutRolePreferenceIgnored => Korean
-        ? "분대장이 역할을 제비뽑기로 정하기로 했습니다."
-        : "The Troop Leader draws roles by lot for now.";
+    public static string AboutRolePreferenceIgnored => T("roster.aboutRolePreferenceIgnored");
 
-    public static string AboutSwapNotAllowed => Korean
-        ? "분대장이 자리 바꾸기를 막아 두었습니다."
-        : "The Troop Leader has not allowed swapping places.";
+    public static string AboutSwapNotAllowed => T("roster.aboutSwapNotAllowed");
 
-    public static string SwapNotAllowed => Korean
-        ? "코옵: 분대장이 자리 바꾸기를 막아 두었습니다."
-        : "Coop: the Troop Leader has not allowed swapping places.";
+    public static string SwapNotAllowed => T("notice.swapNotAllowed");
 
-    public static string AboutRolePreference => Korean
-        ? "짝 편성과 짝 섞기에서 원하는 역할입니다. 다음 번부터 적용됩니다."
-        : "The role you would like when Pairs are formed or shuffled; applies from the next time.";
+    public static string AboutRolePreference => T("roster.aboutRolePreference");
 
-    public static string AboutSwapPlaces => Korean
-        ? "둘 다 요청하면 업는 사람과 업힌 사람이 바뀝니다."
-        : "When both of you ask, you trade Carrier and Rider.";
+    public static string AboutSwapPlaces => T("roster.aboutSwapPlaces");
 
-    public static string AboutNoPartner => Korean
-        ? "다른 짝 없는 사람과 짝 이어주기가 되거나, 짝 섞기 때 짝이 생깁니다."
-        : "You get a partner when another player is free or the Pairs shuffle.";
+    public static string AboutNoPartner => T("roster.aboutNoPartner");
 
-    public static string AboutNextShuffle => Korean
-        ? "시간마다 짝 섞기까지 남은 시간입니다."
-        : "Time left until the next Timed Shuffle.";
+    public static string AboutNextShuffle => T("roster.aboutNextShuffle");
 
-    public static string AboutShuffleNow => Korean
-        ? "모든 짝을 지금 새로 정합니다."
-        : "Forms every Pair anew now.";
+    public static string AboutShuffleNow => T("roster.aboutShuffleNow");
 
-    public static string AboutRecover => Korean
-        ? "업기가 풀렸을 때 모든 짝을 다시 업히고 업힌 사람을 깨웁니다."
-        : "Re-attaches every Pair's carry and wakes every Rider.";
+    public static string AboutRecover => T("roster.aboutRecover");
 
-    public static string AboutAssign => Korean
-        ? "통보하면 모두에게 알린 뒤 3초 뒤에 옮긴 그대로 짝이 됩니다. 짝 없는 사람은 짝 이어주기로 묶입니다."
-        : "Announced, everyone is told and the Pairs become as you laid them out three seconds later; anyone left Unpaired pairs up by Late Pairing.";
+    public static string AboutAssign => T("roster.aboutAnnounce");
 
-    public static string MenuBoardHelp => Korean
-        ? "사진을 끌어 옮기거나, 눌러서 든 다음 놓을 곳을 누릅니다. 사진 위에 놓으면 서로 자리를 바꿉니다. 오른쪽 클릭이나 ESC로 제자리에 둡니다."
-        : "Drag a photo, or press it to pick it up and press where it goes. Dropped on a photo, the two trade places. A right click or Esc puts it back.";
+    public static string MenuBoardHelp => T("roster.boardHelp");
 
-    public static string MenuNewPair => Korean ? "새 짝" : "New";
+    public static string MenuNewPair => T("roster.newPair");
 
-    public static string MenuDropHere => Korean ? "여기에 놓기" : "Drop here";
+    public static string MenuDropHere => T("roster.dropHere");
 
-    public static string MenuEmptyPlace => Korean ? "빈자리" : "Empty";
+    public static string MenuEmptyPlace => T("roster.emptyPlace");
 
-    public static string MenuAssignReset => Korean ? "처음 편성으로" : "Start over";
+    public static string MenuAssignReset => T("roster.startOver");
 
-    public static string AboutCampfireShuffle => Korean
-        ? "모닥불을 피워 다음 구간으로 갈 때 짝을 새로 정합니다."
-        : "Forms the Pairs anew when a campfire is lit.";
+    public static string AboutCampfireShuffle => T("rule.campfireShuffle.about");
 
-    public static string AboutTimedShuffle => Korean
-        ? "정해진 간격마다 짝을 새로 정합니다."
-        : "Forms the Pairs anew at a fixed interval.";
+    public static string AboutTimedShuffle => T("rule.timedShuffle.about");
 
-    public static string AboutTimedShuffleInterval => Korean
-        ? "시간마다 짝 섞기의 간격입니다."
-        : "How often a Timed Shuffle comes.";
+    public static string AboutTimedShuffleInterval => T("rule.timedShuffleInterval.about");
 
-    public static string AboutHandOverPlace => Korean
-        ? "짝이 바뀌면 새 업는 사람이 넘겨받는 몸의 자리로 갑니다."
-        : "A new Carrier moves to where the body they take over stood.";
+    public static string AboutHandOverPlace => T("rule.handOverPlace.about");
 
-    public static string AboutHandOverItems => Korean
-        ? "짝이 바뀌면 새 업는 사람이 넘겨받는 몸의 아이템을 가집니다."
-        : "A new Carrier takes the items of the body they take over.";
+    public static string AboutHandOverItems => T("rule.handOverItems.about");
 
-    public static string AboutCarryWeight => Korean
-        ? "업는 사람이 업힌 사람의 무게를 느낍니다."
-        : "Carriers feel the weight of the person they carry.";
+    public static string AboutCarryWeight => T("rule.carryWeight.about");
 
-    public static string AboutRescueCarry => Korean
-        ? "기절한 대원을 업힌 사람의 등에 얹어 업을 수 있습니다. 짝 없는 대원은 기절한 짝을 통째로 업습니다."
-        : "A Pair can carry a passed-out scout on the Rider's back; a scout without a partner can carry a passed-out Pair.";
+    public static string AboutRescueCarry => T("rule.rescueCarry.about");
 
-    public static string AboutRiderPicksFromBackpack => Korean
-        ? "가방 휠에서 업힌 사람이 아이템을 고릅니다. 끄면 업는 사람이 고릅니다."
-        : "The Rider picks from the backpack wheel; off, the Carrier does.";
+    public static string AboutRiderPicksFromBackpack => T("rule.riderPicksFromBackpack.about");
 
-    public static string AboutAllowOddPlayerCount => Korean
-        ? "인원이 홀수여도 출발합니다. 남는 사람은 짝 없이 올라갑니다."
-        : "Lets a Run depart with an odd count; one player climbs without a Pair.";
+    public static string AboutAllowOddPlayerCount => T("rule.allowOddPlayerCount.about");
 
-    public static string MenuUnpaired => Korean ? "짝 없는 사람" : "Unpaired";
+    public static string MenuUnpaired => T("roster.unpaired");
 
-    public static string MenuUnmodded => Korean ? "모드 없는 대원" : "Unmodded";
+    public static string MenuUnmodded => T("roster.unmodded");
 
-    public static string AboutUnmodded => Korean
-        ? "모드가 없거나 분대장과 맞지 않는 버전이라 짝 없이 함께 오릅니다. 짝 계획이나 짝 지정에 넣을 수 없습니다."
-        : "Without the mod, or with a version that does not work with the Troop Leader's, they climb without a Pair and cannot be planned or assigned.";
+    public static string AboutUnmodded => T("roster.aboutUnmodded");
 
     public static string UnmoddedVersion(string? version) => version == null
-        ? Korean ? "모드 없음" : "No mod"
-        : Korean ? $"버전 {version}" : $"Version {version}";
+        ? T("roster.noMod")
+        : T("roster.modVersion", ("version", version));
 
-    public static string AssignmentCountdown(int seconds) => Korean
-        ? $"코옵: {seconds}초 뒤 분대장이 정한 짝이 됩니다."
-        : $"Coop: the Troop Leader's Pairs take effect in {seconds}...";
+    public static string AssignmentCountdown(int seconds) => T("notice.assignmentCountdown", ("seconds", seconds));
 
-    public static string MenuAssign => Korean ? "짝 명단 통보" : "Announce the Pairs";
+    public static string MenuAssign => T("roster.announce");
 
-    public static string MenuAssignUnavailable => Korean
-        ? "코옵: 지금은 이대로 짝을 지을 수 없습니다. 새로 업는 사람은 깨어 있어야 하고, 쓰러진 짝은 함께 있어야 하며, 모두 같은 버전의 모드가 있어야 합니다."
-        : "Coop: these Pairs cannot be set now. A new Carrier must be awake, a fallen Pair stays together, and everyone needs this version.";
+    public static string MenuAssignUnavailable => T("notice.assignUnavailable");
 
-    public static string SwapPlaces => Korean ? "자리 바꾸기" : "Swap Places";
+    public static string SwapPlaces => T("roster.swapPlaces");
 
-    public static string CancelSwap => Korean ? "자리 바꾸기 취소" : "Cancel Swap";
+    public static string CancelSwap => T("roster.cancelSwap");
 
-    public static string SwapUnavailable => Korean
-        ? "코옵: 짝과 둘 다 섬에서 살아 있을 때만 자리를 바꿀 수 있습니다."
-        : "Coop: you can swap places only while you and your partner are alive on the island.";
+    public static string SwapUnavailable => T("notice.swapUnavailable");
 
-    public static string SwapAsked(string partner) => Korean
-        ? $"코옵: {partner} 님에게 자리 바꾸기를 요청했습니다. 30초 안에 상대도 누르면 바꿉니다."
-        : $"Coop: asked {partner} to swap places. It happens if they agree within 30 seconds.";
+    public static string SwapAsked(string partner) => T("notice.swapAsked", ("partner", partner));
 
-    public static string SwapOffered(string partner) => Korean
-        ? $"코옵: {partner} 님이 자리를 바꾸고 싶어 합니다. ESC → 편성표에서 자리 바꾸기를 누르면 바꿉니다."
-        : $"Coop: {partner} wants to swap places. Press Swap Places in ESC → Roster to agree.";
+    public static string SwapOffered(string partner) => T("notice.swapOffered", ("partner", partner));
 
-    public static string SwapWithdrawn(string partner) => Korean
-        ? $"코옵: {partner} 님의 자리 바꾸기 요청이 취소되었습니다."
-        : $"Coop: {partner} no longer asks to swap places.";
+    public static string SwapWithdrawn(string partner) => T("notice.swapWithdrawn", ("partner", partner));
 
-    public static string SwapCancelled => Korean
-        ? "코옵: 자리 바꾸기 요청을 취소했습니다."
-        : "Coop: your request to swap places is cancelled.";
+    public static string SwapCancelled => T("notice.swapCancelled");
 
-    public static string SwapExpired => Korean
-        ? "코옵: 30초 동안 답이 없어 자리 바꾸기 요청이 취소되었습니다."
-        : "Coop: no answer in 30 seconds, so your request to swap places lapsed.";
+    public static string SwapExpired => T("notice.swapExpired");
 
-    public static string SwapCancelledByShuffle => Korean
-        ? "코옵: 짝 섞기가 시작되어 자리 바꾸기 요청을 취소했습니다."
-        : "Coop: a Pair Shuffle is starting, so your request to swap places is cancelled.";
+    public static string SwapCancelledByShuffle => T("notice.swapCancelledByShuffle");
 
-    public static string RiderHandEmptied => Korean
-        ? "코옵: 업힌 사람은 아이템을 손에 들 수 없어 바닥에 내려놓았습니다."
-        : "Coop: a Rider cannot hold items, so it was dropped.";
+    public static string RiderHandEmptied => T("notice.riderHandEmptied");
 
-    public static string RiderBackEmptied => Korean
-        ? "코옵: 업힌 사람은 등에 아이템을 멜 수 없어 바닥에 내려놓았습니다."
-        : "Coop: a Rider cannot wear a back item, so it was dropped.";
+    public static string RiderBackEmptied => T("notice.riderBackEmptied");
 
-    public static string Recovered => Korean
-        ? "코옵: 분대장이 모든 짝을 다시 업히고 업힌 사람을 깨웠습니다."
-        : "Coop: the Troop Leader re-carried every Pair and woke every Rider.";
+    public static string Recovered => T("notice.recovered");
 
-    public static string OddPlayerCount(int pairable, int unmodded) => Korean
-        ? $"코옵: 출발하려면 짝을 지을 인원이 짝수여야 합니다. (현재 {pairable}명{(unmodded > 0 ? $", 모드 없는 대원 {unmodded}명 제외" : string.Empty)})"
-        : $"Coop: an even number of players who can pair is needed to depart. ({pairable}{(unmodded > 0 ? $", not counting {unmodded} Unmodded" : string.Empty)})";
+    public static string OddPlayerCount(int pairable, int unmodded) => unmodded > 0
+        ? T("notice.oddPlayerCountWithUnmodded", ("pairable", pairable), ("unmodded", unmodded))
+        : T("notice.oddPlayerCount", ("pairable", pairable));
 
     /// <summary>More players who can pair are in the room than the mod pairs at once.</summary>
-    public static string Overfull(int seats) => Korean
-        ? $"코옵: 대원이 {seats}명을 넘어, 먼저 온 {seats}명만 짝을 짓습니다. 나머지 대원은 자리가 날 때까지 짝 없이 올라갑니다."
-        : $"Coop: more than {seats} scouts are here, so only the first {seats} to join are paired. The rest climb without a Pair until a place frees up.";
+    public static string Overfull(int seats) => T("notice.overfull", ("seats", seats));
 
     /// <summary>An Unmodded Player in the room, told to everyone who plays with the mod.</summary>
     public static string UnmoddedPlayer(string player, string? theirs, string? leaders) => theirs == null
-        ? Korean
-            ? $"코옵: {player} 님에게는 모드가 없어 짝 없이 함께 오릅니다."
-            : $"Coop: {player} does not have BetterCoop and climbs without a Pair."
-        : Korean
-            ? $"코옵: {player} 님의 모드 {theirs}는 분대장의 {leaders ?? "?"}와 맞지 않아 짝 없이 함께 오릅니다."
-            : $"Coop: {player}'s BetterCoop {theirs} does not work with the Troop Leader's {leaders ?? "?"}, so they climb without a Pair.";
+        ? T("notice.unmoddedPlayer", ("player", player))
+        : T("notice.unmoddedPlayerVersion", ("player", player), ("theirs", theirs), ("leaders", leaders ?? "?"));
 
     /// <summary>This player rests in a room whose Troop Leader has another version of the mod, or none.</summary>
     public static string Resting(string leader, string? leaders, string mine) => leaders == null
-        ? Korean
-            ? $"코옵: 분대장 {leader} 님에게 모드가 없어 이 방에서는 모드를 쉽니다. 짝 없이 함께 오릅니다."
-            : $"Coop: the Troop Leader {leader} does not have BetterCoop. The mod rests in this room; you climb without a Pair."
-        : Korean
-            ? $"코옵: 분대장 {leader} 님의 모드는 {leaders}, 내 모드는 {mine}입니다. 이 방에서는 모드를 쉬고 짝 없이 함께 오릅니다. 모드 매니저에서 같은 버전으로 맞추면 짝이 됩니다."
-            : $"Coop: the Troop Leader {leader} runs BetterCoop {leaders}, you run {mine}. The mod rests in this room and you climb without a Pair; match their version in your mod manager to pair.";
+        ? T("notice.resting", ("leader", leader))
+        : T("notice.restingVersion", ("leader", leader), ("leaders", leaders), ("mine", mine));
 }
