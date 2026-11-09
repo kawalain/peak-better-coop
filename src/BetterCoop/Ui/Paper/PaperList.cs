@@ -12,11 +12,11 @@ using Object = UnityEngine.Object;
 namespace BetterCoop.Ui.Paper;
 
 /// <summary>
-/// The body of a paper form, one entry under another: a masthead, sections
-/// marked with trail signs over printed rules, fields whose printed label
-/// leads by dots to an answer in pen, check boxes, answers to circle, rubber
-/// stamps, and a line to sign, and the sign for "gone home" at its end. Every
-/// text is a function, read again each frame, so the form follows what it shows.
+/// The body of a paper form, one entry under another: a masthead, numbered
+/// sections over printed rules, fields whose printed label leads by dots to
+/// an answer in pen, check boxes, answers to circle, rubber stamps, and a
+/// line to sign. Every text is a function, read again each frame, so the
+/// form follows what it shows.
 /// </summary>
 internal sealed class PaperList
 {
@@ -42,12 +42,6 @@ internal sealed class PaperList
     private const float TableLineStep = 0.09f;
 
     private const float TableTyping = 1.2f;
-
-    /// <summary>The size of the trail sign before a heading.</summary>
-    private const float SignSize = 40f;
-
-    /// <summary>The size of the trail sign that ends the form.</summary>
-    private const float EndSignSize = 46f;
 
     private const float LeaderHeight = 10f;
 
@@ -157,35 +151,21 @@ internal sealed class PaperList
     }
 
     /// <summary>
-    /// A section heading in bold small capitals over a printed rule, as the
-    /// Boy Scout Handbook sets its headings, led by a trail sign where a
-    /// number would be: each section takes the next sign in turn.
+    /// A numbered section heading in bold small capitals over a printed rule,
+    /// as the Boy Scout Handbook sets its headings.
     /// </summary>
     /// <returns>The header's row, for the page to scroll to.</returns>
     public RectTransform Header(Func<string> text, Func<bool>? visible = null)
     {
-        TrailSign sign = FormDrawing.SectionSigns[section++ % FormDrawing.SectionSigns.Length];
+        int number = ++section;
         PaperRow row = NewRow("Header", HeaderHeight, visible, TextAnchor.LowerLeft);
-        RectTransform line = Line(row.Root.transform);
-        RectTransform mark = Fixed(line, "Sign", SignSize, SignSize);
-        VectorView.Add(mark, size => FormDrawing.Sign(sign, size.x), Color.clear);
-        TMP_Text title = AddText(line, "Title", PaperText.Heading, TextAlignmentOptions.BottomLeft, flexible: true);
+        TMP_Text title = AddText(row.Root.transform, "Title", PaperText.Heading, TextAlignmentOptions.BottomLeft, flexible: true);
         title.fontStyle = FontStyles.Bold | FontStyles.SmallCaps;
         title.characterSpacing = 2f;
         AddDrawing(row.Root.transform, "Rule", RuleHeight, size => FormDrawing.HeadingRule(size.x, size.y));
-        row.Refreshers.Add(() => PaperText.Set(title, text()));
+        row.Refreshers.Add(() => PaperText.Set(title, $"{number}.  {text()}"));
         Add(row);
         return (RectTransform)row.Root.transform;
-    }
-
-    /// <summary>The trail's end after the form's last row: the sign a scout leaves for "I have gone home."</summary>
-    public void End()
-    {
-        PaperRow row = NewRow("End", EndSignSize + 24f, alignment: TextAnchor.MiddleCenter);
-        row.Root.GetComponent<VerticalLayoutGroup>().childForceExpandWidth = false;
-        RectTransform mark = Fixed(row.Root.transform, "Sign", EndSignSize, EndSignSize);
-        VectorView.Add(mark, size => FormDrawing.Sign(TrailSign.GoneHome, size.x), Color.clear);
-        Add(row);
     }
 
     /// <summary>A small heading inside a section, grouping the rows under it.</summary>

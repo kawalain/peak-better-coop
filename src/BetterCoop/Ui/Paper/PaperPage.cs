@@ -283,7 +283,6 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         filled = true;
         List.Clear();
         Fill(List);
-        List.End();
         LayoutRebuilder.ForceRebuildLayoutImmediate(content);
         // New rows' drawings show at once, not their fallback colour for a frame.
         VectorView.DrawAll(content);
