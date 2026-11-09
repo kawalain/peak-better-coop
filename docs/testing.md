@@ -37,6 +37,7 @@ then each guest with `--only` in the order wanted. The commands used below:
 | `drill {what: end, ending}` | in a Twin, ends the real Run at the summit or with the party lost |
 | `drill {what: flood, kind, count?}` | sends many of one kind of the mod's own messages at once, as a misbehaving modded client would: `rider`, `revive`, `wheel`, `sound`, `recovery`, `swap`, `pairs` |
 | `drill {what: leave, atOperation?, delay?}` | leaves the room now, or just after the next operation runs |
+| `drill {what: kill, actor, how, allow?, to?}` | sends a death of that scout this copy may not send: `die` (the death RPC) or `sync` (a join sync marking it dead); `consent` sends its leave to be eaten (rightful from its own copy); to player `to` or every other copy |
 | `sounds {contains, play?}` | the game's loaded audio clips and the effects that use them |
 
 A Twin closed by force is started again with `--only <role>`. Close a Twin by
@@ -151,6 +152,15 @@ Runs) are the unit tests on `WireLimits`, `PairSeats`, `RelayedButton`,
    names every new Pair).
 7. **Everyone dies.** `console {name: Character.Die}` on every copy at once.
    Every copy shows everyone dead and the same Run Report, Lost.
+8. **Forged deaths.** With two Pairs, on one Pair's Carrier's copy `drill
+   {what: kill, actor: <itself>, how: consent, allow: false}` (it refuses to
+   be eaten). From a guest that is neither that Carrier nor the Troop Leader,
+   `drill {what: kill, actor: <Carrier>, to: <Rider>}` with `how: consent`,
+   then `die`, then `sync`. The Rider's copy logs `Refused a cannibalism
+   consent`, `Refused a death` and `Refused a join sync`, and both members
+   stay alive. The same `die` against the other Pair's Carrier, who allows
+   being eaten, kills both members, as a cannibal may in unmodded PEAK; so
+   does `console Character.Die` on a Carrier's copy.
 
 ## Features
 

@@ -124,6 +124,62 @@ internal static partial class ControlCommands
         return $"sent {sent} {kind}";
     }
 
+    /// <summary>
+    /// Sends a death of player <c>actor</c>'s scout that this copy may not
+    /// send, as a client that is neither that scout's owner nor the Troop
+    /// Leader could: <c>die</c> (the game's death RPC), <c>sync</c> (a join
+    /// sync marking the scout dead), or <c>consent</c> (that scout's leave to
+    /// be eaten, <c>allow</c>; from the scout's own copy it is rightful and
+    /// stands in for its setting). It goes to player <c>to</c> only, or to
+    /// every other copy without one, so a test can aim it at a Rider alone.
+    /// </summary>
+    private static JToken Kill(JObject args)
+    {
+        if (!PhotonNetwork.InRoom)
+        {
+            throw new InvalidOperationException("not in a room");
+        }
+
+        int actor = (int?)args["actor"] ?? throw new ArgumentException("actor: the player whose scout dies");
+        string how = (string?)args["how"] ?? "die";
+        Character scout = Character.AllCharacters.FirstOrDefault(c => c != null && c.photonView.Owner?.ActorNumber == actor)
+            ?? throw new ArgumentException($"no scout of player {actor}");
+        Photon.Realtime.Player? to = args["to"] is JToken target
+            ? PhotonNetwork.CurrentRoom.GetPlayer((int)target) ?? throw new ArgumentException($"no player {target}")
+            : null;
+        CharacterData d = scout.data;
+        object[] payload = how switch
+        {
+            "die" => [],
+            "sync" =>
+            [
+                d.passedOut, d.fullyPassedOut, true, d.isSprinting, d.currentItem?.photonView!, d.isJumping,
+                d.isClimbing, d.isRopeClimbing, d.isVineClimbing, d.vinePercent, d.ropePercent, d.isCrouching,
+                d.isReaching, d.heldVine?.photonView!, d.heldRope?.photonView!, d.badgeStatus,
+                d.cannibalismPermitted, d.isSkeleton, d.petrifyAmount,
+            ],
+            "consent" => [(bool?)args["allow"] ?? true],
+            _ => throw new ArgumentException("how: die, sync or consent"),
+        };
+        string rpc = how switch { "die" => "RPCA_Die", "sync" => "RPC_SyncOnJoin", _ => "RPCA_SyncCanBeCannibalized" };
+        if (how == "consent" && scout.IsLocal)
+        {
+            d.cannibalismPermitted = (bool)payload[0];
+        }
+
+        if (to != null)
+        {
+            scout.photonView.RPC(rpc, to, payload);
+        }
+        else
+        {
+            scout.photonView.RPC(rpc, RpcTarget.Others, payload);
+        }
+
+        PhotonNetwork.SendAllOutgoingCommands();
+        return $"sent a {how} of {scout.characterName} to {(to == null ? "every other copy" : $"player {to.ActorNumber}")}";
+    }
+
     private static void NeedPartner(int partner)
     {
         if (partner < 0)
