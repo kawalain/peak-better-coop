@@ -351,7 +351,8 @@ internal sealed class PaperList
             {
                 drawn = who;
                 float end = SignatureInset + Mathf.Min(name.GetPreferredValues(who).x, SignatureWidth - SignatureInset);
-                doodle.anchoredPosition = new Vector2(end + 34f, 30f);
+                // A long name puts the doodle over its last letters rather than off the paper.
+                doodle.anchoredPosition = new Vector2(Mathf.Min(end + 34f, SignatureWidth - 40f), 30f);
                 sketch.Redraw();
             }
         });
