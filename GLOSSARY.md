@@ -56,12 +56,21 @@ _Avoid_: spectating, mirroring
 
 **Pair Formation** (짝 편성):
 Forming the Pairs for the first time in a Run, when the party arrives on the
-island.
+island. Pairs in the Pair Plan whose members are both there are kept; everyone
+else is paired at random.
 _Avoid_: 짝짓기, 짝 짓기, matchmaking
+
+**Pair Plan** (짝 계획):
+The Pairs the Troop Leader sets at the Airport before a Run, naming who carries
+in each. Nobody is carried at the Airport; the Pair Formation on arrival uses
+the plan, over Role Preferences, and the plan ends there or when the party is
+back at the Airport. Every player sees it on the Roster.
+_Avoid_: pre-pairing, lobby pairs, 예약 짝
 
 **Role Preference** (원하는 역할):
 A player's stated wish to be Carrier, Rider, or either (상관없음; stored as Random) in a Pair
-Formation, a Pair Shuffle, or a Late Pairing.
+Formation, a Pair Shuffle, or a Late Pairing, followed unless the Run Rules
+say otherwise. A Pair Plan and a Pair Assignment always come before it.
 
 **Pair Shuffle** (짝 섞기):
 Forming the Pairs anew in the middle of a Run so that every Pair changes:
@@ -71,7 +80,7 @@ _Avoid_: re-pairing, reshuffle
 
 **Late Pairing** (짝 이어주기):
 Forming a Pair in the middle of a Run from two Unpaired Players, leaving every
-other Pair as it is. Two whose Pair ended when one of them left pair again
+other Pair as it is, unless the Run Rules turn it off. Two whose Pair ended when one of them left pair again
 first, in their former roles. A member who is dead or passed out becomes the
 Rider and comes back on the Carrier's back; otherwise Role Preferences decide.
 The Shared Body starts where the higher of the two is.
@@ -97,8 +106,9 @@ is lost or copied: the items swap between the two bodies.
 _Avoid_: body swap, inheritance
 
 **Role Swap** (자리 바꾸기):
-The Carrier and Rider of a Pair trading roles when both ask for it or the
-Troop Leader orders it, with a Body Handover to the new Carrier.
+The Carrier and Rider of a Pair trading roles when both ask for it, if the
+Run Rules allow asking, or when the Troop Leader orders it, with a Body
+Handover to the new Carrier.
 _Avoid_: role switch, flip
 
 **Shared Life** (생사 공유):
@@ -118,13 +128,17 @@ _Avoid_: solo player, odd player
 **Roster** (편성표):
 The page of the pause menu for the mod, drawn as a paper form: every player sees the Pairs and the
 Unpaired Players, sets their Role Preference, and asks for a Role Swap; the
-Troop Leader also changes the Pairs and the Run Rules there.
+Troop Leader also changes the Pairs and the Run Rules there, and at the Airport
+sets the Pair Plan.
 _Avoid_: Coop Menu, 코옵 메뉴, coop panel, admin menu
 
 **Run Rules** (원정 규칙):
-The Troop Leader's settings that hold for everyone in the room: shuffles,
-Body Handover, carry weight, odd player counts, and who picks from the
-backpack wheel.
+The Troop Leader's settings that hold for everyone in the room: whether Role
+Preferences are followed, whether Role Swaps may be asked for, whether Late
+Pairing happens, odd player counts, shuffles, Body Handover, carry weight, and
+who picks from the backpack wheel. Every rule that changes play is one; each
+starts out leaving players free. A new Troop Leader keeps the rules the room
+has.
 _Avoid_: host settings, room settings
 
 **Solo Pair** (1인 짝 테스트):
