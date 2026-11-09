@@ -20,36 +20,34 @@ internal interface IPortraits
 }
 
 /// <summary>
-/// Takes passport photos of scouts: a copy of the passport's own dressed-up
-/// scout and camera, kept far below the world, framed as the passport frames
-/// a face, and photographed once per look into a texture of its own. The copy
-/// is made when the Airport's passport wakes and kept across scenes. Without
-/// it, or if a photo fails, there is no photo and a silhouette stands in.
+/// Takes passport photos of scouts on the <see cref="ModelStage"/>: a copy
+/// of the passport's own dressed-up scout stands there, framed as the
+/// passport frames a face, and is drawn once per look into a texture of its
+/// own. The copy is made when the Airport's passport wakes and kept across
+/// scenes. Without it, or if a photo fails, there is no photo and a
+/// silhouette stands in.
 /// </summary>
 [HarmonyPatch]
 [HarmonyWrapSafe]
 internal static class PhotoStudio
 {
-    public const int Width = 160;
+    public const int Width = 320;
 
-    public const int Height = 200;
+    public const int Height = 400;
 
     /// <summary>Where the passport's camera sits when it shows the face, in its parent.</summary>
     private static readonly Vector3 FacePlace = new(0f, 1.65f, 1f);
 
     private const float FaceSize = 0.6f;
 
-    private static readonly Vector3 StudioPlace = new(0f, -4000f, 0f);
-
     private static readonly Dictionary<string, RenderTexture> Photos = new();
-
-    private static GameObject? studio;
 
     private static PlayerCustomizationDummy? model;
 
-    private static Camera? camera;
+    /// <summary>Where the camera stands from the model, in the model's own frame, and which way it looks.</summary>
+    private static Vector3 eye;
 
-    private static Light? lamp;
+    private static Quaternion turn;
 
     private static bool broken;
 
@@ -64,12 +62,11 @@ internal static class PhotoStudio
             return kept;
         }
 
-        if (!Ready() || model == null || camera == null)
+        if (!Ready() || model == null)
         {
             return null;
         }
 
-        RenderTexture? photo = null;
         var clock = System.Diagnostics.Stopwatch.StartNew();
         try
         {
@@ -82,46 +79,26 @@ internal static class PhotoStudio
                 model.anim.Update(0f);
             }
 
-            photo = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32)
-            {
-                name = "BetterCoop.Photo",
-                antiAliasing = 4,
-                hideFlags = HideFlags.HideAndDontSave,
-            };
-            photo.Create();
-            camera.aspect = Width / (float)Height;
-            camera.targetTexture = photo;
-            if (lamp != null)
-            {
-                lamp.enabled = true;
-            }
-
-            camera.Render();
+            Transform at = model.transform;
+            Quaternion facing = at.rotation * turn;
+            // Lit from over the viewer's shoulder.
+            Vector3 light = (facing * Vector3.forward) - (0.6f * (facing * Vector3.up)) + (0.4f * (facing * Vector3.right));
+            var shot = new ModelStage.Shot(at.TransformPoint(eye), facing, FaceSize, 0.05f, 20f, Backdrop, light.normalized);
+            RenderTexture photo = ModelStage.Draw(model.gameObject, shot, Width, Height);
+            photo.name = "BetterCoop.Photo";
             Photos[look] = photo;
             Plugin.Verbose($"Took a passport photo of {look} in {clock.Elapsed.TotalMilliseconds:F1} ms.");
             return photo;
         }
         catch (Exception exception)
         {
-            // One failure means the studio does not work here; silhouettes from now on.
+            // One failure means photos do not work here; silhouettes from now on.
             broken = true;
-            if (photo != null)
-            {
-                photo.Release();
-                Object.Destroy(photo);
-            }
-
             Guard.Report("PhotoStudio.Take", exception);
             return null;
         }
         finally
         {
-            camera.targetTexture = null;
-            if (lamp != null)
-            {
-                lamp.enabled = false;
-            }
-
             model.gameObject.SetActive(false);
         }
     }
@@ -132,7 +109,6 @@ internal static class PhotoStudio
     /// <summary>Lets a photo go, as when its scout has changed how they look.</summary>
     public static void Forget(string look)
     {
-
         if (Photos.TryGetValue(look, out RenderTexture? photo))
         {
             Photos.Remove(look);
@@ -144,7 +120,7 @@ internal static class PhotoStudio
         }
     }
 
-    /// <summary>Whether photos can be taken here: the studio is set up, or can be from the passport now.</summary>
+    /// <summary>Whether photos can be taken here: the model is set up, or can be from the passport now.</summary>
     public static bool Working => Ready();
 
     /// <summary>The skin colour of a skin index, or a plain tan when the game's list is not there.</summary>
@@ -172,7 +148,7 @@ internal static class PhotoStudio
 
     private static bool Ready()
     {
-        if (studio != null)
+        if (model != null)
         {
             return true;
         }
@@ -182,12 +158,12 @@ internal static class PhotoStudio
             SetUp(passport);
         }
 
-        return studio != null;
+        return model != null;
     }
 
     private static void SetUp(PassportManager passport)
     {
-        if (studio != null || broken || passport.dummy == null || passport.dummyCamera == null)
+        if (model != null || broken || passport.dummy == null || passport.dummyCamera == null)
         {
             return;
         }
@@ -199,73 +175,38 @@ internal static class PhotoStudio
         catch (Exception exception)
         {
             broken = true;
-            if (studio != null)
+            if (model != null)
             {
-                Object.Destroy(studio);
-                studio = null;
+                Object.Destroy(model.gameObject);
+                model = null;
             }
 
             Guard.Report("PhotoStudio.SetUp", exception);
         }
     }
 
+    /// <summary>Copies the passport's scout onto the stage and notes where the passport's camera sees its face from.</summary>
     private static void Build(PlayerCustomizationDummy source, Camera sourceCamera)
     {
-        // Where the camera sits from the scout when the passport shows the face.
         Transform? cameraParent = sourceCamera.transform.parent;
         Vector3 faceCamera = cameraParent != null ? cameraParent.TransformPoint(FacePlace) : FacePlace;
-        Vector3 fromModel = source.transform.InverseTransformPoint(faceCamera);
-        Quaternion turn = Quaternion.Inverse(source.transform.rotation) * sourceCamera.transform.rotation;
+        eye = source.transform.InverseTransformPoint(faceCamera);
+        turn = Quaternion.Inverse(source.transform.rotation) * sourceCamera.transform.rotation;
 
-        studio = new GameObject("BetterCoop.PhotoStudio");
-        Object.DontDestroyOnLoad(studio);
-        studio.transform.position = StudioPlace;
-
-        GameObject copy = Object.Instantiate(source.gameObject, studio.transform);
+        GameObject copy = Object.Instantiate(source.gameObject, ModelStage.Root);
         copy.SetActive(false);
-        copy.name = "Model";
+        copy.name = "Scout";
         copy.transform.localPosition = Vector3.zero;
         copy.transform.localRotation = Quaternion.identity;
         copy.transform.localScale = source.transform.lossyScale;
-        model = copy.GetComponent<PlayerCustomizationDummy>();
         // A camera that came along with the scout would keep filming for the passport.
         foreach (Camera stray in copy.GetComponentsInChildren<Camera>(true))
         {
             stray.enabled = false;
         }
 
-        GameObject lens = Object.Instantiate(sourceCamera.gameObject, studio.transform);
-        lens.name = "Camera";
-        foreach (Transform child in lens.transform)
-        {
-            Object.Destroy(child.gameObject);
-        }
-
-        foreach (AudioListener listener in lens.GetComponents<AudioListener>())
-        {
-            Object.DestroyImmediate(listener);
-        }
-
-        lens.transform.position = copy.transform.TransformPoint(fromModel);
-        lens.transform.rotation = copy.transform.rotation * turn;
-        camera = lens.GetComponent<Camera>();
-        camera.enabled = false;
-        camera.orthographic = true;
-        camera.orthographicSize = FaceSize;
-        camera.clearFlags = CameraClearFlags.SolidColor;
-        camera.backgroundColor = Backdrop;
-        camera.targetTexture = null;
-
-        // A lamp of its own, reaching nothing but the model this far from the world.
-        var light = new GameObject("Lamp");
-        light.transform.SetParent(studio.transform, false);
-        light.transform.position = lens.transform.position + lens.transform.up * 0.5f;
-        lamp = light.AddComponent<Light>();
-        lamp.type = LightType.Point;
-        lamp.range = 6f;
-        lamp.intensity = 1.5f;
-        lamp.enabled = false;
-        Plugin.Verbose("Set up the photo studio from the passport.");
+        model = copy.GetComponent<PlayerCustomizationDummy>();
+        Plugin.Verbose("Set up passport photos from the passport's scout.");
     }
 }
 
