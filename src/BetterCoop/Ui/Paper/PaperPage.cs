@@ -334,7 +334,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         Texture? hand = null;
         try
         {
-            hand = PhotoStudio.ScoutmasterHand();
+            hand = ScoutmasterHand.Picture();
         }
         catch (Exception exception)
         {

@@ -399,7 +399,7 @@ internal sealed class PaperHandIn : MonoBehaviour
         page.raycastTarget = false;
 
         // A taken picture shows at a forearm's length beside the page; a drawn arm is twice as tall as wide.
-        float scale = Forearm / PhotoStudio.HandForearmPixels;
+        float scale = Forearm / ScoutmasterHand.ForearmPixels;
         float handWidth = arm != null ? arm.width * scale : DrawnWidth;
         handHeight = arm != null ? arm.height * scale : DrawnWidth * 2f;
         handX = UnityEngine.Random.Range(-0.18f, 0.18f) * size.x;
