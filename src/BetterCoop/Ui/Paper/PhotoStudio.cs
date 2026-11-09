@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BetterCoop.Core;
 using HarmonyLib;
 using Photon.Pun;
@@ -41,6 +42,12 @@ internal static class PhotoStudio
     private const float FaceSize = 0.6f;
 
     private static readonly Dictionary<string, RenderTexture> Photos = new();
+
+    /// <summary>The looks photographed, oldest first, so the oldest goes when there are too many.</summary>
+    private static readonly List<string> Order = new();
+
+    /// <summary>The most photos kept at once: a whole room and the Zoo's scouts, with room to spare.</summary>
+    private const int MostPhotos = 48;
 
     private static PlayerCustomizationDummy? model;
 
@@ -86,7 +93,13 @@ internal static class PhotoStudio
             var shot = new ModelStage.Shot(at.TransformPoint(eye), facing, FaceSize, 0.05f, 20f, Backdrop, light.normalized);
             RenderTexture photo = ModelStage.Draw(model.gameObject, shot, Width, Height);
             photo.name = "BetterCoop.Photo";
+            while (Order.Count >= MostPhotos)
+            {
+                Forget(Order[0]);
+            }
+
             Photos[look] = photo;
+            Order.Add(look);
             Plugin.Verbose($"Took a passport photo of {look} in {clock.Elapsed.TotalMilliseconds:F1} ms.");
             return photo;
         }
@@ -109,6 +122,7 @@ internal static class PhotoStudio
     /// <summary>Lets a photo go, as when its scout has changed how they look.</summary>
     public static void Forget(string look)
     {
+        Order.Remove(look);
         if (Photos.TryGetValue(look, out RenderTexture? photo))
         {
             Photos.Remove(look);
@@ -217,8 +231,11 @@ internal static class PhotoStudio
 /// </summary>
 internal sealed class LivePortraits : IPortraits
 {
-    /// <summary>The look each player was last photographed in.</summary>
-    private static readonly Dictionary<int, string> Taken = new();
+    /// <summary>How soon a player who changed how they look is photographed again.</summary>
+    private const float RetakeSeconds = 2f;
+
+    /// <summary>The look each player was last photographed in, and when.</summary>
+    private static readonly Dictionary<int, (string Look, float At)> Taken = new();
 
     public Texture? Photo(int actor) => Take(actor);
 
@@ -227,6 +244,13 @@ internal sealed class LivePortraits : IPortraits
     /// <summary>Takes one photo a player in the room still lacks; false when every player has theirs.</summary>
     public static bool WarmOne()
     {
+        // Photos of players who left go, so joining and leaving again and again keeps no more.
+        foreach (int gone in Taken.Keys.Where(actor => PhotonNetwork.CurrentRoom?.GetPlayer(actor) == null).ToList())
+        {
+            PhotoStudio.Forget(Taken[gone].Look);
+            Taken.Remove(gone);
+        }
+
         foreach (Photon.Realtime.Player player in PhotonNetwork.PlayerList)
         {
             if (Look(player.ActorNumber) is string look && !PhotoStudio.Has(look))
@@ -247,20 +271,53 @@ internal sealed class LivePortraits : IPortraits
             return null;
         }
 
-        if (Taken.TryGetValue(actor, out string? before) && before != look)
+        float now = Time.unscaledTime;
+        if (Taken.TryGetValue(actor, out (string Look, float At) before) && before.Look != look)
         {
-            PhotoStudio.Forget(before);
+            // A look changed again and again is photographed at most every few seconds.
+            if (now - before.At < RetakeSeconds && PhotoStudio.Has(before.Look))
+            {
+                return PhotoStudio.Take(before.Look, _ => { });
+            }
+
+            PhotoStudio.Forget(before.Look);
+        }
+        else if (PhotoStudio.Has(look))
+        {
+            return PhotoStudio.Take(look, _ => { });
         }
 
-        Taken[actor] = look;
+        Taken[actor] = (look, now);
         return PhotoStudio.Take(look, model => model.UpdateDummy(player));
     }
 
-    /// <summary>Everything that shows in a player's photo, apart from who they are.</summary>
+    /// <summary>
+    /// Everything that shows in a player's photo, apart from who they are; or
+    /// null for a look the game has no such parts for, which shows the
+    /// silhouette rather than failing the photo studio for everyone.
+    /// </summary>
     private static string? Look(int actor) =>
-        Data(actor) is CharacterCustomizationData d
+        Data(actor) is CharacterCustomizationData d && Wearable(d)
             ? $"{actor}:{d.currentSkin}.{d.currentAccessory}.{d.currentEyes}.{d.currentMouth}.{d.currentOutfit}.{d.currentHat}.{d.currentSash}.{d.currentMedal}"
             : null;
+
+    private static bool Wearable(CharacterCustomizationData d)
+    {
+        Customization options = Singleton<Customization>.Instance;
+        if (options == null)
+        {
+            return false;
+        }
+
+        static bool In(int index, CustomizationOption[]? list, int least = 0) => list != null && index >= least && index < list.Length;
+        return In(d.currentSkin, options.skins)
+            && In(d.currentAccessory, options.accessories)
+            && In(d.currentEyes, options.eyes)
+            && In(d.currentMouth, options.mouths)
+            && In(d.currentOutfit, options.fits)
+            && In(d.currentHat, options.hats, least: -1)
+            && d.currentSash >= 0;
+    }
 
     private static CharacterCustomizationData? Data(int actor)
     {
