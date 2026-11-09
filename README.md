@@ -1,10 +1,10 @@
 # BetterCoop
 
+[한국어](https://github.com/kawalain/peak-better-coop/blob/main/README.ko.md)
+
 Two scouts, one body: the **Carrier** has the keyboard, the **Rider** has the
 mouse, and they live and die together. Pray for a partner who knows the way,
 and not one who eats every mushroom.
-
-[한국어](https://github.com/kawalain/peak-better-coop/blob/main/README.ko.md)
 
 ![A Pair Shuffle letter counting down to a new partner](https://raw.githubusercontent.com/kawalain/peak-better-coop/main/docs/images/en-shuffle-letter.webp)
 
