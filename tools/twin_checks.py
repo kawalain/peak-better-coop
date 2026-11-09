@@ -680,12 +680,17 @@ class Run:
 
     def back_at_airport(self) -> str:
         mark = marks()
-        stalled = []
-        for role in ROLES:
-            try:
-                wait(lambda r=role: end_screen_next(r), f"{role}'s end screen", 20, 1)
-            except Failed:
-                stalled.append(role)
+        done: set[str] = set()
+
+        def next_pressed() -> bool:
+            done.update(r for r in ROLES if r not in done and end_screen_next(r))
+            return len(done) == len(ROLES)
+
+        try:
+            wait(next_pressed, "every end screen", 20, 1)
+        except Failed:
+            pass
+        stalled = [r for r in ROLES if r not in done]
         if stalled:
             # The game's end screen stops before its buttons for a scout who rejoined
             # mid-Run (their timeline is empty), so the room goes back as after it.

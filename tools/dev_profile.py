@@ -239,7 +239,14 @@ def twin(profile: Path, game: Path, role: str, plugin: Path | None, control: boo
     # player's own copy forward; the app id lets Steamworks start without relaunching.
     env = dict(os.environ, SteamAppId=PEAK_APP_ID, SteamGameId=PEAK_APP_ID)
     print(f"{role}: " + " ".join(command))
-    subprocess.Popen(command, cwd=game, env=env)
+    startup = None
+    if not visible:
+        # The game's window would show on screen until the mod moves it off;
+        # it starts hidden, and the mod shows it again off every screen.
+        startup = subprocess.STARTUPINFO()
+        startup.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+        startup.wShowWindow = 0  # SW_HIDE
+    subprocess.Popen(command, cwd=game, env=env, startupinfo=startup)
 
 
 def main(argv: list[str]) -> None:

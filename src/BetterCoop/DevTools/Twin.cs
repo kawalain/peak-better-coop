@@ -119,7 +119,14 @@ internal static class Twin
         runtime.AddComponent<TwinJoiner>();
         if (arguments.Contains(HeadlessArgument))
         {
+            // At once, before the first scene plays a sound or the window shows.
+            TwinScreen.Silence();
             runtime.AddComponent<TwinScreen>();
+        }
+        else
+        {
+            // Windows may remember a headless Twin's mute for the Twin game's executable.
+            TwinScreen.Unmute();
         }
 
         Plugin.Log.LogWarning($"Twin: this copy is {label} ({Role}{(Unmodded ? ", Unmodded" : string.Empty)}), scout id {Id}; it {(Hosts ? "opens" : "joins")} the room on {RoomCard}.");
@@ -243,7 +250,37 @@ internal sealed class TwinScreen : MonoBehaviour
 
     private const int FrameRate = 30;
 
+    private const int WatchedFrames = 600;
+
     private float next;
+
+    /// <summary>Mutes the game and puts its window away; the window starts hidden, so it never shows on screen.</summary>
+    internal static void Silence()
+    {
+        try
+        {
+            AudioListener.volume = 0f;
+            MuteProcess();
+            PutAwayAll(show: false);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("Twin.Silence", exception);
+        }
+    }
+
+    /// <summary>Lets a visible Twin be heard again.</summary>
+    internal static void Unmute()
+    {
+        try
+        {
+            MuteProcess(false);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("Twin.Unmute", exception);
+        }
+    }
 
     private void Start()
     {
@@ -254,7 +291,8 @@ internal sealed class TwinScreen : MonoBehaviour
 
     private void Update()
     {
-        if (Time.unscaledTime < next)
+        // Every frame at first, while the game still sizes and places its window.
+        if (Time.unscaledTime < next && Time.frameCount > WatchedFrames)
         {
             return;
         }
@@ -262,20 +300,11 @@ internal sealed class TwinScreen : MonoBehaviour
         next = Time.unscaledTime + Every;
         try
         {
-            // The game sets neither of these, but a scene change may show the window again.
+            // The game raises the listener's volume back every frame, and a scene change may show the window again.
             AudioListener.volume = 0f;
+            MuteProcess();
             Application.targetFrameRate = FrameRate;
-            uint process = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
-            EnumWindows((window, _) =>
-            {
-                GetWindowThreadProcessId(window, out uint owner);
-                if (owner == process && IsWindowVisible(window))
-                {
-                    PutAway(window);
-                }
-
-                return true;
-            }, IntPtr.Zero);
+            PutAwayAll();
         }
         catch (Exception exception)
         {
@@ -291,25 +320,171 @@ internal sealed class TwinScreen : MonoBehaviour
 
     private const long ToolWindow = 0x80, AppWindow = 0x40000, NoActivate = 0x8000000;
 
-    private const uint NoSize = 0x1, NoZOrder = 0x4, NoActivateMove = 0x10, FrameChanged = 0x20;
+    private const uint NoSize = 0x1, NoZOrder = 0x4, NoActivateMove = 0x10, FrameChanged = 0x20, ShowAgain = 0x40;
 
-    private static void PutAway(IntPtr window)
+    /// <summary>The game's own window, hidden or not, and any other window of this process on show.</summary>
+    private static void PutAwayAll(bool show = true)
+    {
+        uint process = (uint)System.Diagnostics.Process.GetCurrentProcess().Id;
+        var name = new System.Text.StringBuilder(64);
+        EnumWindows((window, _) =>
+        {
+            GetWindowThreadProcessId(window, out uint owner);
+            if (owner == process)
+            {
+                name.Clear();
+                GetClassName(window, name, name.Capacity);
+                if (name.ToString() == GameWindowClass || IsWindowVisible(window))
+                {
+                    PutAway(window, show);
+                }
+            }
+
+            return true;
+        }, IntPtr.Zero);
+    }
+
+    private const string GameWindowClass = "UnityWndClass";
+
+    private static void PutAway(IntPtr window, bool show)
     {
         long style = GetWindowLongPtr(window, ExStyle).ToInt64();
         long away = (style | ToolWindow | NoActivate) & ~AppWindow;
+        bool shown = IsWindowVisible(window);
+        KeepAway(window);
         if (away != style)
         {
             // The taskbar drops a button only for a window shown again after the change.
-            ShowWindow(window, 0);
+            if (shown)
+            {
+                ShowWindow(window, 0);
+            }
+
             SetWindowLongPtr(window, ExStyle, new IntPtr(away));
-            ShowWindow(window, 4);
+            shown = false;
         }
 
-        if (GetWindowRect(window, out Rect rect) && rect.Left != Away)
+        if (!shown || (GetWindowRect(window, out Rect rect) && rect.Left > Away / 2))
         {
-            SetWindowPos(window, IntPtr.Zero, Away, Away, 0, 0, NoSize | NoZOrder | NoActivateMove | FrameChanged);
+            // Shown off every screen without taking the focus once the game runs: a hidden window stops presenting.
+            SetWindowPos(window, IntPtr.Zero, Away, Away, 0, 0, NoSize | NoZOrder | NoActivateMove | FrameChanged | (show ? ShowAgain : 0));
         }
     }
+
+    /// <summary>
+    /// Mutes this process's sound in Windows itself: the game turns its own
+    /// listener back up every frame and fades sounds in, so muting the game
+    /// alone lets some through.
+    /// </summary>
+    private static void MuteProcess(bool mute = true)
+    {
+        IntPtr enumerator = IntPtr.Zero, device = IntPtr.Zero, sessions = IntPtr.Zero, volume = IntPtr.Zero;
+        try
+        {
+            Guid enumeratorClass = new("BCDE0395-E52F-467C-8E3D-C4579291692E");
+            Guid enumeratorInterface = new("A95664D2-9614-4F35-A746-DE8DB63617E6");
+            Guid sessionsInterface = new("BFA971F1-4D5E-40BB-935E-967039BFBEE4");
+            if (CoCreateInstance(ref enumeratorClass, IntPtr.Zero, AllContexts, ref enumeratorInterface, out enumerator) != 0
+                || Call<GetDefaultEndpoint>(enumerator, 4)(enumerator, 0, 0, out device) != 0
+                || Call<Activate>(device, 3)(device, ref sessionsInterface, AllContexts, IntPtr.Zero, out sessions) != 0
+                || Call<GetSimpleVolume>(sessions, 4)(sessions, IntPtr.Zero, 0, out volume) != 0)
+            {
+                return;
+            }
+
+            Call<SetMute>(volume, 5)(volume, mute ? 1 : 0, IntPtr.Zero);
+            if (mute && !muted && Call<GetMute>(volume, 6)(volume, out int now) == 0 && now != 0)
+            {
+                muted = true;
+                Plugin.Log.LogInfo("Twin: muted this copy's sound in Windows.");
+            }
+        }
+        finally
+        {
+            foreach (IntPtr held in new[] { volume, sessions, device, enumerator })
+            {
+                if (held != IntPtr.Zero)
+                {
+                    System.Runtime.InteropServices.Marshal.Release(held);
+                }
+            }
+        }
+    }
+
+    private const int AllContexts = 23;
+
+    /// <summary>The method at that slot of a COM object's table, called without COM interop, which Unity's Mono lacks.</summary>
+    private static T Call<T>(IntPtr instance, int slot)
+        where T : Delegate
+    {
+        IntPtr table = System.Runtime.InteropServices.Marshal.ReadIntPtr(instance);
+        IntPtr method = System.Runtime.InteropServices.Marshal.ReadIntPtr(table, slot * IntPtr.Size);
+        return System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<T>(method);
+    }
+
+    private delegate int GetDefaultEndpoint(IntPtr self, int flow, int role, out IntPtr device);
+
+    private delegate int Activate(IntPtr self, ref Guid iid, int context, IntPtr parameters, out IntPtr instance);
+
+    private delegate int GetSimpleVolume(IntPtr self, IntPtr session, int crossProcess, out IntPtr volume);
+
+    private delegate int SetMute(IntPtr self, int mute, IntPtr context);
+
+    private delegate int GetMute(IntPtr self, out int mute);
+
+    private static bool muted;
+
+    [System.Runtime.InteropServices.DllImport("ole32.dll")]
+    private static extern int CoCreateInstance(ref Guid type, IntPtr outer, int context, ref Guid iid, out IntPtr instance);
+
+    private const int WindowProcedure = -4;
+
+    private const uint PositionChanging = 0x46;
+
+    private const uint NoMove = 0x2;
+
+    private delegate IntPtr WindowProc(IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
+
+    private static readonly WindowProc Placing = Place;
+
+    private static readonly System.Collections.Generic.Dictionary<IntPtr, IntPtr> Procedures = new();
+
+    /// <summary>
+    /// Hooks the window's own procedure so every move or show the game makes
+    /// lands off every screen: the game shows and places its window itself
+    /// while it starts, after the mod has loaded.
+    /// </summary>
+    private static void KeepAway(IntPtr window)
+    {
+        if (Procedures.ContainsKey(window))
+        {
+            return;
+        }
+
+        // Known before the hook goes in, so no message finds it missing.
+        Procedures[window] = GetWindowLongPtr(window, WindowProcedure);
+        SetWindowLongPtr(window, WindowProcedure, System.Runtime.InteropServices.Marshal.GetFunctionPointerForDelegate(Placing));
+    }
+
+    private static IntPtr Place(IntPtr window, uint message, IntPtr wParam, IntPtr lParam)
+    {
+        if (message == PositionChanging && lParam != IntPtr.Zero)
+        {
+            // WINDOWPOS: two handles, then x, y, cx, cy and flags.
+            int at = 2 * IntPtr.Size;
+            uint flags = (uint)System.Runtime.InteropServices.Marshal.ReadInt32(lParam, at + 16);
+            System.Runtime.InteropServices.Marshal.WriteInt32(lParam, at, Away);
+            System.Runtime.InteropServices.Marshal.WriteInt32(lParam, at + 4, Away);
+            System.Runtime.InteropServices.Marshal.WriteInt32(lParam, at + 16, (int)(flags & ~NoMove));
+        }
+
+        return Procedures.TryGetValue(window, out IntPtr procedure)
+            ? CallWindowProc(procedure, window, message, wParam, lParam)
+            : IntPtr.Zero;
+    }
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern IntPtr CallWindowProc(IntPtr procedure, IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
 
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
     private struct Rect
@@ -339,6 +514,9 @@ internal sealed class TwinScreen : MonoBehaviour
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern bool IsWindowVisible(IntPtr window);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    private static extern int GetClassName(IntPtr window, System.Text.StringBuilder name, int capacity);
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     private static extern bool ShowWindow(IntPtr window, int command);
