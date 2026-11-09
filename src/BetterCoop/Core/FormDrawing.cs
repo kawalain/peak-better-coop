@@ -429,9 +429,9 @@ internal static class FormDrawing
         float foot = h * 0.93f;
 
         // The body: a squat cup, its rim an ellipse, standing on a wavy foot.
-        Pencil(svg, hand, [(left + w * 0.03f, foot), (left - w * 0.02f, h * 0.72f), (left, rim)], Lead);
-        Pencil(svg, hand, [(right - w * 0.03f, foot), (right + w * 0.02f, h * 0.72f), (right, rim)], Lead);
-        Pencil(svg, hand, Round((w * 0.5f, rim), (right - left) / 2f, h * 0.05f, 0.0, 2.0, 20), Lead);
+        Pencil(svg, hand, [(left + w * 0.03f, foot), (left - w * 0.02f, h * 0.72f), (left, rim)], Lead, h);
+        Pencil(svg, hand, [(right - w * 0.03f, foot), (right + w * 0.02f, h * 0.72f), (right, rim)], Lead, h);
+        Pencil(svg, hand, Round((w * 0.5f, rim), (right - left) / 2f, h * 0.05f, 0.0, 2.0, 20), Lead, h);
         var sole = new List<(float X, float Y)>();
         for (int i = 0; i <= 12; i++)
         {
@@ -439,7 +439,7 @@ internal static class FormDrawing
             sole.Add((left - w * 0.06f + (right - left + w * 0.12f) * t, foot + (float)Math.Sin(t * Math.PI * 4) * h * 0.02f));
         }
 
-        Pencil(svg, hand, sole, Lead);
+        Pencil(svg, hand, sole, Lead, h);
 
         // Tentacles, each waving its own way, with a knob at the tip.
         for (int i = 0; i < 7; i++)
@@ -459,29 +459,118 @@ internal static class FormDrawing
                     from.Y + (float)Math.Sin(angle) * along + (float)Math.Cos(angle) * sway));
             }
 
-            Pencil(svg, hand, tentacle, Lead);
-            Pencil(svg, hand, Round(tentacle[tentacle.Count - 1], h * 0.025f, h * 0.025f, 0.0, 2.0, 8), Lead);
+            Pencil(svg, hand, tentacle, Lead, h);
+            Pencil(svg, hand, Round(tentacle[tentacle.Count - 1], h * 0.025f, h * 0.025f, 0.0, 2.0, 8), Lead, h);
         }
 
         // Crossed eyes of two sizes, looking at each other.
         (float X, float Y) leftEye = (w * 0.43f, h * 0.63f);
         (float X, float Y) rightEye = (w * 0.575f, h * 0.62f);
-        Pencil(svg, hand, Round(leftEye, h * 0.045f, h * 0.045f, 0.0, 2.0, 12), Lead);
-        Pencil(svg, hand, Round(rightEye, h * 0.065f, h * 0.065f, 0.0, 2.0, 14), Lead);
+        Pencil(svg, hand, Round(leftEye, h * 0.045f, h * 0.045f, 0.0, 2.0, 12), Lead, h);
+        Pencil(svg, hand, Round(rightEye, h * 0.065f, h * 0.065f, 0.0, 2.0, 14), Lead, h);
         string lead = Lead.Hex;
         svg.Append(F($"<circle cx=\"{leftEye.X + h * 0.02f}\" cy=\"{leftEye.Y + h * 0.01f}\" r=\"{h * 0.02f}\" fill=\"{lead}\"/>"));
         svg.Append(F($"<circle cx=\"{rightEye.X - h * 0.03f}\" cy=\"{rightEye.Y + h * 0.02f}\" r=\"{h * 0.022f}\" fill=\"{lead}\"/>"));
 
         // A goofy grin, its tongue out to one side.
-        Pencil(svg, hand, Round((w * 0.5f, h * 0.73f), w * 0.09f, h * 0.06f, 0.05, 0.9, 10), Lead);
-        Pencil(svg, hand, Round((w * 0.53f, h * 0.80f), w * 0.025f, h * 0.03f, 0.0, 1.0, 6), Lead);
+        Pencil(svg, hand, Round((w * 0.5f, h * 0.73f), w * 0.09f, h * 0.06f, 0.05, 0.9, 10), Lead, h);
+        Pencil(svg, hand, Round((w * 0.53f, h * 0.80f), w * 0.025f, h * 0.03f, 0.0, 1.0, 6), Lead, h);
+        return Close(svg);
+    }
+
+    /// <summary>
+    /// A clumsy grey pegasus pony pencilled in a margin, after Derpy: a big
+    /// round head under shaggy bangs, eyes that look two ways at once, a
+    /// happy grin, a small folded wing, and a muffin she has her eye on.
+    /// </summary>
+    public static string Pony(float width, float height)
+    {
+        var svg = Open(width, height);
+        var hand = new Random(11);
+        float w = width;
+        float h = height;
+        string lead = Lead.Hex;
+
+        // The body, the legs under it, and the neck up to the head.
+        Pencil(svg, hand, Round((w * 0.40f, h * 0.65f), w * 0.17f, h * 0.11f, 0.0, 2.0, 24), Lead, h);
+        foreach (float x in new[] { 0.29f, 0.36f, 0.45f, 0.51f })
+        {
+            Pencil(svg, hand, [(w * x, h * 0.72f), (w * x + Next(hand, -1.5f, 1.5f), h * 0.93f), (w * x + h * 0.035f, h * 0.93f)], Lead, h);
+        }
+
+        (float X, float Y) head = (w * 0.64f, h * 0.34f);
+        float r = h * 0.21f;
+        Pencil(svg, hand, [(w * 0.50f, h * 0.57f), (head.X - r * 0.55f, head.Y + r * 0.82f)], Lead, h);
+        Pencil(svg, hand, [(w * 0.55f, h * 0.62f), (head.X + r * 0.05f, head.Y + r * 0.98f)], Lead, h);
+
+        // The head, its snout bulging forward, and a tall pointed ear.
+        Pencil(svg, hand, Round(head, r, r, 0.55, 1.78, 28), Lead, h);
+        Pencil(svg, hand, Round((head.X + r * 0.78f, head.Y + r * 0.50f), r * 0.40f, r * 0.42f, 1.5, 1.05, 14), Lead, h);
+        Pencil(svg, hand, [(head.X - r * 0.50f, head.Y - r * 0.85f), (head.X - r * 0.35f, head.Y - r * 1.60f), (head.X - r * 0.05f, head.Y - r * 0.98f)], Lead, h);
+
+        // Shaggy bangs swept across the forehead, and the mane down the neck.
+        Pencil(svg, hand,
+        [
+            (head.X - r * 1.00f, head.Y - r * 0.10f), (head.X - r * 0.60f, head.Y - r * 1.00f),
+            (head.X + r * 0.40f, head.Y - r * 1.00f), (head.X + r * 0.92f, head.Y - r * 0.45f),
+            (head.X + r * 0.40f, head.Y - r * 0.55f), (head.X + r * 0.18f, head.Y - r * 0.32f),
+            (head.X - r * 0.02f, head.Y - r * 0.58f), (head.X - r * 0.38f, head.Y - r * 0.32f),
+            (head.X - r * 0.48f, head.Y - r * 0.62f), (head.X - r * 0.88f, head.Y + r * 0.25f),
+        ], Lead, h);
+        Pencil(svg, hand, [(head.X - r * 1.00f, head.Y - r * 0.05f), (head.X - r * 1.20f, head.Y + r * 0.80f), (w * 0.47f, h * 0.58f)], Lead, h);
+        Pencil(svg, hand, [(head.X - r * 0.95f, head.Y + r * 0.35f), (head.X - r * 1.05f, head.Y + r * 1.10f)], Lead, h);
+
+        // Big eyes that look two ways at once.
+        (float X, float Y) near = (head.X - r * 0.12f, head.Y + r * 0.05f);
+        (float X, float Y) far = (head.X + r * 0.50f, head.Y + r * 0.02f);
+        Pencil(svg, hand, Round(near, r * 0.30f, r * 0.34f, 0.0, 2.0, 14), Lead, h);
+        Pencil(svg, hand, Round(far, r * 0.24f, r * 0.30f, 0.0, 2.0, 12), Lead, h);
+        svg.Append(F($"<circle cx=\"{near.X - r * 0.12f}\" cy=\"{near.Y - r * 0.14f}\" r=\"{r * 0.12f}\" fill=\"{lead}\"/>"));
+        svg.Append(F($"<circle cx=\"{far.X + r * 0.09f}\" cy=\"{far.Y + r * 0.13f}\" r=\"{r * 0.10f}\" fill=\"{lead}\"/>"));
+
+        // A wide, happy grin across the snout.
+        Pencil(svg, hand, Round((head.X + r * 0.62f, head.Y + r * 0.58f), r * 0.34f, r * 0.18f, 0.05, 0.9, 10), Lead, h);
+
+        // A small folded wing, its feathers scalloped.
+        for (int i = 0; i < 3; i++)
+        {
+            Pencil(svg, hand, Round((w * (0.34f + i * 0.05f), h * 0.58f), w * 0.03f, h * 0.04f, 0.0, 1.0, 6), Lead, h);
+        }
+
+        Pencil(svg, hand, [(w * 0.31f, h * 0.58f), (w * 0.38f, h * 0.53f), (w * 0.47f, h * 0.55f)], Lead, h);
+
+        // A long tail, flowing back in three wavy strands.
+        for (int i = 0; i < 3; i++)
+        {
+            var strand = new List<(float X, float Y)>();
+            for (int s = 0; s <= 10; s++)
+            {
+                float t = s / 10f;
+                strand.Add((
+                    w * (0.235f - 0.20f * t - 0.02f * i * t),
+                    h * (0.60f + (0.18f + 0.05f * i) * (float)Math.Pow(t, 1.4) + 0.025f * (float)Math.Sin(t * Math.PI * 2.2 + i))));
+            }
+
+            Pencil(svg, hand, strand, Lead, h);
+        }
+
+        // The muffin: a fluted cup, a domed top, and a few berries.
+        (float X, float Y) cup = (w * 0.88f, h * 0.84f);
+        float m = h * 0.07f;
+        Pencil(svg, hand, [(cup.X - m, cup.Y - m * 0.6f), (cup.X - m * 0.7f, cup.Y + m), (cup.X + m * 0.7f, cup.Y + m), (cup.X + m, cup.Y - m * 0.6f)], Lead, h);
+        Pencil(svg, hand, [(cup.X - m * 0.3f, cup.Y - m * 0.5f), (cup.X - m * 0.25f, cup.Y + m)], Lead, h);
+        Pencil(svg, hand, [(cup.X + m * 0.3f, cup.Y - m * 0.5f), (cup.X + m * 0.25f, cup.Y + m)], Lead, h);
+        Pencil(svg, hand, Round((cup.X, cup.Y - m * 0.6f), m * 1.2f, m * 0.9f, 1.0, 1.0, 12), Lead, h);
+        svg.Append(F($"<circle cx=\"{cup.X - m * 0.4f}\" cy=\"{cup.Y - m * 1.0f}\" r=\"{m * 0.16f}\" fill=\"{lead}\"/>"));
+        svg.Append(F($"<circle cx=\"{cup.X + m * 0.3f}\" cy=\"{cup.Y - m * 1.2f}\" r=\"{m * 0.16f}\" fill=\"{lead}\"/>"));
         return Close(svg);
     }
 
     /// <summary>One pencil line along <paramref name="points"/>, gone over twice by a light hand.</summary>
-    private static void Pencil(StringBuilder svg, Random hand, IReadOnlyList<(float X, float Y)> points, Ink colour)
+    private static void Pencil(StringBuilder svg, Random hand, IReadOnlyList<(float X, float Y)> points, Ink colour, float size)
     {
-        const float width = 1.7f;
+        // A pencil's line is about as thin whatever the size of the doodle.
+        float width = Math.Max(1.1f, Math.Min(1.7f, size * 0.0076f));
         float[] passes = [1f, 0.6f];
         float[] shades = [0.1f, 0.35f];
         for (int pass = 0; pass < passes.Length; pass++)

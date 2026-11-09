@@ -309,7 +309,7 @@ internal sealed class PaperList
 
     /// <summary>
     /// The makers' names pencilled small in the form's bottom-left corner, as
-    /// a doodle in the margin, with a silly sea anemone beside them. Pressed,
+    /// a doodle in the margin, with a silly sea anemone and a clumsy pony beside them. Pressed,
     /// a name opens its maker's page; pointed at, it is underlined.
     /// </summary>
     public void Credits(IReadOnlyList<(string Name, Action Open)> makers)
@@ -341,6 +341,8 @@ internal sealed class PaperList
 
         RectTransform doodle = Fixed(line, "Anemone", 64f, 56f);
         VectorView.Add(doodle, size => FormDrawing.Anemone(size.x, size.y), Color.clear);
+        RectTransform pony = Fixed(line, "Pony", 80f, 62f);
+        VectorView.Add(pony, size => FormDrawing.Pony(size.x, size.y), Color.clear);
         RectTransform spare = NewRect("Spare", line);
         spare.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
         Add(row);
