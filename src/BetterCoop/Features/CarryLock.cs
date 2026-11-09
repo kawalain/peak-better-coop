@@ -287,6 +287,24 @@ internal static class CarryLockPatches
     private static bool KeepCarryAwake(CharacterCarrying __instance) =>
         !IsLivePair(__instance.character, __instance.character.data.carriedPlayer);
 
+    /// <summary>
+    /// The game's warp turns a body's colliders back on as it ends, even a
+    /// Rider's still being carried, and a physics step later the two bodies
+    /// push each other apart. A carried Rider's colliders stay off while it
+    /// warps; dropping it still turns them on, as the carry has ended by then.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(CharacterRagdoll), nameof(CharacterRagdoll.ToggleCollision))]
+    private static bool KeepWarpedRiderClear(CharacterRagdoll __instance, bool enableCollision)
+    {
+        Character body = __instance.character;
+        return !(enableCollision
+            && body != null
+            && body.warping
+            && body.data.isCarried
+            && IsLivePair(body.data.carrier, body));
+    }
+
     private const float DropNoteSeconds = 10f;
 
     private static float nextDropNote;
