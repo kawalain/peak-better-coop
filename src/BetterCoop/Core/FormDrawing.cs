@@ -222,23 +222,71 @@ internal static class FormDrawing
     }
 
     /// <summary>
-    /// A scout's head and shoulders as a plain silhouette in their skin
-    /// colour, for when no photo of them can be taken.
+    /// A scout drawn in the game's way where no photo can be taken: the big
+    /// round head in <paramref name="skin"/> under a beanie, a neckerchief
+    /// over the jacket, thick dark outlines, on the photo studio's backdrop.
+    /// A <paramref name="mystery"/> scout, one not known yet, is all grey
+    /// with a big question mark drawn on the face instead of eyes.
     /// </summary>
-    public static string Silhouette(float width, float height, Ink skin)
+    public static string Silhouette(float width, float height, Ink skin, bool mystery = false)
     {
         var svg = Open(width, height);
-        svg.Append(F($"<rect width=\"{width}\" height=\"{height}\" fill=\"{Paper.Mix(PaperDrawing.PassportBlue, 0.18f).Hex}\"/>"));
-        float cx = width / 2f;
-        string body = skin.Hex;
         string outline = PaperDrawing.InkBlack.Hex;
-        // Shoulders, then the round head the scouts have.
-        svg.Append(F($"<path d=\"M{width * 0.08f} {height}C{width * 0.1f} {height * 0.72f} {width * 0.3f} {height * 0.66f} {cx} {height * 0.66f}C{width * 0.7f} {height * 0.66f} {width * 0.9f} {height * 0.72f} {width * 0.92f} {height}Z\" fill=\"{body}\" stroke=\"{outline}\" stroke-width=\"2\"/>"));
-        svg.Append(F($"<ellipse cx=\"{cx}\" cy=\"{height * 0.42f}\" rx=\"{width * 0.27f}\" ry=\"{height * 0.25f}\" fill=\"{body}\" stroke=\"{outline}\" stroke-width=\"2\"/>"));
-        svg.Append(F($"<ellipse cx=\"{cx - width * 0.09f}\" cy=\"{height * 0.4f}\" rx=\"{width * 0.035f}\" ry=\"{height * 0.05f}\" fill=\"{outline}\"/>"));
-        svg.Append(F($"<ellipse cx=\"{cx + width * 0.09f}\" cy=\"{height * 0.4f}\" rx=\"{width * 0.035f}\" ry=\"{height * 0.05f}\" fill=\"{outline}\"/>"));
+        float line = Math.Max(2f, width * 0.026f);
+        var grey = new Ink(0.60f, 0.62f, 0.66f);
+        Ink jacket = mystery ? grey.Mix(PaperDrawing.InkBlack, 0.1f) : new Ink(0.55f, 0.50f, 0.36f);
+        Ink scarf = mystery ? grey.Mix(new Ink(1f, 1f, 1f), 0.2f) : new Ink(0.80f, 0.24f, 0.20f);
+        Ink hat = mystery ? grey.Mix(PaperDrawing.InkBlack, 0.3f) : new Ink(0.30f, 0.40f, 0.29f);
+        Ink face = mystery ? grey.Mix(new Ink(1f, 1f, 1f), 0.25f) : skin;
+        svg.Append(F($"<rect width=\"{width}\" height=\"{height}\" fill=\"{Backdrop.Hex}\"/>"));
+
+        float cx = width / 2f;
+        float r = width * 0.33f;
+        float cy = height * 0.47f;
+
+        // Shoulders in the jacket, and the neckerchief's knot under the chin.
+        float shoulder = height * 0.80f;
+        svg.Append(F($"<path d=\"M{width * 0.04f} {height + line}C{width * 0.05f} {shoulder} {width * 0.24f} {height * 0.74f} {cx} {height * 0.74f}C{width * 0.76f} {height * 0.74f} {width * 0.95f} {shoulder} {width * 0.96f} {height + line}Z\" fill=\"{jacket.Hex}\" stroke=\"{outline}\" stroke-width=\"{line}\" stroke-linejoin=\"round\"/>"));
+        svg.Append(F($"<path d=\"M{cx - r * 0.62f} {cy + r * 0.86f}L{cx + r * 0.62f} {cy + r * 0.86f}L{cx} {height * 0.97f}Z\" fill=\"{scarf.Hex}\" stroke=\"{outline}\" stroke-width=\"{line}\" stroke-linejoin=\"round\"/>"));
+
+        // The head, with a soft highlight as the game's cel shading leaves.
+        svg.Append(F($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{r}\" fill=\"{face.Hex}\" stroke=\"{outline}\" stroke-width=\"{line}\"/>"));
+        svg.Append(F($"<ellipse cx=\"{cx - r * 0.42f}\" cy=\"{cy - r * 0.05f}\" rx=\"{r * 0.16f}\" ry=\"{r * 0.26f}\" fill=\"#ffffff\" fill-opacity=\"0.28\"/>"));
+
+        // A beanie pulled over the top of the head, with its turned-up band and bobble.
+        float band = cy - r * 0.48f;
+        svg.Append(F($"<path d=\"M{cx - r * 0.98f} {band}C{cx - r * 0.98f} {cy - r * 1.42f} {cx + r * 0.98f} {cy - r * 1.42f} {cx + r * 0.98f} {band}Z\" fill=\"{hat.Hex}\" stroke=\"{outline}\" stroke-width=\"{line}\" stroke-linejoin=\"round\"/>"));
+        svg.Append(F($"<rect x=\"{cx - r * 1.04f}\" y=\"{band - r * 0.2f}\" width=\"{r * 2.08f}\" height=\"{r * 0.3f}\" rx=\"{r * 0.14f}\" fill=\"{hat.Mix(PaperDrawing.InkBlack, 0.18f).Hex}\" stroke=\"{outline}\" stroke-width=\"{line}\"/>"));
+        svg.Append(F($"<circle cx=\"{cx}\" cy=\"{cy - r * 1.18f}\" r=\"{r * 0.17f}\" fill=\"{hat.Mix(new Ink(1f, 1f, 1f), 0.25f).Hex}\" stroke=\"{outline}\" stroke-width=\"{line}\"/>"));
+
+        if (mystery)
+        {
+            // A big question mark drawn on the face: a dark stroke under a pale one.
+            float top = cy - r * 0.34f;
+            string mark = F($"M{cx - r * 0.34f} {top}C{cx - r * 0.34f} {top - r * 0.5f} {cx + r * 0.42f} {top - r * 0.5f} {cx + r * 0.38f} {top + r * 0.02f}C{cx + r * 0.35f} {top + r * 0.32f} {cx} {top + r * 0.3f} {cx} {top + r * 0.62f}");
+            float dot = top + r * 0.98f;
+            svg.Append(F($"<path d=\"{mark}\" fill=\"none\" stroke=\"{outline}\" stroke-width=\"{r * 0.3f}\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"));
+            svg.Append(F($"<circle cx=\"{cx}\" cy=\"{dot}\" r=\"{r * 0.15f}\" fill=\"{outline}\"/>"));
+            svg.Append(F($"<path d=\"{mark}\" fill=\"none\" stroke=\"{Paper.Hex}\" stroke-width=\"{r * 0.15f}\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"));
+            svg.Append(F($"<circle cx=\"{cx}\" cy=\"{dot}\" r=\"{r * 0.075f}\" fill=\"{Paper.Hex}\"/>"));
+        }
+        else
+        {
+            // Two tall eyes with a glint each.
+            foreach (float side in new[] { -1f, 1f })
+            {
+                float ex = cx + side * r * 0.3f;
+                float ey = cy + r * 0.02f;
+                svg.Append(F($"<ellipse cx=\"{ex}\" cy=\"{ey}\" rx=\"{r * 0.11f}\" ry=\"{r * 0.19f}\" fill=\"{outline}\"/>"));
+                svg.Append(F($"<circle cx=\"{ex - r * 0.03f}\" cy=\"{ey - r * 0.08f}\" r=\"{r * 0.04f}\" fill=\"#ffffff\"/>"));
+            }
+        }
+
         return Close(svg);
     }
+
+    /// <summary>The photo studio's backdrop, behind a drawn scout as behind a photographed one.</summary>
+    public static readonly Ink Backdrop = new(0.80f, 0.86f, 0.90f);
 
     /// <summary>The doodles someone may leave by a signature.</summary>
     public enum DoodleKind

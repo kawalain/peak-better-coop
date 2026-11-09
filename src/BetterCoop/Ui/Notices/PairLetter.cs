@@ -215,7 +215,8 @@ internal sealed class PairLetter : MonoBehaviour
             }
             else
             {
-                VectorView.Add(place, size => FormDrawing.Silhouette(size.x, size.y, new Ink(grey.r, grey.g, grey.b)), grey);
+                VectorView.Add(place, size => FormDrawing.Silhouette(size.x, size.y, new Ink(grey.r, grey.g, grey.b), mystery: true), grey);
+                VectorView.Add(PhotoEdge(place), size => FormDrawing.PhotoEdge(size.x, size.y), Color.clear);
             }
 
             RectTransform caption = ScoutPhoto.Caption(theirs);
@@ -226,6 +227,15 @@ internal sealed class PairLetter : MonoBehaviour
 
         photosFade.alpha = 0f;
         VectorView.DrawAll(photos);
+    }
+
+    private static RectTransform PhotoEdge(RectTransform photo)
+    {
+        RectTransform edge = PaperList.NewRect("Edge", photo);
+        edge.anchorMin = Vector2.zero;
+        edge.anchorMax = Vector2.one;
+        edge.offsetMin = edge.offsetMax = Vector2.zero;
+        return edge;
     }
 
     private static string Role(bool? carries) => carries is bool carrying ? Strings.RoleOf(carrying) : Strings.LetterRoleUnknown;
