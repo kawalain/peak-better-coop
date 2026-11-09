@@ -31,6 +31,11 @@ internal sealed class VectorView : MonoBehaviour
 
     private string? key;
 
+    /// <summary>The textures this view counts itself a user of: its drawing's, and while boiling, its other frames'.</summary>
+    private readonly HashSet<string> held = new();
+
+    private int drawnFrame = -1;
+
     private Vector2 drawnSize;
 
     private float drawnScale;
@@ -45,8 +50,15 @@ internal sealed class VectorView : MonoBehaviour
     /// <summary>What shows until the drawing is ready, or if it cannot be made.</summary>
     public Color Fallback { get; set; } = Color.clear;
 
+    /// <summary>
+    /// Whether the drawing boils, drawn again for each <see cref="Boil.Frame"/>
+    /// as a hand-drawn line wobbles; the view keeps every frame's texture.
+    /// </summary>
+    public bool Boiling { get; set; }
+
     /// <summary>Adds a view filling <paramref name="rect"/> that shows <paramref name="drawing"/>.</summary>
-    public static VectorView Add(RectTransform rect, Func<Vector2, string> drawing, Color fallback)
+    /// <param name="boil">Whether the drawing boils; see <see cref="Boiling"/>.</param>
+    public static VectorView Add(RectTransform rect, Func<Vector2, string> drawing, Color fallback, bool boil = false)
     {
         RawImage raw = rect.gameObject.AddComponent<RawImage>();
         raw.raycastTarget = false;
@@ -54,6 +66,7 @@ internal sealed class VectorView : MonoBehaviour
         VectorView view = rect.gameObject.AddComponent<VectorView>();
         view.Drawing = drawing;
         view.Fallback = fallback;
+        view.Boiling = boil;
         return view;
     }
 
@@ -69,6 +82,12 @@ internal sealed class VectorView : MonoBehaviour
     /// <summary>Draws again, as when what the drawing shows has changed.</summary>
     public void Redraw()
     {
+        if (Boiling)
+        {
+            // The frames drawn of what it showed before will not show again.
+            ReleaseAll();
+        }
+
         stale = true;
         DrawNow();
     }
@@ -94,6 +113,12 @@ internal sealed class VectorView : MonoBehaviour
                 return;
             }
 
+            if (size != drawnSize || !Mathf.Approximately(scale, drawnScale))
+            {
+                // Frames held for the old size will not show again.
+                ReleaseAll();
+            }
+
             Show(size, scale);
             drawnSize = size;
             drawnScale = scale;
@@ -102,7 +127,7 @@ internal sealed class VectorView : MonoBehaviour
         catch (Exception exception)
         {
             failed = true;
-            Release();
+            ReleaseAll();
             if (image != null)
             {
                 image.texture = null;
@@ -113,20 +138,33 @@ internal sealed class VectorView : MonoBehaviour
         }
     }
 
-    private void LateUpdate() => DrawNow();
+    private void LateUpdate()
+    {
+        if (Boiling && Boil.Frame != drawnFrame)
+        {
+            stale = true;
+        }
 
-    private void OnDestroy() => Release();
+        DrawNow();
+    }
+
+    private void OnDestroy() => ReleaseAll();
 
     /// <summary>Shows the drawing for this size, from the shared textures or drawn anew.</summary>
     private void Show(Vector2 size, float scale)
     {
+        drawnFrame = Boil.Frame;
         string svg = Drawing(size);
         int pixelWidth = Mathf.Clamp(Mathf.CeilToInt(size.x * scale), 1, MaxSide);
         int pixelHeight = Mathf.Clamp(Mathf.CeilToInt(size.y * scale), 1, MaxSide);
         string wanted = $"{pixelWidth}x{pixelHeight}:{svg}";
         if (wanted != key)
         {
-            Release();
+            if (!Boiling)
+            {
+                ReleaseAll();
+            }
+
             if (!Textures.TryGetValue(wanted, out Shared? shared))
             {
                 shared = new Shared(NewTexture(pixelWidth, pixelHeight));
@@ -134,7 +172,11 @@ internal sealed class VectorView : MonoBehaviour
                 Paint(shared.Texture, svg, size);
             }
 
-            shared.Users++;
+            if (held.Add(wanted))
+            {
+                shared.Users++;
+            }
+
             key = wanted;
         }
 
@@ -218,26 +260,25 @@ internal sealed class VectorView : MonoBehaviour
         return texture;
     }
 
-    /// <summary>Lets go of this view's texture, freeing it once no view shows it.</summary>
-    private void Release()
+    /// <summary>Lets go of every texture this view holds, freeing each once no view shows it.</summary>
+    private void ReleaseAll()
     {
-        if (key == null)
+        foreach (string heldKey in held)
         {
-            return;
-        }
-
-        if (Textures.TryGetValue(key, out Shared? shared) && --shared.Users <= 0)
-        {
-            Textures.Remove(key);
-            if (image != null && image.texture == shared.Texture)
+            if (Textures.TryGetValue(heldKey, out Shared? shared) && --shared.Users <= 0)
             {
-                image.texture = null;
-            }
+                Textures.Remove(heldKey);
+                if (image != null && image.texture == shared.Texture)
+                {
+                    image.texture = null;
+                }
 
-            shared.Texture.Release();
-            Destroy(shared.Texture);
+                shared.Texture.Release();
+                Destroy(shared.Texture);
+            }
         }
 
+        held.Clear();
         key = null;
     }
 

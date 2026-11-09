@@ -279,7 +279,7 @@ internal sealed class PaperList
         doodle.sizeDelta = new Vector2(150f, 128f);
         doodle.localRotation = Quaternion.Euler(0f, 0f, -8f);
         string drawn = string.Empty;
-        VectorView sketch = VectorView.Add(doodle, size => FormDrawing.Doodle(size.x, size.y, drawn), Color.clear);
+        VectorView sketch = VectorView.Add(doodle, size => FormDrawing.Doodle(size.x, size.y, drawn, Boil.Frame), Color.clear, boil: true);
 
         RectTransform nameRect = NewRect("Name", blank);
         nameRect.anchorMin = Vector2.zero;
@@ -340,9 +340,9 @@ internal sealed class PaperList
         }
 
         RectTransform doodle = Fixed(line, "Anemone", 64f, 56f);
-        VectorView.Add(doodle, size => FormDrawing.Anemone(size.x, size.y), Color.clear);
+        VectorView.Add(doodle, size => FormDrawing.Anemone(size.x, size.y, Boil.Frame), Color.clear, boil: true);
         RectTransform pony = Fixed(line, "Pony", 80f, 62f);
-        VectorView.Add(pony, size => FormDrawing.Pony(size.x, size.y), Color.clear);
+        VectorView.Add(pony, size => FormDrawing.Pony(size.x, size.y, Boil.Frame), Color.clear, boil: true);
         RectTransform spare = NewRect("Spare", line);
         spare.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
         Add(row);

@@ -25,6 +25,9 @@ internal static class PaperSheet
 
     private static Material? grain;
 
+    /// <summary>How many times a second the game's window noise moves, as its shader steps it.</summary>
+    public static float WiggleTime { get; private set; } = 3f;
+
     /// <summary>
     /// Adds the sheet <paramref name="name"/> under <paramref name="parent"/>,
     /// reaching past it by the paper's margin so the paper's edge is the
@@ -105,6 +108,11 @@ internal static class PaperSheet
             hideFlags = HideFlags.HideAndDontSave,
         };
         grain.SetColor("_TexColor", GrainTint);
+        if (grain.HasProperty("_WiggleTime"))
+        {
+            WiggleTime = grain.GetFloat("_WiggleTime");
+        }
+
         Plugin.Verbose($"Paper takes its grain from the game's {source.name} material.");
         return grain;
     }
