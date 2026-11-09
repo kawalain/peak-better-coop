@@ -82,6 +82,71 @@ internal static class SharedLife
         }
     }
 
+    /// <summary>
+    /// On the Rider's client, a death of their Carrier counts only from those
+    /// the game lets kill a scout: the Carrier, the Troop Leader, this client,
+    /// or a cannibal both of them allow. Any other client could make the
+    /// Rider die while the Carrier lives, as the game checks the sender only
+    /// on the dying scout's own client.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(Character), nameof(Character.RPCA_Die))]
+    private static bool CarrierDiesOnlyByRightfulKill(Character __instance, PhotonMessageInfo info) =>
+        !IsForgedForRider(__instance, info.Sender, "death", canEat: true);
+
+    /// <summary>
+    /// A join sync of the Rider's Carrier counts only from the Carrier or the
+    /// Troop Leader, who alone send it; another client's could mark the
+    /// Carrier dead on the Rider's client, and the Rider would die to match.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(CharacterData), nameof(CharacterData.RPC_SyncOnJoin))]
+    private static bool CarrierSyncsOnlyFromRightfulSender(CharacterData __instance) =>
+        !IsForgedForRider(__instance.character, RpcSender.Current, "join sync", canEat: false);
+
+    /// <summary>
+    /// The Carrier's leave to be eaten counts only from the Carrier or the
+    /// Troop Leader; another client's could open the cannibal's way above.
+    /// </summary>
+    [HarmonyPrefix]
+    [HarmonyPatch(typeof(CharacterData), nameof(CharacterData.RPCA_SyncCanBeCannibalized))]
+    private static bool CarrierConsentsOnlyForThemselves(CharacterData __instance) =>
+        !IsForgedForRider(__instance.character, RpcSender.Current, "cannibalism consent", canEat: false);
+
+    private static bool IsForgedForRider(Character target, Photon.Realtime.Player? sender, string what, bool canEat)
+    {
+        Character rider = Character.localCharacter;
+        if (sender == null
+            || target == null
+            || rider == null
+            || target == rider
+            || PairRoster.RoleOf(rider) != PairRole.Rider
+            || !PairRoster.TryGetPartner(rider, out Character carrier)
+            || carrier != target
+            || sender.IsLocal
+            || sender.IsMasterClient
+            || sender.ActorNumber == target.photonView.Owner?.ActorNumber
+            || (canEat && CouldEat(sender, target)))
+        {
+            return false;
+        }
+
+        Plugin.Log.LogWarning($"Refused a {what} of Carrier {target.characterName} from player {sender.ActorNumber}, who may not send it.");
+        return true;
+    }
+
+    /// <summary>
+    /// The game's <c>Character.CouldBeEatenBy</c> as the Carrier's own client
+    /// answers it: the Carrier's setting allows being eaten (shared as their
+    /// raw consent) and the eater allows cannibalism. The Rider's own setting
+    /// has no say, or a Carrier eaten rightfully would leave the Rider alive.
+    /// A skeleton shares no consent, so its setting is taken to allow it.
+    /// </summary>
+    private static bool CouldEat(Photon.Realtime.Player sender, Character carrier) =>
+        (carrier.data._cannibalismPermitted || carrier.data.isSkeleton)
+        && PlayerHandler.TryGetCharacter(sender.ActorNumber, out Character eater)
+        && eater.data.cannibalismPermitted;
+
     /// <summary>The Rider never dies alone, so the Carrier never dies for the Rider.</summary>
     [HarmonyPrefix]
     [HarmonyPatch(typeof(Character), nameof(Character.DieInstantly))]
