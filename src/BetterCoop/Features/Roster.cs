@@ -153,6 +153,7 @@ internal sealed class RosterPage : PaperPage
             {
                 draft ??= new PairDraft(Basis(), room.Players);
                 draft.Follow(Basis(), room.Players);
+                StartFromLastRun(draft);
                 shown = draft;
             }
             else
@@ -160,7 +161,7 @@ internal sealed class RosterPage : PaperPage
                 shown = new PairDraft(Basis(), room.Players);
             }
 
-            board = PairRows.Add(list, room, shown, portraits, leads, Moved, StartOver, HandIn, out RectTransform heading);
+            board = PairRows.Add(list, room, shown, portraits, leads, Moved, StartOver, HandIn, out RectTransform heading, () => fromLastRun && shown.Changed);
             pairsHeading = heading;
         }
 
@@ -191,6 +192,40 @@ internal sealed class RosterPage : PaperPage
     }
 
     protected override void DropDraft() => draft?.Reset(Basis(), room.Players);
+
+    /// <summary>Whether this visit to the Airport has already offered the last Run's Pairs.</summary>
+    private bool offeredLastRun;
+
+    /// <summary>Whether the draft now holds the last Run's Pairs as they were laid out.</summary>
+    private bool fromLastRun;
+
+    /// <summary>
+    /// At the Airport with no plan yet, lays the last Run's Pairs into the
+    /// draft once, when the same scouts gather again; it stays a draft until
+    /// announced.
+    /// </summary>
+    private void StartFromLastRun(PairDraft planDraft)
+    {
+        if (room.Formed)
+        {
+            offeredLastRun = false;
+            fromLastRun = false;
+            return;
+        }
+
+        if (offeredLastRun || room.Plan.Count > 0 || planDraft.Changed)
+        {
+            return;
+        }
+
+        offeredLastRun = true;
+        IReadOnlyList<Pair> last = room.LastRunPairs;
+        if (last.Count > 0)
+        {
+            planDraft.Lay(last, room.Players);
+            fromLastRun = true;
+        }
+    }
 
     /// <summary>What the draft starts from: the Pairs on the island, the Pair Plan at the Airport.</summary>
     private IReadOnlyList<Pair> Basis() => room.Formed ? room.Pairs : room.Plan;
@@ -247,7 +282,8 @@ internal static class PairRows
         Action<int> moved,
         Action startOver,
         Action<Action> handIn,
-        out RectTransform heading)
+        out RectTransform heading,
+        Func<bool>? fromLastRun = null)
     {
         bool planning = !room.Formed;
         heading = list.Header(() => planning ? Strings.MenuPairPlan : Strings.MenuPairs);
@@ -260,6 +296,7 @@ internal static class PairRows
         {
             list.Note(() => Strings.MenuBoardHelp);
             list.Note(() => Strings.MenuDraft, visible: () => draft.Changed);
+            list.Note(() => Strings.MenuPlanFromLastRun, visible: () => fromLastRun?.Invoke() ?? false);
         }
 
         PairBoard? board = null;
@@ -520,6 +557,8 @@ internal sealed class LiveRoom : ICoopRoom
     public bool Planning => PhotonNetwork.InRoom && !GameHandler.IsOnIsland;
 
     public IReadOnlyList<Pair> Plan => PairPlans.Read();
+
+    public IReadOnlyList<Pair> LastRunPairs => PairPlans.LastRun();
 
     public int Me => Character.localCharacter is Character local
         ? PairRoster.ActorOf(local)

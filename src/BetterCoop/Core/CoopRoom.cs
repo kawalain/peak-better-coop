@@ -41,6 +41,9 @@ internal interface ICoopRoom
     /// <summary>The Pair Plan the Troop Leader announced; empty when there is none.</summary>
     IReadOnlyList<Pair> Plan { get; }
 
+    /// <summary>The Pairs the last Run ended with whose two members are both here now.</summary>
+    IReadOnlyList<Pair> LastRunPairs { get; }
+
     /// <summary>The local player.</summary>
     int Me { get; }
 

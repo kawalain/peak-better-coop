@@ -97,6 +97,10 @@ internal static class Strings
         ? "출발 전에 짝을 미리 정해 둘 수 있습니다. 섬에 도착하면 이 계획대로 짝을 편성하고, 계획에 없는 대원은 제비뽑기로 짝을 짓습니다."
         : "Set the Pairs before departure. On arrival the Pairs form as planned; anyone left out is paired by lot.";
 
+    public static string MenuPlanFromLastRun => Korean
+        ? "지난 원정을 함께한 대원들이라 그때의 짝으로 초안을 채워 두었습니다. 통보해야 계획이 됩니다."
+        : "The same scouts as last Run, so the draft starts from the Pairs that Run ended with. Announce it to make it the plan.";
+
     public static string MenuPlanNone => Korean
         ? "분대장이 아직 짝 계획을 세우지 않았습니다. 섬에 도착하면 제비뽑기로 짝을 짓습니다."
         : "The Troop Leader has not planned the Pairs yet; on arrival they are drawn by lot.";

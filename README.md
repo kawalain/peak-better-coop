@@ -51,7 +51,9 @@ Pairs out as they like by moving the photos about as a draft, then announce
 them to everyone with a postmark: the Scoutmaster's hand reaches down and
 takes the paper. A draft thrown away is crumpled up and tossed. At the
 Airport the Troop Leader plans the Pairs the same way before departure; the
-Pairs form as planned on arrival, and anyone left out is paired by lot.
+Pairs form as planned on arrival, and anyone left out is paired by lot. When
+the same scouts gather again, the plan's draft starts from the Pairs the last
+Run ended with.
 
 | Setting | Default | |
 | --- | --- | --- |

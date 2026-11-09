@@ -85,6 +85,11 @@ internal sealed class FakeRoom : ICoopRoom
 
     public IReadOnlyList<Pair> Plan => plan;
 
+    /// <summary>A room not yet formed remembers its scouts' last Run as Pairs of neighbours, turned round.</summary>
+    public IReadOnlyList<Pair> LastRunPairs => Formed
+        ? []
+        : Enumerable.Range(0, players.Count / 2).Select(i => new Pair(players[2 * i + 1], players[2 * i])).ToList();
+
     public int Me => 1;
 
     public IReadOnlyList<int> Players => players;

@@ -172,6 +172,54 @@ internal static class PairPlans
         return true;
     }
 
+    /// <summary>Where the last Run's Pairs are kept between games.</summary>
+    private static string LastRunFile => System.IO.Path.Combine(BepInEx.Paths.ConfigPath, "in.kawala.bettercoop.last-pairs.txt");
+
+    /// <summary>Keeps the Pairs a Run ended with, by user id, for the next plan to start from.</summary>
+    public static void RememberLastRun(PairingResult ended)
+    {
+        var pairs = ended.Pairs
+            .Select(p => (Carrier: KnownPlayers.UserIdOf(p.Carrier), Rider: KnownPlayers.UserIdOf(p.Rider)))
+            .Where(p => p.Carrier != null && p.Rider != null)
+            .Select(p => (p.Carrier!, p.Rider!))
+            .ToList();
+        if (pairs.Count == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            System.IO.File.WriteAllText(LastRunFile, LastRunPairs.Encode(pairs));
+            Plugin.Verbose($"Kept the {pairs.Count} Pair(s) this Run ended with.");
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PairPlans.RememberLastRun", exception);
+        }
+    }
+
+    /// <summary>The last Run's Pairs whose two members are both in the room now.</summary>
+    public static IReadOnlyList<Pair> LastRun()
+    {
+        if (!PhotonNetwork.InRoom || !System.IO.File.Exists(LastRunFile))
+        {
+            return [];
+        }
+
+        try
+        {
+            return LastRunPairs.Map(
+                LastRunPairs.Decode(System.IO.File.ReadAllText(LastRunFile)),
+                id => PhotonNetwork.PlayerList.FirstOrDefault(p => !p.IsInactive && p.UserId == id)?.ActorNumber);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PairPlans.LastRun", exception);
+            return [];
+        }
+    }
+
     /// <summary>A plan drawn at random from the players who run this version, as the Pair Formation would form them.</summary>
     public static IReadOnlyList<Pair> Draw() => PairingRules.Form(
         PhotonNetwork.PlayerList
@@ -303,6 +351,12 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         }
 
         PairingResult? previous = PairRoster.Reload();
+        if (previous is { Pairs.Count: > 0 } && PairRoster.Read() == null)
+        {
+            // The Pairs are cleared as the party is back at the Airport: the Run ended with these.
+            PairPlans.RememberLastRun(previous);
+        }
+
         Announce(previous, PairRoster.Read());
         Api.RaisePairsChanged();
     }
