@@ -67,7 +67,7 @@ internal static partial class ControlCommands
         ["language"] = new("{name?}: shows the game in that language (English, Korean, ...) until it closes, as the settings would but saving nothing; without a name, answers with the current one.", Language),
         ["window"] = new("{width, height}: sizes this copy's window, for seeing the paper at another shape.", Window),
         ["sounds"] = new("{contains?, play?}: the game's loaded audio clips whose name contains 'contains', with their length and the sound effects that use them; play {clip name} plays one flat, as a menu sound.", Sounds),
-        ["drill"] = new("{what, ...}: forge {key, actor?, value?} writes a made-up value to a mod key of the room, or of player 'actor', as a player who may not write it would (Pairs, without a value, swaps every Pair's roles), and the other copies should drop it; letter {case} plays the Zoo's Pair letter case (0 to 5); end {ending: summit|lost}, in a Twin only, ends the real Run for the whole room.", Drill),
+        ["drill"] = new("{what, ...}: forge {key, actor?, value?} writes a made-up value to a mod key of the room, or of player 'actor', as a player who may not write it would (Pairs, without a value, swaps every Pair's roles), and the other copies should drop it; letter {case} plays the Zoo's Pair letter case (0 to 5); end {ending: summit|lost}, in a Twin only, ends the real Run for the whole room; flood {kind: rider|revive|wheel|sound|recovery|swap|pairs, count?} sends that many of the mod's own messages at once, as a misbehaving modded client would; leave {atOperation?, delay?} leaves the room now, or that long after the operation counting down runs.", Drill),
     };
 
     private static JToken Commands() =>
@@ -485,7 +485,7 @@ internal static partial class ControlCommands
 
     private static JToken Drill(JObject args)
     {
-        string what = (string?)args["what"] ?? throw new ArgumentException("what: forge, letter, end");
+        string what = (string?)args["what"] ?? throw new ArgumentException("what: forge, letter, end, flood, leave");
         switch (what)
         {
             case "forge":
@@ -501,8 +501,12 @@ internal static partial class ControlCommands
                 return ZooLetter.Scenes[scene].Label();
             case "end":
                 return EndRun((string?)args["ending"] ?? "summit");
+            case "flood":
+                return Flood(args);
+            case "leave":
+                return Leave(args);
             default:
-                throw new ArgumentException($"no drill '{what}'; drills: forge, letter, end");
+                throw new ArgumentException($"no drill '{what}'; drills: forge, letter, end, flood, leave");
         }
     }
 
