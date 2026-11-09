@@ -26,19 +26,7 @@ internal static class ScoutPhoto
     public static void Add(RectTransform parent, TMP_Text template, IPortraits portraits, int actor, string name, string? role)
     {
         RectTransform photo = PhotoArea(parent);
-        Texture? taken = portraits.Photo(actor);
-        if (taken != null)
-        {
-            RawImage image = photo.gameObject.AddComponent<RawImage>();
-            image.texture = taken;
-            image.raycastTarget = false;
-        }
-        else
-        {
-            Color skin = portraits.Skin(actor);
-            var ink = new Ink(skin.r, skin.g, skin.b);
-            VectorView.Add(photo, s => FormDrawing.Silhouette(s.x, s.y, ink), skin);
-        }
+        PhotoPrint.Add(photo, portraits, actor);
 
         RectTransform edge = PaperList.NewRect("Edge", photo);
         edge.anchorMin = Vector2.zero;
@@ -72,6 +60,17 @@ internal static class ScoutPhoto
         LayoutElement size = text.gameObject.AddComponent<LayoutElement>();
         size.minHeight = size.preferredHeight = height;
         size.layoutPriority = 2;
+    }
+
+    /// <summary>A whole-area layer of a photo, under its edge.</summary>
+    internal static RectTransform Layer(string name, RectTransform photo)
+    {
+        RectTransform layer = PaperList.NewRect(name, photo);
+        layer.anchorMin = Vector2.zero;
+        layer.anchorMax = Vector2.one;
+        layer.offsetMin = layer.offsetMax = Vector2.zero;
+        layer.SetAsFirstSibling();
+        return layer;
     }
 
     public static RectTransform PhotoArea(RectTransform parent)

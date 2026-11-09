@@ -49,6 +49,12 @@ internal static class PhotoStudio
     /// <summary>The most photos kept at once: a whole room and the Zoo's scouts, with room to spare.</summary>
     private const int MostPhotos = 48;
 
+    /// <summary>Photos let go, kept a little while so a print still showing one can change to the new one first.</summary>
+    private static readonly List<(RenderTexture Photo, float At)> Retired = new();
+
+    /// <summary>How long a photo let go is kept: longer than a print takes to look for a new one.</summary>
+    private const float RetireSeconds = 3f;
+
     private static PlayerCustomizationDummy? model;
 
     /// <summary>Where the camera stands from the model, in the model's own frame, and which way it looks.</summary>
@@ -126,6 +132,21 @@ internal static class PhotoStudio
         if (Photos.TryGetValue(look, out RenderTexture? photo))
         {
             Photos.Remove(look);
+            if (photo != null)
+            {
+                Retired.Add((photo, Time.unscaledTime));
+            }
+        }
+    }
+
+    /// <summary>Destroys the photos let go a while ago, which no print shows any more.</summary>
+    public static void Sweep()
+    {
+        float now = Time.unscaledTime;
+        while (Retired.Count > 0 && now - Retired[0].At >= RetireSeconds)
+        {
+            RenderTexture photo = Retired[0].Photo;
+            Retired.RemoveAt(0);
             if (photo != null)
             {
                 photo.Release();
@@ -265,10 +286,17 @@ internal sealed class LivePortraits : IPortraits
 
     private static Texture? Take(int actor)
     {
-        if (PhotonNetwork.CurrentRoom?.GetPlayer(actor) is not Photon.Realtime.Player player
-            || Look(actor) is not string look)
+        if (PhotonNetwork.CurrentRoom?.GetPlayer(actor) is not Photon.Realtime.Player player)
         {
             return null;
+        }
+
+        if (Look(actor) is not string look)
+        {
+            // The game forgets every look as a scene loads, until they are sent again: the last photo stands meanwhile.
+            return Taken.TryGetValue(actor, out (string Look, float At) last) && PhotoStudio.Has(last.Look)
+                ? PhotoStudio.Take(last.Look, _ => { })
+                : null;
         }
 
         float now = Time.unscaledTime;
@@ -319,11 +347,20 @@ internal sealed class LivePortraits : IPortraits
             && d.currentSash >= 0;
     }
 
+    /// <summary>
+    /// The look the game has received for a player, or null before it has.
+    /// The game's own lookup makes a default look for a player it has heard
+    /// nothing of yet, which would be photographed and then let go as soon as
+    /// the real look arrives; and it would keep that default for the game too.
+    /// </summary>
     private static CharacterCustomizationData? Data(int actor)
     {
         try
         {
-            return GameHandler.GetService<PersistentPlayerDataService>()?.GetPlayerData(actor)?.customizationData;
+            PersistentPlayerDataService? service = GameHandler.GetService<PersistentPlayerDataService>();
+            return service != null && service.PersistentPlayerDatas.TryGetValue(actor, out PersistentPlayerData? data)
+                ? data?.customizationData
+                : null;
         }
         catch (Exception exception)
         {
@@ -357,6 +394,7 @@ internal sealed class PhotoDarkroom : MonoBehaviour
         next = Time.unscaledTime + Pause;
         try
         {
+            PhotoStudio.Sweep();
             if (!PhotoStudio.Working)
             {
                 return;
