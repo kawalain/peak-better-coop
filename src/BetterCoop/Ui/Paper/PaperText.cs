@@ -60,5 +60,5 @@ internal static class PaperText
         }
     }
 
-    private static Color ToColor(Core.Ink ink) => new(ink.R, ink.G, ink.B, ink.A);
+    internal static Color ToColor(Core.Ink ink) => new(ink.R, ink.G, ink.B, ink.A);
 }

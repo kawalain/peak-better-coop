@@ -193,6 +193,13 @@ internal sealed class ZooPage : PaperPage
             "사진: 앨범 귀퉁이에 끼운 것(짝 편성표), 클립으로 끼운 것(짝 편지), 꺼내 가 귀퉁이만 남은 자리.",
             "Prints: held in album corners (the Pair page), clipped on (a Pair letter), and taken out, leaving the corners."));
         Prints(list);
+        list.Stamp(
+            () => T("사진 현상", "Develop the prints"),
+            () => T("현상", "Develop"),
+            PhotoPrint.DevelopAgain,
+            about: () => T(
+                "처음 인화되는 사진처럼 위의 사진들이 흰 인화지에서 어두운 곳부터 따뜻한 색으로 떠오른 뒤 제 색으로 굳습니다.",
+                "The prints above come up again as a first print does: from white paper, the darks first, warm, then fixed in their own colours."));
         list.Signature(() => T("서명", "Signed"), () => "Alder");
         Makers.Add(list);
 
