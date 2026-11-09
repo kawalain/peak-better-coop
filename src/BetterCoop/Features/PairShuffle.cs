@@ -73,7 +73,7 @@ internal static class PairShuffle
     /// <summary>The room's operation, decoded once for each value the room holds: it is read several times a frame.</summary>
     private static Operation? RoomOperation()
     {
-        object? value = PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Operation, out object found) ? found : null;
+        object? value = RoomProtocol.Get(RoomKeys.Operation);
         if (!ReferenceEquals(value, decodedOperationFrom))
         {
             decodedOperationFrom = value;
@@ -318,7 +318,7 @@ internal static class PairShuffle
         foreach (PhotonPlayer player in PhotonNetwork.PlayerList)
         {
             if (player.IsInactive
-                || ModPresence.VersionOf(player) != MyPluginInfo.PLUGIN_VERSION
+                || !RoomProtocol.Speaks(player)
                 || current.Pairs.Any(p => p.Contains(player.ActorNumber))
                 || CharacterOf(player.ActorNumber) is not Character character
                 || !Arrivals.Settled(player.ActorNumber, character.GetInstanceID(), Time.unscaledTime))
@@ -396,7 +396,7 @@ internal static class PairShuffle
         var kept = before.Pairs.Where(p => !IsAlive(p.Carrier) || !IsAlive(p.Rider)).ToList();
         var candidates = PhotonNetwork.PlayerList
             .Where(p => !p.IsInactive
-                && ModPresence.VersionOf(p) == MyPluginInfo.PLUGIN_VERSION
+                && RoomProtocol.Speaks(p)
                 && IsAlive(p.ActorNumber)
                 && !kept.Any(k => k.Contains(p.ActorNumber)))
             .Select(p => new PairCandidate(p.ActorNumber, ModPresence.PairingRoleOf(p)))
@@ -471,7 +471,7 @@ internal static class PairShuffle
         plan = null;
         object? stored = op.Id == Arrangement.IdOf(publishedAssignment)
             ? publishedAssignment
-            : PhotonNetwork.CurrentRoom.CustomProperties[RoomKeys.Assignment];
+            : RoomProtocol.Get(RoomKeys.Assignment);
         if (Arrangement.Decode(stored, op.Id) is not IReadOnlyList<Pair> wanted
             || Arranged(before, wanted) is not PairingResult after)
         {
@@ -497,7 +497,7 @@ internal static class PairShuffle
     private static bool IsEligible(int actor) =>
         PhotonNetwork.CurrentRoom?.GetPlayer(actor) is PhotonPlayer player
         && !player.IsInactive
-        && ModPresence.VersionOf(player) == MyPluginInfo.PLUGIN_VERSION
+        && RoomProtocol.Speaks(player)
         && CharacterOf(actor) != null;
 
     private static PairingResult? Swap(PairingResult before, Operation op)
@@ -716,7 +716,7 @@ internal static class PairShuffle
     /// <summary>The room's latest handover, decoded once for each value the room holds: it is looked at every frame.</summary>
     private static HandoverPlan? ReadHandover()
     {
-        object? value = PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Handover, out object found) ? found : null;
+        object? value = RoomProtocol.Get(RoomKeys.Handover);
         if (!ReferenceEquals(value, decodedHandoverFrom))
         {
             decodedHandoverFrom = value;
@@ -737,7 +737,7 @@ internal static class PairShuffle
     /// </summary>
     private static double? ReadClock()
     {
-        double? room = PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.ShuffleClock, out object value)
+        double? room = RoomProtocol.TryGet(RoomKeys.ShuffleClock, out object value)
             && value is double clock
             && ServerClock.IsTime(clock)
             && ServerClock.Since(PhotonNetwork.Time, clock) >= -ServerClock.Skew

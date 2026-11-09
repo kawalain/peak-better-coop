@@ -9,8 +9,10 @@ using PhotonPlayer = Photon.Realtime.Player;
 namespace BetterCoop.Features;
 
 /// <summary>
-/// Keeps the party at the Airport until it can form Pairs: an even player
-/// count (unless odd counts are allowed) and the same mod version everywhere.
+/// Keeps the party at the Airport until it can form Pairs: an even count of
+/// players who can pair, unless odd counts are allowed. Unmodded Players
+/// depart with the party (ADR 0009), and a client resting in the room leaves
+/// the decision to the Troop Leader.
 /// </summary>
 [HarmonyPatch]
 [HarmonyWrapSafe]
@@ -23,39 +25,35 @@ internal static class PartyGate
         {
             foreach (PhotonPlayer player in PhotonNetwork.PlayerList)
             {
-                members.Add(new PartyMember(KnownPlayers.NameOf(player, player.ActorNumber), ModPresence.VersionOf(player)));
+                members.Add(new PartyMember(KnownPlayers.NameOf(player, player.ActorNumber), player.IsLocal || RoomProtocol.Speaks(player)));
             }
         }
 
-        return PartyGateRules.Evaluate(
-            members,
-            MyPluginInfo.PLUGIN_VERSION,
-            RunRules.AllowOddPlayerCount || DevHooks.SoloPair);
+        return PartyGateRules.Evaluate(members, RunRules.AllowOddPlayerCount || DevHooks.SoloPair);
     }
 
     private static bool AllowDeparture(string source)
     {
+        if (RoomProtocol.Resting)
+        {
+            return true;
+        }
+
         PartyGateVerdict verdict = Evaluate();
+        if (verdict.Unmodded.Count > 0)
+        {
+            Plugin.Log.LogInfo($"Departing with {verdict.Unmodded.Count} Unmodded Player(s): {string.Join(", ", verdict.Unmodded)}.");
+        }
+
         if (verdict.CanDepart)
         {
             return true;
         }
 
-        Plugin.Log.LogInfo($"Departure blocked at {source} with {verdict.PlayerCount} players.");
-
+        Plugin.Log.LogInfo($"Departure blocked at {source} with {verdict.PairableCount} players who can pair.");
         if (verdict.OddCountBlocked)
         {
-            CoopNotice.Warning(Strings.OddPlayerCount(verdict.PlayerCount));
-        }
-
-        foreach (string player in verdict.PlayersWithoutMod)
-        {
-            CoopNotice.Warning(Strings.MissingMod(player));
-        }
-
-        foreach (PartyMember member in verdict.PlayersWithOtherVersion)
-        {
-            CoopNotice.Warning(Strings.OtherVersion(member.Name, member.ModVersion!, MyPluginInfo.PLUGIN_VERSION));
+            CoopNotice.Warning(Strings.OddPlayerCount(verdict.PairableCount, verdict.Unmodded.Count));
         }
 
         return false;

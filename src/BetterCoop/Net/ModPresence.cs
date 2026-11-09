@@ -7,8 +7,8 @@ using PhotonPlayer = Photon.Realtime.Player;
 namespace BetterCoop.Net;
 
 /// <summary>
-/// Publishes the local mod version and Role Preference as player custom
-/// properties, so the host can check the party and form Pairs.
+/// Publishes the local mod version, protocol, and Role Preference as player
+/// custom properties, so the Troop Leader can tell who it pairs (ADR 0009).
 /// </summary>
 internal sealed class ModPresence : MonoBehaviourPunCallbacks
 {
@@ -61,6 +61,7 @@ internal sealed class ModPresence : MonoBehaviourPunCallbacks
         var properties = new PhotonHashtable
         {
             [RoomKeys.Version] = MyPluginInfo.PLUGIN_VERSION,
+            [RoomKeys.Protocol] = RoomProtocol.Current,
             [RoomKeys.Role] = (byte)CoopConfig.RolePreference.Value,
         };
         PhotonNetwork.LocalPlayer.SetCustomProperties(properties);

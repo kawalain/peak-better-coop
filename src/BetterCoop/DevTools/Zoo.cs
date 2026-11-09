@@ -233,7 +233,7 @@ internal sealed class ZooPage : PaperPage
         list.Stamp(
             () => T("주의 통지", "Caution"),
             () => T("재생", "Play"),
-            () => CoopNotice.Warning(Strings.MissingMod("Cedar")));
+            () => CoopNotice.Warning(Strings.UnmoddedPlayer("Cedar", null, null)));
         list.Choice(
             () => T("짝 편지의 경우", "Pair letter case"),
             () => letterScene,

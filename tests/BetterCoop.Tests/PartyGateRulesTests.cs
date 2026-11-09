@@ -5,9 +5,9 @@ namespace BetterCoop.Tests;
 
 public class PartyGateRulesTests
 {
-    private const string Version = "0.1.0";
+    private static PartyMember Modded(string name) => new(name, canPair: true);
 
-    private static PartyMember Modded(string name) => new(name, Version);
+    private static PartyMember Unmodded(string name) => new(name, canPair: false);
 
     [Theory]
     [InlineData(2)]
@@ -17,7 +17,7 @@ public class PartyGateRulesTests
     {
         var members = Enumerable.Range(0, count).Select(i => Modded($"P{i}")).ToList();
 
-        PartyGateVerdict verdict = PartyGateRules.Evaluate(members, Version, allowOddPlayerCount: false);
+        PartyGateVerdict verdict = PartyGateRules.Evaluate(members, allowOddPlayerCount: false);
 
         Assert.True(verdict.CanDepart);
     }
@@ -30,39 +30,40 @@ public class PartyGateRulesTests
     {
         var members = Enumerable.Range(0, count).Select(i => Modded($"P{i}")).ToList();
 
-        Assert.False(PartyGateRules.Evaluate(members, Version, allowOddPlayerCount: false).CanDepart);
-        Assert.True(PartyGateRules.Evaluate(members, Version, allowOddPlayerCount: true).CanDepart);
+        Assert.False(PartyGateRules.Evaluate(members, allowOddPlayerCount: false).CanDepart);
+        Assert.True(PartyGateRules.Evaluate(members, allowOddPlayerCount: true).CanDepart);
     }
 
     [Fact]
     public void Empty_room_never_departs()
     {
-        PartyGateVerdict verdict = PartyGateRules.Evaluate([], Version, allowOddPlayerCount: true);
+        PartyGateVerdict verdict = PartyGateRules.Evaluate([], allowOddPlayerCount: true);
 
         Assert.False(verdict.CanDepart);
     }
 
     [Fact]
-    public void Players_without_the_mod_are_named()
+    public void Unmodded_players_depart_with_the_party_and_are_named()
     {
-        var members = new[] { Modded("Host"), new PartyMember("Guest", null) };
+        var members = new[] { Modded("Host"), Modded("Guest"), Unmodded("Plain") };
 
-        PartyGateVerdict verdict = PartyGateRules.Evaluate(members, Version, allowOddPlayerCount: false);
+        PartyGateVerdict verdict = PartyGateRules.Evaluate(members, allowOddPlayerCount: false);
 
-        Assert.False(verdict.CanDepart);
-        Assert.Equal(["Guest"], verdict.PlayersWithoutMod);
+        Assert.True(verdict.CanDepart);
+        Assert.Equal(2, verdict.PairableCount);
+        Assert.Equal(["Plain"], verdict.Unmodded);
     }
 
     [Fact]
-    public void Players_with_another_version_are_named_with_their_version()
+    public void Only_players_who_can_pair_count_towards_an_even_number()
     {
-        var members = new[] { Modded("Host"), new PartyMember("Guest", "0.0.9") };
+        var members = new[] { Modded("Host"), Modded("A"), Modded("B"), Unmodded("Plain") };
 
-        PartyGateVerdict verdict = PartyGateRules.Evaluate(members, Version, allowOddPlayerCount: false);
+        PartyGateVerdict verdict = PartyGateRules.Evaluate(members, allowOddPlayerCount: false);
 
-        Assert.False(verdict.CanDepart);
-        PartyMember mismatch = Assert.Single(verdict.PlayersWithOtherVersion);
-        Assert.Equal("Guest", mismatch.Name);
-        Assert.Equal("0.0.9", mismatch.ModVersion);
+        Assert.True(verdict.OddCountBlocked);
+        Assert.Equal(3, verdict.PairableCount);
+        Assert.Equal(["Plain"], verdict.Unmodded);
+        Assert.True(PartyGateRules.Evaluate(members, allowOddPlayerCount: true).CanDepart);
     }
 }

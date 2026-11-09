@@ -148,6 +148,12 @@ until a Late Pairing or a Pair Shuffle gives them a partner. A player joining
 during a Run starts as one.
 _Avoid_: solo player, odd player
 
+**Unmodded Player** (모드 없는 대원):
+A player in the room whose game does not run the mod, or runs a version that
+cannot work with the Troop Leader's. They climb as Unpaired Players, are told
+which version the Troop Leader has, and do not hold the party at the Airport.
+_Avoid_: vanilla player, outdated player, 바닐라
+
 ### Controls
 
 **Roster** (편성표):

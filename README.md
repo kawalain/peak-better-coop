@@ -42,9 +42,11 @@ and come back together.
 ## Installing
 
 Install with a mod manager (Gale, r2modman, or Thunderstore Mod Manager).
-Everyone in the room needs the same version; the Airport kiosk names anyone
-who does not have it. The party also needs an even number of players unless
-the Troop Leader (host) allows an odd one.
+The Troop Leader (host) needs the mod. Players with the Troop Leader's version
+are paired; anyone without the mod, or with a version that does not work with
+the Troop Leader's, climbs along without a Pair, and everyone is told who. The
+players who can pair need to be an even number unless the Troop Leader allows
+an odd one.
 
 ## Settings
 

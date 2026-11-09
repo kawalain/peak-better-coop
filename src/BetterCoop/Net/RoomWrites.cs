@@ -20,6 +20,7 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
     /// <summary>The room keys only the Troop Leader writes.</summary>
     private static readonly string[] Kept =
     [
+        RoomKeys.Protocol,
         RoomKeys.Rules,
         RoomKeys.Pairs,
         RoomKeys.Plan,
@@ -120,11 +121,34 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
         }
     }
 
-    /// <summary>A new Troop Leader can know no better than the room: what is there becomes its own.</summary>
+    /// <summary>
+    /// A new Troop Leader can know no better than the room: what is there
+    /// becomes its own, when it is in this client's protocol. A room in
+    /// another protocol (ADR 0009), or one a mod without a protocol wrote, is
+    /// stamped with this one and its values cleared, keeping only this
+    /// Troop Leader's Run Rules.
+    /// </summary>
     private static void TrustIfLeading()
     {
         if (!PhotonNetwork.InRoom || !PhotonNetwork.IsMasterClient)
         {
+            return;
+        }
+
+        if (!RoomProtocol.Readable)
+        {
+            var stamp = new PhotonHashtable { [RoomKeys.Protocol] = RoomProtocol.Current };
+            foreach (string key in Kept)
+            {
+                if (key != RoomKeys.Protocol && PhotonNetwork.CurrentRoom.CustomProperties.ContainsKey(key))
+                {
+                    stamp[key] = null;
+                }
+            }
+
+            stamp[RoomKeys.Rules] = RunRules.Local;
+            Plugin.Verbose($"Stamped the room with protocol {RoomProtocol.Current} (was {RoomProtocol.OfRoom()?.ToString() ?? "none"}) and cleared its other values.");
+            Set(stamp);
             return;
         }
 

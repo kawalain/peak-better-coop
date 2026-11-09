@@ -77,6 +77,7 @@ public sealed class Plugin : BaseUnityPlugin
         runtime.AddComponent<RiderPreviewsKeeper>();
         runtime.AddComponent<SharedViewSoundsKeeper>();
         runtime.AddComponent<PairShuffleLink>();
+        runtime.AddComponent<UnmoddedPlayers>();
         runtime.AddComponent<Ui.Paper.PhotoDarkroom>();
         runtime.AddComponent<Ui.Notices.NoticeBoard>();
         DevHooks.Started(this, runtime);

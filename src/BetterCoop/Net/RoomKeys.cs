@@ -6,6 +6,9 @@ internal static class RoomKeys
     /// <summary>Player property: the mod version the player runs.</summary>
     public const string Version = "BetterCoop.Version";
 
+    /// <summary>Player property: the protocol the player's mod speaks. Room property: the Troop Leader's (ADR 0009).</summary>
+    public const string Protocol = "BetterCoop.Protocol";
+
     /// <summary>Player property: the player's <see cref="Core.RolePreference"/>.</summary>
     public const string Role = "BetterCoop.Role";
 

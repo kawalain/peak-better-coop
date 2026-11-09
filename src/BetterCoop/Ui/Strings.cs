@@ -603,15 +603,25 @@ internal static class Strings
         ? "코옵: 분대장이 모든 짝을 다시 업히고 업힌 사람을 깨웠습니다."
         : "Coop: the Troop Leader re-carried every Pair and woke every Rider.";
 
-    public static string OddPlayerCount(int count) => Korean
-        ? $"코옵: 출발하려면 인원이 짝수여야 합니다. (현재 {count}명)"
-        : $"Coop: an even number of players is needed to depart. ({count} in the room)";
+    public static string OddPlayerCount(int pairable, int unmodded) => Korean
+        ? $"코옵: 출발하려면 짝을 지을 인원이 짝수여야 합니다. (현재 {pairable}명{(unmodded > 0 ? $", 모드 없는 대원 {unmodded}명 제외" : string.Empty)})"
+        : $"Coop: an even number of players who can pair is needed to depart. ({pairable}{(unmodded > 0 ? $", not counting {unmodded} Unmodded" : string.Empty)})";
 
-    public static string MissingMod(string player) => Korean
-        ? $"코옵: {player} 님에게 모드가 없습니다."
-        : $"Coop: {player} does not have the mod.";
+    /// <summary>An Unmodded Player in the room, told to everyone who plays with the mod.</summary>
+    public static string UnmoddedPlayer(string player, string? theirs, string? leaders) => theirs == null
+        ? Korean
+            ? $"코옵: {player} 님에게는 모드가 없어 짝 없이 함께 오릅니다."
+            : $"Coop: {player} does not have BetterCoop and climbs without a Pair."
+        : Korean
+            ? $"코옵: {player} 님의 모드 {theirs}는 분대장의 {leaders ?? "?"}와 맞지 않아 짝 없이 함께 오릅니다."
+            : $"Coop: {player}'s BetterCoop {theirs} does not work with the Troop Leader's {leaders ?? "?"}, so they climb without a Pair.";
 
-    public static string OtherVersion(string player, string theirs, string required) => Korean
-        ? $"코옵: {player} 님의 모드 버전이 다릅니다. ({theirs}, 필요한 버전 {required})"
-        : $"Coop: {player} has mod version {theirs}. (needed: {required})";
+    /// <summary>This player rests in a room whose Troop Leader has another version of the mod, or none.</summary>
+    public static string Resting(string leader, string? leaders, string mine) => leaders == null
+        ? Korean
+            ? $"코옵: 분대장 {leader} 님에게 모드가 없어 이 방에서는 모드를 쉽니다. 짝 없이 함께 오릅니다."
+            : $"Coop: the Troop Leader {leader} does not have BetterCoop. The mod rests in this room; you climb without a Pair."
+        : Korean
+            ? $"코옵: 분대장 {leader} 님의 모드는 {leaders}, 내 모드는 {mine}입니다. 이 방에서는 모드를 쉬고 짝 없이 함께 오릅니다. 모드 매니저에서 같은 버전으로 맞추면 짝이 됩니다."
+            : $"Coop: the Troop Leader {leader} runs BetterCoop {leaders}, you run {mine}. The mod rests in this room and you climb without a Pair; match their version in your mod manager to pair.";
 }

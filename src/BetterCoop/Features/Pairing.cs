@@ -83,8 +83,7 @@ internal static class PairRoster
 
     public static PairingResult? Read()
     {
-        if (!PhotonNetwork.InRoom
-            || !PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Pairs, out object value)
+        if (!RoomProtocol.TryGet(RoomKeys.Pairs, out object value)
             || value is not object[] { Length: 3 } parts
             || parts[0] is not int[] flat
             || parts[1] is not int[] unpaired
@@ -142,8 +141,7 @@ internal static class PairPlans
 {
     public static IReadOnlyList<Pair> Read()
     {
-        if (!PhotonNetwork.InRoom
-            || !PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Plan, out object value)
+        if (!RoomProtocol.TryGet(RoomKeys.Plan, out object value)
             || value is not int[] flat
             || flat.Length > 2 * WireLimits.MaxScouts)
         {
@@ -238,7 +236,7 @@ internal static class PairPlans
     /// <summary>A plan drawn at random from the players who run this version, as the Pair Formation would form them.</summary>
     public static IReadOnlyList<Pair> Draw() => PairingRules.Form(
         PhotonNetwork.PlayerList
-            .Where(p => !p.IsInactive && ModPresence.VersionOf(p) == MyPluginInfo.PLUGIN_VERSION)
+            .Where(p => !p.IsInactive && RoomProtocol.Speaks(p))
             .Select(p => new PairCandidate(p.ActorNumber, ModPresence.PairingRoleOf(p)))
             .ToList(),
         new System.Random()).Pairs;
@@ -254,10 +252,7 @@ internal static class FormerPairs
     private static PartedPairs? hostCopy;
 
     /// <summary>The Troop Leader's copy, loaded from the room the first time.</summary>
-    public static PartedPairs HostCopy() => hostCopy ??= PartedPairs.Decode(
-        PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Parted, out object value)
-            ? value
-            : null);
+    public static PartedPairs HostCopy() => hostCopy ??= PartedPairs.Decode(RoomProtocol.Get(RoomKeys.Parted));
 
     /// <summary>Drops the copy; a client that becomes Troop Leader later reloads it from the room.</summary>
     public static void Forget() => hostCopy = null;
@@ -351,6 +346,19 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
 
     private static void RoomPropertiesChanged(PhotonHashtable changed)
     {
+        if (changed.ContainsKey(RoomKeys.Protocol))
+        {
+            // The room took another protocol (ADR 0009): what this client read of it no longer holds.
+            PairRoster.Reload();
+            Api.RaisePairsChanged();
+            return;
+        }
+
+        if (!RoomProtocol.Readable)
+        {
+            return;
+        }
+
         if (changed.ContainsKey(RoomKeys.Plan)
             && changed[RoomKeys.Plan] != null
             && !GameHandler.IsOnIsland
@@ -519,7 +527,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
     private static void FormPairs(PhotonPlayer[] players, List<PhotonPlayer> spawned)
     {
         var candidates = spawned
-            .Where(p => ModPresence.VersionOf(p) == MyPluginInfo.PLUGIN_VERSION)
+            .Where(p => RoomProtocol.Speaks(p))
             .Select(p => new PairCandidate(p.ActorNumber, ModPresence.PairingRoleOf(p)))
             .ToList();
         // The Troop Leader's Pair Plan, set at the Airport, comes first.

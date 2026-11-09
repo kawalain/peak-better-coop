@@ -1,76 +1,55 @@
 using System.Collections.Generic;
+using System.Linq;
 
 namespace BetterCoop.Core;
 
 /// <summary>A player in the room as seen by the party gate.</summary>
 internal sealed class PartyMember
 {
-    public PartyMember(string name, string? modVersion)
+    public PartyMember(string name, bool canPair)
     {
         Name = name;
-        ModVersion = modVersion;
+        CanPair = canPair;
     }
 
     public string Name { get; }
 
-    /// <summary>The mod version the player published, or null without the mod.</summary>
-    public string? ModVersion { get; }
+    /// <summary>Whether the player's mod works with the Troop Leader's; false for an Unmodded Player.</summary>
+    public bool CanPair { get; }
 }
 
 /// <summary>Why a Run may or may not depart.</summary>
 internal sealed class PartyGateVerdict
 {
-    public PartyGateVerdict(
-        int playerCount,
-        bool oddCountBlocked,
-        IReadOnlyList<string> playersWithoutMod,
-        IReadOnlyList<PartyMember> playersWithOtherVersion)
+    public PartyGateVerdict(int pairableCount, bool oddCountBlocked, IReadOnlyList<string> unmodded)
     {
-        PlayerCount = playerCount;
+        PairableCount = pairableCount;
         OddCountBlocked = oddCountBlocked;
-        PlayersWithoutMod = playersWithoutMod;
-        PlayersWithOtherVersion = playersWithOtherVersion;
+        Unmodded = unmodded;
     }
 
-    public int PlayerCount { get; }
+    /// <summary>The players who can be paired, the Troop Leader among them.</summary>
+    public int PairableCount { get; }
 
     public bool OddCountBlocked { get; }
 
-    public IReadOnlyList<string> PlayersWithoutMod { get; }
+    /// <summary>The Unmodded Players, who depart with the party and climb unpaired.</summary>
+    public IReadOnlyList<string> Unmodded { get; }
 
-    public IReadOnlyList<PartyMember> PlayersWithOtherVersion { get; }
-
-    public bool CanDepart =>
-        PlayerCount > 0
-        && !OddCountBlocked
-        && PlayersWithoutMod.Count == 0
-        && PlayersWithOtherVersion.Count == 0;
+    public bool CanDepart => PairableCount > 0 && !OddCountBlocked;
 }
 
-/// <summary>Decides whether the party may leave the Airport on a Run.</summary>
+/// <summary>
+/// Decides whether the party may leave the Airport on a Run. Unmodded Players
+/// never hold it back (ADR 0009); only those who can be paired count towards
+/// an even number.
+/// </summary>
 internal static class PartyGateRules
 {
-    public static PartyGateVerdict Evaluate(
-        IReadOnlyList<PartyMember> members,
-        string requiredVersion,
-        bool allowOddPlayerCount)
+    public static PartyGateVerdict Evaluate(IReadOnlyList<PartyMember> members, bool allowOddPlayerCount)
     {
-        var withoutMod = new List<string>();
-        var otherVersion = new List<PartyMember>();
-
-        foreach (PartyMember member in members)
-        {
-            if (member.ModVersion == null)
-            {
-                withoutMod.Add(member.Name);
-            }
-            else if (member.ModVersion != requiredVersion)
-            {
-                otherVersion.Add(member);
-            }
-        }
-
-        bool oddBlocked = members.Count % 2 != 0 && !allowOddPlayerCount;
-        return new PartyGateVerdict(members.Count, oddBlocked, withoutMod, otherVersion);
+        int pairable = members.Count(m => m.CanPair);
+        bool oddBlocked = pairable % 2 != 0 && !allowOddPlayerCount;
+        return new PartyGateVerdict(pairable, oddBlocked, members.Where(m => !m.CanPair).Select(m => m.Name).ToList());
     }
 }

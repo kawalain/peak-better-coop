@@ -85,8 +85,7 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
     {
         get
         {
-            if (PhotonNetwork.InRoom
-                && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Rules, out object value)
+            if (RoomProtocol.TryGet(RoomKeys.Rules, out object value)
                 && value is int rules)
             {
                 return rules;
@@ -159,7 +158,7 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
     {
         try
         {
-            if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Rules, out object value) && value is int rules)
+            if (RoomProtocol.TryGet(RoomKeys.Rules, out object value) && value is int rules)
             {
                 See(rules);
             }
@@ -174,7 +173,7 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
 
     public override void OnRoomPropertiesUpdate(PhotonHashtable changed)
     {
-        if (changed.ContainsKey(RoomKeys.Rules) && changed[RoomKeys.Rules] is int rules)
+        if (RoomProtocol.Readable && changed.ContainsKey(RoomKeys.Rules) && changed[RoomKeys.Rules] is int rules)
         {
             int? before = seen?.Value;
             See(rules);
@@ -287,7 +286,7 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
             return;
         }
 
-        if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Rules, out object value)
+        if (RoomProtocol.TryGet(RoomKeys.Rules, out object value)
             && value is int room
             && Trusted(room) is int rules)
         {
@@ -315,6 +314,9 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
             adopting = false;
         }
     }
+
+    /// <summary>The rules this player's config sets, as the room holds them.</summary>
+    internal static int Local => LocalRules();
 
     private static void PublishIfHost()
     {

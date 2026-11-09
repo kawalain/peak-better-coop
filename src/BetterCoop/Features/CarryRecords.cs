@@ -59,7 +59,7 @@ internal static class CarryRecords
     {
         get
         {
-            object? value = PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Record, out object found) ? found : null;
+            object? value = RoomProtocol.Get(RoomKeys.Record);
             if (!ReferenceEquals(value, readRecordFrom))
             {
                 readRecordFrom = value;
@@ -75,7 +75,7 @@ internal static class CarryRecords
     {
         get
         {
-            object? value = PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Report, out object found) ? found : null;
+            object? value = RoomProtocol.Get(RoomKeys.Report);
             if (!ReferenceEquals(value, readReportFrom))
             {
                 readReportFrom = value;
@@ -188,7 +188,7 @@ internal static class CarryRecords
     /// <summary>On every client: a new report waits to be told of until the party is back at the Airport.</summary>
     public static void OnRoomPropertiesChanged(PhotonHashtable changed)
     {
-        if (changed.ContainsKey(RoomKeys.Report))
+        if (RoomProtocol.Readable && changed.ContainsKey(RoomKeys.Report))
         {
             reportUntold = changed[RoomKeys.Report] != null;
         }
@@ -229,8 +229,7 @@ internal static class CarryRecords
         };
     }
 
-    private static object? Room(string key) =>
-        PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(key, out object value) ? value : null;
+    private static object? Room(string key) => RoomProtocol.Get(key);
 
     private static string IdOf(int actor) => KnownPlayers.UserIdOf(actor) ?? $"#{actor}";
 

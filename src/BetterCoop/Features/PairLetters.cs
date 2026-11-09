@@ -55,7 +55,7 @@ internal static class PairLetters
             followedId = op.Id;
             closing = false;
             IReadOnlyList<Pair>? assignment = op.Kind == OperationKind.PairAssignment
-                ? Arrangement.Decode(PhotonNetwork.CurrentRoom?.CustomProperties[RoomKeys.Assignment], op.Id)
+                ? Arrangement.Decode(RoomProtocol.Get(RoomKeys.Assignment), op.Id)
                 : null;
             preview = PairLetterPlan.Preview(op.Kind, me, op.SwapCarrier, op.SwapRider, assignment);
             Pair? had = PairRoster.Pairs.FirstOrDefault(p => p.Contains(me));

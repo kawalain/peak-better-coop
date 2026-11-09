@@ -46,8 +46,12 @@ public static class Api
         Assignment,
     }
 
-    /// <summary>False when BetterCoop turned itself off; every character then reads as unpaired.</summary>
-    public static bool Enabled => Plugin.Patched;
+    /// <summary>
+    /// False when BetterCoop turned itself off, or rests in a room whose
+    /// Troop Leader has another version or none; every character then reads
+    /// as unpaired.
+    /// </summary>
+    public static bool Enabled => Plugin.Patched && !Net.RoomProtocol.Resting;
 
     /// <summary>Raised on every client when the Pairs change, including when they form and when they clear at the Airport.</summary>
     public static event Action? PairsChanged;

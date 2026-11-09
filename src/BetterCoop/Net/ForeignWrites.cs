@@ -20,7 +20,7 @@ namespace BetterCoop.Net;
 internal static class ForeignWrites
 {
     /// <summary>Player keys only their player, or the Troop Leader, writes.</summary>
-    private static readonly string[] OwnKeys = [RoomKeys.Version, RoomKeys.Role, RoomKeys.SwapRequest];
+    private static readonly string[] OwnKeys = [RoomKeys.Version, RoomKeys.Protocol, RoomKeys.Role, RoomKeys.SwapRequest];
 
     private const double NoteSeconds = 10;
 
