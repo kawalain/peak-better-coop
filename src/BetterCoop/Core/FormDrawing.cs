@@ -605,7 +605,7 @@ internal static partial class FormDrawing
     /// A Merit Badge as a round scout patch pencilled in a margin: a double
     /// ring with running stitches between, and a picture of what it is for:
     /// a scout carrying a friend on their back, a scout asleep in a
-    /// nightcap, a crowned mountain, or a heart.
+    /// nightcap, a crowned mountain, a life ring, or a heart.
     /// </summary>
     /// <param name="frame">Which of the doodle's hand-drawn frames: the lines wobble from one to the next.</param>
     public static string Badge(float width, float height, MeritBadgeKind kind, int frame = 0)
@@ -692,6 +692,24 @@ internal static partial class FormDrawing
                 Pencil(svg, hand, [At(0.43f, 0.47f), At(0.47f, 0.50f), At(0.50f, 0.46f), At(0.54f, 0.50f), At(0.57f, 0.47f)], Lead, h);
                 Pencil(svg, hand, [At(0.42f, 0.32f), At(0.43f, 0.22f), At(0.47f, 0.28f), At(0.50f, 0.19f), At(0.53f, 0.28f), At(0.57f, 0.22f), At(0.58f, 0.32f), At(0.42f, 0.32f)], Lead, h);
                 Dot(At(0.50f, 0.18f), s * 0.014f);
+                break;
+            }
+
+            case MeritBadgeKind.RescueRanger:
+            {
+                // A life ring with its four bands, hung from a looped rope.
+                (float X, float Y) ring = At(0.50f, 0.56f);
+                Pencil(svg, hand, Round(ring, s * 0.17f, s * 0.17f, 0.0, 2.04, 28), Lead, h);
+                Pencil(svg, hand, Round(ring, s * 0.085f, s * 0.085f, 0.0, 2.04, 18), Lead, h);
+                for (int band = 0; band < 4; band++)
+                {
+                    double a = Math.PI / 4 + Math.PI / 2 * band;
+                    Pencil(svg, hand, [Polar(ring, s * 0.085f, a - 0.22), Polar(ring, s * 0.17f, a - 0.15)], Lead, h);
+                    Pencil(svg, hand, [Polar(ring, s * 0.085f, a + 0.22), Polar(ring, s * 0.17f, a + 0.15)], Lead, h);
+                }
+
+                Pencil(svg, hand, Curve(At(0.50f, 0.39f), At(0.42f, 0.24f), At(0.56f, 0.22f)), Lead, h);
+                Pencil(svg, hand, Curve(At(0.56f, 0.22f), At(0.64f, 0.27f), At(0.50f, 0.39f)), Lead, h);
                 break;
             }
 

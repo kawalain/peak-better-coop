@@ -56,6 +56,7 @@ internal static partial class ControlCommands
                 ["carried"] = Math.Round(s.Carried, 1),
                 ["ridden"] = Math.Round(s.Ridden, 1),
                 ["climbed"] = Math.Round(s.Climbed, 1),
+                ["rescuing"] = Math.Round(s.Rescuing, 1),
             })),
             ["report"] = report == null ? null : new JObject
             {

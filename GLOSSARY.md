@@ -20,11 +20,13 @@ The player who hosts the room; the game's own name for the host.
 _Avoid_: host, 방장 (in player text)
 
 **Carry Record** (업기 기록):
-What each player has done in Pairs over a Run: the time spent as Carrier, the
-time spent as Rider, and the height climbed while carrying, counting only
-climbs, not falls. Time with no partner or with the Shared Body dead does not
-count. It follows the player through leaving and rejoining, and starts afresh
-when the next Run departs.
+What each player has done in Pairs and Rescue Carries over a Run: the time
+spent as Carrier, the time spent as Rider, the height climbed while carrying,
+counting only climbs, not falls, and the time spent carrying a Rescued. Time
+with no partner or with the Shared Body dead counts only as rescue time, and
+height does not count while the Shared Body is passed out. It follows the
+player through leaving and rejoining, and starts afresh when the next Run
+departs.
 _Avoid_: stats, score, leaderboard
 
 **Run Report** (원정 보고서):
@@ -37,7 +39,7 @@ _Avoid_: end screen, summary, results
 **Merit Badge** (공로 배지):
 A playful title on the Run Report for the best Carry Record in one thing: the
 most time carrying, the most time carried, the most height climbed carrying,
-and the two who stayed a Pair the longest.
+the most time rescuing, and the two who stayed a Pair the longest.
 _Avoid_: achievement, award, trophy
 
 ### Teams

@@ -101,8 +101,8 @@ internal static class Strings
     public static string MenuCarryRecord => Korean ? "업기 기록" : "Carry Record";
 
     public static string AboutCarryRecord => Korean
-        ? "이번 원정에서 업고, 업히고, 업은 채 오른 만큼입니다. 짝이 없거나 쓰러져 있던 시간은 세지 않습니다."
-        : "How long each scout carried and rode this Run, and how high they climbed carrying. Time unpaired or down does not count.";
+        ? "이번 원정에서 업고, 업히고, 업은 채 오르고, 쓰러진 대원을 구조해 업은 만큼입니다. 짝이 없거나 쓰러져 있던 시간은 구조 말고는 세지 않습니다."
+        : "How long each scout carried and rode this Run, how high they climbed carrying, and how long they carried a rescued scout. Time unpaired or down counts only for rescues.";
 
     public static string CarryRecordEmpty => Korean ? "아직 적힌 기록이 없습니다." : "Nothing recorded yet.";
 
@@ -113,6 +113,8 @@ internal static class Strings
     public static string HeadRidden => Korean ? "업힌 시간" : "Rode";
 
     public static string HeadClimbed => Korean ? "오른 높이" : "Climbed";
+
+    public static string HeadRescuing => Korean ? "구조 시간" : "Rescued";
 
     public static string MenuRunReport => Korean ? "원정 보고서" : "Run Report";
 
@@ -157,6 +159,7 @@ internal static class Strings
         MeritBadgeKind.SteadyBack => Korean ? "든든한 등" : "Steady Back",
         MeritBadgeKind.ComfyPassenger => Korean ? "편안한 승객" : "Comfy Passenger",
         MeritBadgeKind.ClimbingKing => Korean ? "등반왕" : "Climbing King",
+        MeritBadgeKind.RescueRanger => Korean ? "구조대장" : "Rescue Ranger",
         _ => Korean ? "단짝" : "Best Buddies",
     };
 
@@ -166,6 +169,7 @@ internal static class Strings
         MeritBadgeKind.SteadyBack => $"{HeadCarried} {Duration(amount)}",
         MeritBadgeKind.ComfyPassenger => $"{HeadRidden} {Duration(amount)}",
         MeritBadgeKind.ClimbingKing => $"{HeadClimbed} {Metres(amount)}",
+        MeritBadgeKind.RescueRanger => $"{HeadRescuing} {Duration(amount)}",
         _ => $"{HeadTogether} {Duration(amount)}",
     };
 

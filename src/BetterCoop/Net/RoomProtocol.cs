@@ -18,7 +18,7 @@ internal static class RoomProtocol
     /// Raise with any change to a mod room or player property, an event code,
     /// or a wire format, in the same commit. A version bump alone never does.
     /// </summary>
-    public const int Current = 2;
+    public const int Current = 3;
 
     /// <summary>The protocol a player publishes, or null without the mod or before 0.6.0.</summary>
     public static int? Of(PhotonPlayer player) =>

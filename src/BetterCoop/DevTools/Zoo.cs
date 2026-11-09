@@ -185,6 +185,7 @@ internal sealed class ZooPage : PaperPage
             new BadgeCard(MeritBadgeKind.SteadyBack, Strings.BadgeName(MeritBadgeKind.SteadyBack), "Alder", Strings.BadgeAmount(MeritBadgeKind.SteadyBack, 1934)),
             new BadgeCard(MeritBadgeKind.ComfyPassenger, Strings.BadgeName(MeritBadgeKind.ComfyPassenger), Strings.Left("Quill"), Strings.BadgeAmount(MeritBadgeKind.ComfyPassenger, 1702)),
             new BadgeCard(MeritBadgeKind.ClimbingKing, Strings.BadgeName(MeritBadgeKind.ClimbingKing), "Cedar", Strings.BadgeAmount(MeritBadgeKind.ClimbingKing, 812.4)),
+            new BadgeCard(MeritBadgeKind.RescueRanger, Strings.BadgeName(MeritBadgeKind.RescueRanger), "Elm", Strings.BadgeAmount(MeritBadgeKind.RescueRanger, 95)),
             new BadgeCard(MeritBadgeKind.BestBuddies, Strings.BadgeName(MeritBadgeKind.BestBuddies), "Birch & Dahlia", Strings.BadgeAmount(MeritBadgeKind.BestBuddies, 2410)),
         ]);
         list.Signature(() => T("서명", "Signed"), () => "Alder");

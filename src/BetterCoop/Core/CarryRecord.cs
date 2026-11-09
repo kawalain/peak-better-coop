@@ -6,7 +6,8 @@ namespace BetterCoop.Core;
 
 /// <summary>
 /// The Carry Record of a Run: for each player, by user id, the time spent as
-/// Carrier and as Rider and the height climbed while carrying; and for each
+/// Carrier and as Rider, the height climbed while carrying, and the time spent
+/// carrying a Rescued (ADR 0010); and for each
 /// segment, how long each Pair climbed it. The Troop Leader counts it from
 /// samples of the Pairs and shares it as a room property.
 /// </summary>
@@ -30,11 +31,22 @@ internal sealed class CarryRecord
 
     /// <summary>
     /// Counts <paramref name="seconds"/> of the Pairs as sampled now in
-    /// <paramref name="segment"/>, named <paramref name="title"/>. A Pair whose
-    /// Shared Body is dead counts nothing; a Pair's height counts only upward.
+    /// <paramref name="segment"/>, named <paramref name="title"/>, and of the
+    /// players carrying a Rescued now. A Pair whose Shared Body is dead counts
+    /// nothing; a Pair's height counts only upward, and not while its Shared
+    /// Body is passed out, being carried rather than climbing.
     /// </summary>
-    public void Count(IEnumerable<PairSample> pairs, double seconds, int segment, string title)
+    public void Count(IEnumerable<PairSample> pairs, double seconds, int segment, string title) =>
+        Count(pairs, [], seconds, segment, title);
+
+    /// <inheritdoc cref="Count(IEnumerable{PairSample}, double, int, string)"/>
+    public void Count(IEnumerable<PairSample> pairs, IEnumerable<(string Id, string Name)> rescuers, double seconds, int segment, string title)
     {
+        foreach ((string id, string name) in rescuers.Distinct())
+        {
+            ScoutOf(id, name).Rescuing += seconds;
+        }
+
         var sampled = new HashSet<(string, string)>();
         foreach (PairSample pair in pairs)
         {
@@ -53,7 +65,7 @@ internal sealed class CarryRecord
             if (heights.TryGetValue(key, out double last))
             {
                 double climb = pair.Height - last;
-                if (climb > 0 && climb <= MaxClimbPerSample)
+                if (climb > 0 && climb <= MaxClimbPerSample && !pair.PassedOut)
                 {
                     carrier.Climbed += climb;
                 }
@@ -135,6 +147,7 @@ internal sealed class CarryRecord
         Best(MeritBadgeKind.SteadyBack, s => s.Carried, 1);
         Best(MeritBadgeKind.ComfyPassenger, s => s.Ridden, 1);
         Best(MeritBadgeKind.ClimbingKing, s => s.Climbed, 1);
+        Best(MeritBadgeKind.RescueRanger, s => s.Rescuing, 1);
 
         var together = stretches
             .GroupBy(s => string.CompareOrdinal(s.Carrier, s.Rider) < 0 ? (s.Carrier, s.Rider) : (s.Rider, s.Carrier))
@@ -159,6 +172,7 @@ internal sealed class CarryRecord
             scouts.Select(s => s.Carried).ToArray(),
             scouts.Select(s => s.Ridden).ToArray(),
             scouts.Select(s => s.Climbed).ToArray(),
+            scouts.Select(s => s.Rescuing).ToArray(),
             stretches.Select(s => s.Segment).ToArray(),
             stretches.Select(s => s.Title).ToArray(),
             stretches.Select(s => IndexOf(s.Carrier)).ToArray(),
@@ -169,21 +183,23 @@ internal sealed class CarryRecord
 
     public static CarryRecord? Decode(object? value)
     {
-        if (value is not object[] { Length: 10 } parts
+        if (value is not object[] { Length: 11 } parts
             || parts[0] is not string[] ids
             || parts[1] is not string[] names
             || parts[2] is not double[] carried
             || parts[3] is not double[] ridden
             || parts[4] is not double[] climbed
-            || parts[5] is not int[] segments
-            || parts[6] is not string[] titles
-            || parts[7] is not int[] carriers
-            || parts[8] is not int[] riders
-            || parts[9] is not double[] seconds
+            || parts[5] is not double[] rescuing
+            || parts[6] is not int[] segments
+            || parts[7] is not string[] titles
+            || parts[8] is not int[] carriers
+            || parts[9] is not int[] riders
+            || parts[10] is not double[] seconds
             || names.Length != ids.Length
             || carried.Length != ids.Length
             || ridden.Length != ids.Length
             || climbed.Length != ids.Length
+            || rescuing.Length != ids.Length
             || titles.Length != segments.Length
             || carriers.Length != segments.Length
             || riders.Length != segments.Length
@@ -208,6 +224,7 @@ internal sealed class CarryRecord
                 Carried = Amount(carried[i]),
                 Ridden = Amount(ridden[i]),
                 Climbed = Amount(climbed[i]),
+                Rescuing = Amount(rescuing[i]),
             });
         }
 
@@ -250,6 +267,9 @@ internal sealed class CarryRecord
 
         /// <summary>Metres climbed as Carrier.</summary>
         public double Climbed { get; set; }
+
+        /// <summary>Seconds carrying a Rescued, alone or as either member of the rescuing Pair.</summary>
+        public double Rescuing { get; set; }
     }
 
     /// <summary>How long one Pair climbed in one segment.</summary>
@@ -279,8 +299,9 @@ internal sealed class CarryRecord
 /// <summary>A Pair as the Troop Leader samples it for the Carry Record.</summary>
 internal readonly struct PairSample
 {
-    public PairSample(string carrierId, string carrierName, string riderId, string riderName, bool alive, double height)
+    public PairSample(string carrierId, string carrierName, string riderId, string riderName, bool alive, double height, bool passedOut = false)
     {
+        PassedOut = passedOut;
         CarrierId = carrierId;
         CarrierName = carrierName;
         RiderId = riderId;
@@ -302,6 +323,9 @@ internal readonly struct PairSample
 
     /// <summary>The Shared Body's height, in metres.</summary>
     public double Height { get; }
+
+    /// <summary>Whether the Shared Body is passed out, so any height it gains is a Rescue Carry's, not its own.</summary>
+    public bool PassedOut { get; }
 }
 
 internal enum MeritBadgeKind : byte
@@ -317,6 +341,9 @@ internal enum MeritBadgeKind : byte
 
     /// <summary>단짝: the two who stayed a Pair the longest.</summary>
     BestBuddies = 4,
+
+    /// <summary>구조대장: the most time carrying a Rescued.</summary>
+    RescueRanger = 5,
 }
 
 /// <summary>A Merit Badge on the Run Report: who earned it, and the amount that won it.</summary>

@@ -126,11 +126,12 @@ internal static class CarryRecords
                 IdOf(pair.Rider),
                 NameOf(pair.Rider),
                 !carrier.data.dead,
-                carrier.HipPos().y * MetresPerUnit));
+                carrier.HipPos().y * MetresPerUnit,
+                carrier.data.passedOut || carrier.data.fullyPassedOut));
         }
 
         Segment segment = MapHandler.CurrentSegmentNumber;
-        record.Count(samples, seconds, (int)segment, TitleOf(segment));
+        record.Count(samples, Rescuers(), seconds, (int)segment, TitleOf(segment));
 
         string pairs = string.Join(",", current.Pairs.Select(p => $"{p.Carrier}>{p.Rider}"));
         if (now >= nextShare || pairs != sharedPairs)
@@ -139,6 +140,40 @@ internal static class CarryRecords
             sharedPairs = pairs;
             RoomWrites.Set(new PhotonHashtable { [RoomKeys.Record] = record.Encode() });
         }
+    }
+
+    /// <summary>
+    /// Everyone carrying a Rescued now: both members of a Pair whose Rider
+    /// carries one, and an Unpaired Player carrying a passed-out Shared Body.
+    /// </summary>
+    private static List<(string Id, string Name)> Rescuers()
+    {
+        var rescuers = new List<(string Id, string Name)>();
+        foreach (Character body in Character.AllCharacters)
+        {
+            if (body == null
+                || body.isBot
+                || body.data.dead
+                || body.data.carriedPlayer is not Character carried
+                || (PairRoster.TryGetPartner(body, out Character partner) && partner == carried))
+            {
+                continue;
+            }
+
+            int actor = PairRoster.ActorOf(body);
+            switch (PairRoster.RoleOf(body))
+            {
+                case PairRole.Rider when PairRoster.TryGetPair(body, out Pair pair):
+                    rescuers.Add((IdOf(pair.Carrier), NameOf(pair.Carrier)));
+                    rescuers.Add((IdOf(pair.Rider), NameOf(pair.Rider)));
+                    break;
+                case PairRole.None when PairRoster.RoleOf(carried) != PairRole.None:
+                    rescuers.Add((IdOf(actor), NameOf(actor)));
+                    break;
+            }
+        }
+
+        return rescuers;
     }
 
     /// <summary>As the Troop Leader back at the Airport: a Run that ended without the game ending it still gets its report.</summary>

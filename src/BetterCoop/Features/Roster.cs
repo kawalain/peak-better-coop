@@ -525,7 +525,7 @@ internal static class RecordRows
         CarryRecord? ranked = null;
         IReadOnlyList<TableEntry> entries = [];
         list.Table(
-            () => [Strings.HeadScout, Strings.HeadCarried, Strings.HeadRidden, Strings.HeadClimbed],
+            () => [Strings.HeadScout, Strings.HeadCarried, Strings.HeadRidden, Strings.HeadClimbed, Strings.HeadRescuing],
             () =>
             {
                 // Ranked again only when the room shares a new record.
@@ -539,7 +539,7 @@ internal static class RecordRows
                     ranked = now;
                     entries = now.Ranked()
                         .Select(s => new TableEntry(
-                            [present(s.Id) ? s.Name : Strings.Left(s.Name), Strings.Duration(s.Carried), Strings.Duration(s.Ridden), Strings.Metres(s.Climbed)],
+                            [present(s.Id) ? s.Name : Strings.Left(s.Name), Strings.Duration(s.Carried), Strings.Duration(s.Ridden), Strings.Metres(s.Climbed), Strings.Duration(s.Rescuing)],
                             faint: !present(s.Id)))
                         .ToList();
                 }
