@@ -32,7 +32,10 @@ internal static class CarryRecords
 
     private static CarryRecord? hostCopy;
 
-    private static float lastSample;
+    /// <summary>The game's Run clock at the last sample, so the record counts the time the Run's own clock counts.</summary>
+    private static double lastSample;
+
+    private static double RunClock => RunManager.Instance != null ? RunManager.Instance.TimeSinceRunStarted : 0;
 
     private static float nextShare;
 
@@ -88,7 +91,7 @@ internal static class CarryRecords
     {
         hostCopy = new CarryRecord();
         reported = false;
-        lastSample = Time.unscaledTime;
+        lastSample = RunClock;
         nextShare = Time.unscaledTime + ShareSeconds;
         properties[RoomKeys.Record] = hostCopy.Encode();
         properties[RoomKeys.Report] = null;
@@ -98,8 +101,10 @@ internal static class CarryRecords
     public static void Sample(PairingResult current)
     {
         float now = Time.unscaledTime;
-        float seconds = Mathf.Min(now - lastSample, MostPerSample);
-        lastSample = now;
+        double clock = RunClock;
+        // The clock stands still before the Run starts and while it is paused, and goes back when it is synced.
+        float seconds = (float)Math.Min(clock - lastSample, MostPerSample);
+        lastSample = clock;
         if (reported || seconds <= 0f)
         {
             return;
