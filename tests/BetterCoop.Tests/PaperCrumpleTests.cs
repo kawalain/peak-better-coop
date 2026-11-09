@@ -28,12 +28,25 @@ public class PaperCrumpleTests
     }
 
     [Fact]
-    public void Crumpled_it_is_a_lumpy_ball()
+    public void Its_edges_fold_over_across_the_sheet()
+    {
+        // Halfway, before it is pressed, the edge strips lie over the sheet, turned past upright.
+        Vector3[] points = Shaped(0.5f);
+        Vector3 corner = points[0];
+
+        Assert.True(corner.X > -600f * 0.75f || corner.Y > -450f * 0.75f, $"{corner}");
+        Assert.Contains(points, p => System.Math.Abs(p.Z) > 100f);
+    }
+
+    [Fact]
+    public void Crumpled_it_is_pressed_into_a_small_wad()
     {
         Vector3[] points = Shaped(1f);
+        float width = points.Max(p => p.X) - points.Min(p => p.X);
+        float height = points.Max(p => p.Y) - points.Min(p => p.Y);
 
-        Assert.All(points, p => Assert.InRange(p.Length(), Sheet.Ball * 0.4f, Sheet.Ball * 1.6f));
-        Assert.Contains(points, p => p.Z > 0f);
+        Assert.True(width * height < 1200f * 900f * 0.3f, $"{width} x {height}");
+        Assert.All(points, p => Assert.InRange(p.Z, -900f, 900f));
     }
 
     [Fact]

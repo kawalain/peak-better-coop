@@ -5,19 +5,31 @@ using System.Numerics;
 namespace BetterCoop.Core;
 
 /// <summary>
-/// A sheet of paper crumpled into a ball, as a grid of points in 3D: x to
+/// A sheet of paper crumpled up by hand, as a grid of points in 3D: x to
 /// the right, y up, z away from the viewer, centred on the sheet's middle.
-/// Creases come first, a few ridges running across the sheet at random
-/// angles, then the sheet closes round itself into a lumpy ball, its middle
-/// facing the viewer and its edges folded round the back. The same seed
-/// crumples the same way.
+/// First it creases; then its edges and a corner fold over one after
+/// another, flaps laid across the sheet as hands fold paper; then the whole
+/// is pressed together into a small crinkled wad. The same seed crumples
+/// the same way.
 /// </summary>
 internal sealed class PaperCrumple
 {
-    /// <summary>How much of the crumple is spent creasing before the sheet closes up.</summary>
-    private const float Creasing = 0.35f;
+    /// <summary>When the folds begin and by when the last is made.</summary>
+    private const float FoldsFrom = 0.06f;
+
+    private const float FoldsTo = 0.72f;
+
+    /// <summary>When the folded sheet begins to be pressed together.</summary>
+    private const float PressFrom = 0.5f;
+
+    /// <summary>How small the pressed wad is beside the folded sheet.</summary>
+    private const float Pressed = 0.42f;
 
     private readonly Crease[] creases;
+
+    private readonly Crease[] crinkles;
+
+    private readonly Fold[] folds;
 
     private readonly float amplitudes;
 
@@ -28,19 +40,31 @@ internal sealed class PaperCrumple
         Columns = columns;
         Rows = rows;
         float span = Math.Min(width, height);
-        Ball = span * 0.2f;
         var hand = new Random(seed);
-        creases = new Crease[6];
-        for (int i = 0; i < creases.Length; i++)
+        creases = Creases(hand, 5, span, 0.18f, 0.36f, 0.018f, 0.04f);
+        crinkles = Creases(hand, 6, span, 0.06f, 0.14f, 0.02f, 0.045f);
+        foreach (Crease crease in creases)
         {
-            double angle = hand.NextDouble() * Math.PI;
-            creases[i] = new Crease(
-                new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)),
-                span * Next(hand, 0.16f, 0.34f),
-                Next(hand, 0f, 1f),
-                span * Next(hand, 0.03f, 0.07f) * (hand.Next(2) == 0 ? -1f : 1f));
-            amplitudes += Math.Abs(creases[i].Amplitude);
+            amplitudes += Math.Abs(crease.Amplitude);
         }
+
+        // The four edges in a random order, then a corner, each folded over across the sheet.
+        var edges = new List<Fold>
+        {
+            Edge(hand, new Vector2(-1f, 0f), width / 2f, width),
+            Edge(hand, new Vector2(1f, 0f), width / 2f, width),
+            Edge(hand, new Vector2(0f, 1f), height / 2f, height),
+            Edge(hand, new Vector2(0f, -1f), height / 2f, height),
+        };
+        for (int i = edges.Count - 1; i > 0; i--)
+        {
+            int j = hand.Next(i + 1);
+            (edges[i], edges[j]) = (edges[j], edges[i]);
+        }
+
+        var corner = Vector2.Normalize(new Vector2(hand.Next(2) == 0 ? -width : width, hand.Next(2) == 0 ? -height : height));
+        edges.Add(new Fold(corner, Math.Abs(Vector2.Dot(new Vector2(width, height) / 2f, corner)) * Next(hand, 0.55f, 0.7f), Angle(hand), Toward(hand)));
+        folds = edges.ToArray();
     }
 
     public float Width { get; }
@@ -53,9 +77,6 @@ internal sealed class PaperCrumple
     /// <summary>Grid points down, one more than the cells.</summary>
     public int Rows { get; }
 
-    /// <summary>The finished ball's radius.</summary>
-    public float Ball { get; }
-
     public int Count => Columns * Rows;
 
     /// <summary>Where grid point (<paramref name="column"/>, <paramref name="row"/>) lies on the flat sheet; row 0 is the bottom.</summary>
@@ -64,35 +85,69 @@ internal sealed class PaperCrumple
         ((row / (float)(Rows - 1)) - 0.5f) * Height,
         0f);
 
-    /// <summary>Fills <paramref name="into"/> with every grid point, row by row, <paramref name="progress"/> (0 to 1) of the way to a ball.</summary>
+    /// <summary>Fills <paramref name="into"/> with every grid point, row by row, <paramref name="progress"/> (0 to 1) of the way to a wad.</summary>
     public void Shape(float progress, Vector3[] into)
     {
         progress = Math.Max(0f, Math.Min(1f, progress));
-        float folds = Math.Min(1f, progress / Creasing);
-        float closing = Easing.InOut((progress - (Creasing * 0.4f)) / (1f - (Creasing * 0.4f)));
-        float reach = (float)Math.Sqrt((Width * Width) + (Height * Height)) / 2f;
+        float creasing = Easing.Out(progress / 0.4f);
+        float pressing = Easing.InOut((progress - PressFrom) / (1f - PressFrom));
+        float span = Math.Min(Width, Height);
+        float stagger = (FoldsTo - FoldsFrom) / folds.Length;
         for (int row = 0; row < Rows; row++)
         {
             for (int column = 0; column < Columns; column++)
             {
                 Vector3 rest = Rest(column, row);
-                float ridge = Ridge(new Vector2(rest.X, rest.Y));
+                var flat = new Vector2(rest.X, rest.Y);
+                Vector3 point = new(rest.X, rest.Y, Ridge(creases, flat) * creasing);
 
-                // Creased, and drawn in a little as the creases take up the paper.
-                var creased = new Vector3(rest.X * (1f - (0.12f * folds)), rest.Y * (1f - (0.12f * folds)), ridge * folds);
+                // Each fold lays whatever lies beyond its line now over the rest, as a stack of paper folds,
+                // carrying earlier folds with it.
+                for (int i = 0; i < folds.Length; i++)
+                {
+                    Fold fold = folds[i];
+                    float start = FoldsFrom + (i * stagger);
+                    float turn = Easing.InOut((progress - start) / (stagger * 1.6f));
+                    if (turn > 0f)
+                    {
+                        point = fold.Turn(point, turn);
+                    }
+                }
 
-                // On the ball: the middle at the front, the edges wrapped round the back, lumpy where it creased.
-                float along = (float)Math.Sqrt((rest.X * rest.X) + (rest.Y * rest.Y)) / reach;
-                float round = along * (float)Math.PI * 0.92f;
-                float around = (float)Math.Atan2(rest.Y, rest.X);
-                float radius = Ball * (1f + (0.7f * ridge / Math.Max(1e-4f, amplitudes)));
+                // Pressed together into a wad: drawn in towards the middle, crinkling as it goes...
+                float crinkle = Ridge(crinkles, flat);
+                float shrink = 1f - ((1f - Pressed) * pressing);
+                float wobble = 1f + (0.35f * pressing * crinkle / span * 8f);
+                var pressed = new Vector3(
+                    point.X * shrink * wobble,
+                    point.Y * shrink * wobble,
+                    (point.Z * (1f + pressing)) + (crinkle * pressing * 1.8f));
+
+                // ...and rounded: the folded sheet closes round a lumpy ball, its layers kept apart.
+                float reach = 0.5f * Math.Max(Width, Height) * 0.75f;
+                float outward = Math.Min(1f, new Vector2(point.X, point.Y).Length() / reach);
+                float round = outward * (float)Math.PI * 0.8f;
+                float around = (float)Math.Atan2(point.Y, point.X);
+                float radius = span * 0.2f * (1f + (0.25f * crinkle / (span * 0.1f)));
                 var ball = new Vector3(
                     (float)(Math.Sin(round) * Math.Cos(around)) * radius,
                     (float)(Math.Sin(round) * Math.Sin(around)) * radius,
-                    -(float)Math.Cos(round) * radius);
-
-                into[(row * Columns) + column] = Vector3.Lerp(creased, ball, closing);
+                    (-(float)Math.Cos(round) * radius) + (point.Z * 0.3f));
+                into[(row * Columns) + column] = Vector3.Lerp(pressed, ball, 0.6f * pressing);
             }
+        }
+
+        // Folding takes paper from some sides more than others; the hands keep the wad where the sheet was.
+        Vector3 middle = Vector3.Zero;
+        for (int i = 0; i < Count; i++)
+        {
+            middle += into[i];
+        }
+
+        middle = new Vector3(middle.X, middle.Y, 0f) / Count * Easing.InOut(progress / PressFrom);
+        for (int i = 0; i < Count; i++)
+        {
+            into[i] -= middle;
         }
     }
 
@@ -160,10 +215,42 @@ internal sealed class PaperCrumple
             back);
     }
 
-    private float Ridge(Vector2 point)
+    /// <summary>A strip along one edge, a fifth to a third of the sheet deep, its line a little askew.</summary>
+    private static Fold Edge(Random hand, Vector2 outward, float half, float across)
+    {
+        double skew = Next(hand, -0.22f, 0.22f);
+        var tilted = new Vector2(
+            (float)((outward.X * Math.Cos(skew)) - (outward.Y * Math.Sin(skew))),
+            (float)((outward.X * Math.Sin(skew)) + (outward.Y * Math.Cos(skew))));
+        return new Fold(tilted, half - (across * Next(hand, 0.2f, 0.32f)), Angle(hand), Toward(hand));
+    }
+
+    /// <summary>Which way a flap folds: mostly towards the viewer, so the folding shows.</summary>
+    private static float Toward(Random hand) => hand.NextDouble() < 0.75 ? -1f : 1f;
+
+    /// <summary>How far a flap folds over: most of the way, never quite flat, so flaps do not lie in one another.</summary>
+    private static float Angle(Random hand) => (float)Math.PI * Next(hand, 0.72f, 0.9f);
+
+    private static Crease[] Creases(Random hand, int count, float span, float spacingMin, float spacingMax, float heightMin, float heightMax)
+    {
+        var made = new Crease[count];
+        for (int i = 0; i < count; i++)
+        {
+            double angle = hand.NextDouble() * Math.PI;
+            made[i] = new Crease(
+                new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle)),
+                span * Next(hand, spacingMin, spacingMax),
+                Next(hand, 0f, 1f),
+                span * Next(hand, heightMin, heightMax) * (hand.Next(2) == 0 ? -1f : 1f));
+        }
+
+        return made;
+    }
+
+    private static float Ridge(Crease[] set, Vector2 point)
     {
         float sum = 0f;
-        foreach (Crease crease in creases)
+        foreach (Crease crease in set)
         {
             float x = (Vector2.Dot(point, crease.Across) / crease.Spacing) + crease.Phase;
             float fraction = x - (float)Math.Floor(x);
@@ -193,6 +280,68 @@ internal sealed class PaperCrumple
         public float Phase { get; }
 
         public float Amplitude { get; }
+    }
+
+    /// <summary>
+    /// A fold along a straight line on the flat sheet: everything farther
+    /// out than <see cref="Line"/> along <see cref="Out"/> turns over the
+    /// line, towards the viewer or away, by up to <see cref="Most"/>. The
+    /// paper bends round a narrow hinge rather than at a knife edge, so it
+    /// stays whole across the line wherever the grid's points fall.
+    /// </summary>
+    private readonly struct Fold
+    {
+        /// <summary>How wide the bend at the fold is, a little more than a grid cell.</summary>
+        private const float Hinge = 80f;
+
+        public Fold(Vector2 outward, float line, float most, float side)
+        {
+            Out = outward;
+            Line = line;
+            Most = most;
+            Side = side;
+        }
+
+        public Vector2 Out { get; }
+
+        public float Line { get; }
+
+        public float Most { get; }
+
+        /// <summary>-1 to fold towards the viewer, 1 away.</summary>
+        public float Side { get; }
+
+        /// <summary>Bends <paramref name="point"/> over the fold's line, <paramref name="share"/> of the way over.</summary>
+        public Vector3 Turn(Vector3 point, float share)
+        {
+            var along = new Vector2(-Out.Y, Out.X);
+            var flat = new Vector2(point.X, point.Y);
+            float u = Vector2.Dot(flat, along);
+            float s = Vector2.Dot(flat, Out) - Line;
+            float angle = Most * Math.Min(1f, share);
+            if (s <= 0f || angle <= 1e-4f)
+            {
+                return point;
+            }
+
+            // Round the hinge, a circle's arc as wide as the hinge, then straight on at the fold's angle.
+            float radius = Hinge / angle;
+            float bent = Math.Min(s, Hinge) / radius;
+            float acrossS = radius * (float)Math.Sin(bent);
+            float acrossZ = Side * radius * (1f - (float)Math.Cos(bent));
+            if (s > Hinge)
+            {
+                acrossS += (s - Hinge) * (float)Math.Cos(angle);
+                acrossZ += Side * (s - Hinge) * (float)Math.Sin(angle);
+            }
+
+            // What already stood off the paper stands off it the same way, along the bent paper's normal.
+            float turned = s > Hinge ? angle : bent;
+            acrossS += -Side * (float)Math.Sin(turned) * point.Z;
+            acrossZ += (float)Math.Cos(turned) * point.Z;
+            Vector2 moved = (along * u) + (Out * (Line + acrossS));
+            return new Vector3(moved.X, moved.Y, acrossZ);
+        }
     }
 }
 

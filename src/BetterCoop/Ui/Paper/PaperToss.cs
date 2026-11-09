@@ -162,8 +162,9 @@ internal sealed class PageShooter : MonoBehaviour
 /// <summary>
 /// The page's picture crumpled into a ball and thrown: drawn as a grid of
 /// triangles, each shaded by how it faces the light and drawn far to near,
-/// the rounded corners left out. It crumples where the page was, then flies
-/// off in a random direction, tumbling and falling away, and is gone.
+/// the rounded corners left out. It crumples where the page was, folding
+/// over and pressing together, then is tossed off in a random direction,
+/// tumbling, growing smaller and fainter until it is gone.
 /// </summary>
 internal sealed class PaperWad : MaskableGraphic
 {
@@ -171,11 +172,16 @@ internal sealed class PaperWad : MaskableGraphic
 
     private const int Rows = 17;
 
-    private const float CrumpleSeconds = 0.55f;
+    private const float CrumpleSeconds = 1.3f;
 
-    private const float ThrowFrom = 0.42f;
+    /// <summary>When the toss begins, just before the last of the pressing.</summary>
+    private const float ThrowFrom = 1.15f;
 
-    private const float LastSeconds = 1.7f;
+    /// <summary>How long the toss lasts, the wad shrinking and fading all the while.</summary>
+    private const float FlySeconds = 1.1f;
+
+    /// <summary>How small the wad is by the end of the toss.</summary>
+    private const float Smallest = 0.2f;
 
     private const float Focal = 1800f;
 
@@ -235,13 +241,13 @@ internal sealed class PaperWad : MaskableGraphic
             }
         }
 
-        // Thrown off at random, a little more often up and away than down.
+        // Tossed off at random, a little more often up and away than down.
         float angle = UnityEngine.Random.Range(-0.35f, 1.35f) * Mathf.PI;
-        float speed = UnityEngine.Random.Range(1900f, 2600f);
+        float speed = UnityEngine.Random.Range(700f, 1050f);
         velocity = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * speed;
-        gravity = UnityEngine.Random.Range(2600f, 3400f);
+        gravity = UnityEngine.Random.Range(900f, 1300f);
         spinAxis = Num.Vector3.Normalize(new Num.Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-0.4f, 0.4f)) + new Num.Vector3(0.01f, 0f, 0f));
-        spin = UnityEngine.Random.Range(7f, 12f) * (UnityEngine.Random.value < 0.5f ? -1f : 1f);
+        spin = UnityEngine.Random.Range(4f, 7f) * (UnityEngine.Random.value < 0.5f ? -1f : 1f);
         wobbleAxis = Num.Vector3.Normalize(new Num.Vector3(UnityEngine.Random.Range(-1f, 1f), UnityEngine.Random.Range(-1f, 1f), 0.3f));
         Shape();
     }
@@ -278,38 +284,31 @@ internal sealed class PaperWad : MaskableGraphic
         }
 
         Shape();
-        Rect? area = CanvasArea();
-        if (age > LastSeconds || (age > ThrowFrom + 0.2f && area.HasValue && !area.Value.Overlaps(new Rect(place - (Vector2.one * crumple.Ball * 2f), Vector2.one * crumple.Ball * 4f))))
+        if (age >= ThrowFrom + FlySeconds)
         {
             Destroy(gameObject);
         }
     }
 
-    /// <summary>The root canvas's area in this graphic's own units, to tell when the ball has left it.</summary>
-    private Rect? CanvasArea()
-    {
-        if (canvas == null || canvas.rootCanvas.transform is not RectTransform root)
-        {
-            return null;
-        }
-
-        var corners = new Vector3[4];
-        root.GetWorldCorners(corners);
-        Vector2 a = rectTransform.InverseTransformPoint(corners[0]);
-        Vector2 b = rectTransform.InverseTransformPoint(corners[2]);
-        return Rect.MinMaxRect(Mathf.Min(a.x, b.x), Mathf.Min(a.y, b.y), Mathf.Max(a.x, b.x), Mathf.Max(a.y, b.y));
-    }
+    /// <summary>How far through the toss, 0 before it and 1 at its end.</summary>
+    private float Flown => Mathf.Clamp01((age - ThrowFrom) / FlySeconds);
 
     private void Shape()
     {
         float progress = Mathf.Clamp01(age / CrumpleSeconds);
-        crumple.Shape(Easing.Out(progress), points);
+        crumple.Shape(progress, points);
         float flying = Mathf.Max(0f, age - ThrowFrom);
+        float size = Mathf.Lerp(1f, Smallest, Easing.Out(Flown));
+        for (int i = 0; i < points.Length; i++)
+        {
+            points[i] *= size;
+        }
+
+        // Turned a little as the hands work it, so its folds catch the light, then tumbling as it flies.
         Num.Quaternion turn =
             Num.Quaternion.CreateFromAxisAngle(spinAxis, spin * flying)
-            * Num.Quaternion.CreateFromAxisAngle(wobbleAxis, 0.5f * Easing.InOut(progress));
-        // Away into the distance as it flies.
-        var shift = new Num.Vector3(place.x, place.y, flying * 700f);
+            * Num.Quaternion.CreateFromAxisAngle(wobbleAxis, 0.7f * Easing.InOut(progress));
+        var shift = new Num.Vector3(place.x, place.y, flying * 250f);
         crumple.Triangles(points, turn, shift, Focal, Light, triangles);
         SetVerticesDirty();
     }
@@ -322,9 +321,10 @@ internal sealed class PaperWad : MaskableGraphic
             return;
         }
 
+        float fade = 1f - Easing.InOut(Flown);
         foreach (WadTriangle triangle in triangles)
         {
-            float alpha = Mathf.Min(shown[triangle.A], Mathf.Min(shown[triangle.B], shown[triangle.C]));
+            float alpha = fade * Mathf.Min(shown[triangle.A], Mathf.Min(shown[triangle.B], shown[triangle.C]));
             if (alpha <= 0f)
             {
                 continue;
@@ -332,7 +332,7 @@ internal sealed class PaperWad : MaskableGraphic
 
             // The back of the sheet is the same paper, its print showing through faintly.
             float light = triangle.Light;
-            Color32 shade = new Color(light, light, triangle.Back ? light * 0.97f : light, 1f);
+            Color32 shade = new Color(light, light, triangle.Back ? light * 0.97f : light, alpha);
             int start = mesh.currentVertCount;
             mesh.AddVert(new Vector3(triangle.SeenA.X, triangle.SeenA.Y), shade, uvs[triangle.A]);
             mesh.AddVert(new Vector3(triangle.SeenB.X, triangle.SeenB.Y), shade, uvs[triangle.B]);
