@@ -30,7 +30,8 @@ dotnet test
 
 The game path defaults in `Directory.Build.props`; override `PeakGameDir` in the
 git-ignored `Directory.Build.user.props`. Tests cover game-independent logic
-only and must not touch Unity, Photon, or game types.
+only and must not touch Unity, Photon, or game types. Checks in the game, and the
+set required before every test build, are in `docs/testing.md`.
 
 ## Deploy and feedback
 
