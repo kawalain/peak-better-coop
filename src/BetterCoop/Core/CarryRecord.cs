@@ -425,13 +425,15 @@ internal sealed class RunReport
     public RunReport(RunEnding ending, double seconds, CarryRecord record)
     {
         Ending = ending;
-        Seconds = seconds;
+        // A Troop Leader who took over with a clock behind its predecessor's
+        // would report a Run shorter than the time its record already counts.
+        Seconds = record.Scouts.Select(s => Math.Max(s.Carried + s.Ridden, s.Rescuing)).Append(seconds).Max();
         Record = record;
     }
 
     public RunEnding Ending { get; }
 
-    /// <summary>How long the Run took.</summary>
+    /// <summary>How long the Run took: never shorter than anyone's time counted in it.</summary>
     public double Seconds { get; }
 
     public CarryRecord Record { get; }

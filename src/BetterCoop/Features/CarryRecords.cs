@@ -254,6 +254,18 @@ internal static class CarryRecords
         CoopNotice.Show(NoticeKind.Telegram, Strings.ReportArrived);
     }
 
+    /// <summary>
+    /// When the lead passes: a Troop Leader who lost it lets its copy go, so
+    /// on taking the lead again it carries on from the room's record, and the
+    /// new one counts from its own clock now, not from a sample of its own
+    /// long ago.
+    /// </summary>
+    public static void OnLeaderChanged()
+    {
+        hostCopy = null;
+        lastSample = RunClock;
+    }
+
     public static void OnLeftRoom()
     {
         hostCopy = null;

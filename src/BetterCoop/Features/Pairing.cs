@@ -450,6 +450,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
     {
         try
         {
+            CarryRecords.OnLeaderChanged();
             PairRoster.Reload();
             Api.RaisePairsChanged();
         }

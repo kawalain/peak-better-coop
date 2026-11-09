@@ -158,6 +158,17 @@ public class CarryRecordTests
     }
 
     [Fact]
+    public void A_Run_lasts_at_least_as_long_as_anyone_counted_in_it()
+    {
+        // A new Troop Leader whose clock is behind its predecessor's reports a shorter Run.
+        var record = new CarryRecord();
+        record.Count([Sample("a", "b", 0)], 28.5, 0, "SHORE");
+
+        Assert.Equal(28.5, new RunReport(RunEnding.Lost, 24.7, record).Seconds);
+        Assert.Equal(40, new RunReport(RunEnding.Lost, 40, record).Seconds);
+    }
+
+    [Fact]
     public void A_report_still_under_way_is_never_taken_from_the_room()
     {
         Assert.Null(RunReport.Decode(new RunReport(RunEnding.Underway, 5, new CarryRecord()).Encode()));
