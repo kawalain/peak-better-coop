@@ -44,6 +44,12 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     /// <summary>The rope under the title, tied with a square knot.</summary>
     private static readonly Vector2 RopeSize = new(380f, 30f);
 
+    /// <summary>How far apart the serial's figure wheels stand, in em.</summary>
+    private const float SerialAdvance = 0.62f;
+
+    /// <summary>How long after the paper starts to rise its serial is numbered: once it is mostly up.</summary>
+    private const float SerialDelay = 0.35f;
+
     /// <summary>When, after the paper starts to rise, its knot starts to pull tight, and how long that takes.</summary>
     private const float KnotDelay = 0.18f;
 
@@ -79,6 +85,8 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     private TMP_Text noteText = null!;
 
     private TMP_Text serialText = null!;
+
+    private NumberWheels? serialWheels;
 
     private RectTransform panel = null!;
 
@@ -228,6 +236,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     {
         PaperSounds.Play(PaperSounds.Kind.Rise);
         knotSeconds = 0f;
+        serialWheels?.Roll(SerialDelay);
         away = false;
         motion = Motion.Rising;
         motionSeconds = 0f;
@@ -463,8 +472,9 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
             PaperText.Set(titleText, title());
             PaperText.Set(formText, FormNumber());
             PaperText.Set(noteText, FormNote());
-            PaperText.Set(serialText, FormSerial());
-            PlaceNote(serialText.text.Length > 0);
+            string serial = FormSerial();
+            serialWheels?.Set(serial);
+            PlaceNote(serial.Length > 0);
             List.Refresh();
             KeepSelectionInView();
             scroll.Max = content.rect.height - viewport.rect.height;
@@ -623,6 +633,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         serialText.color = PaperList.StampRed;
         serialText.fontStyle = FontStyles.Bold;
         serialText.characterSpacing = 4f;
+        serialWheels = NumberWheels.Add(serialText, SerialAdvance);
 
         viewport = NewRect("Viewport", panel);
         viewport.anchorMin = Vector2.zero;

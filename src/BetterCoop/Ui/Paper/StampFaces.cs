@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BetterCoop.Core;
 using TMPro;
 using UnityEngine;
@@ -234,7 +235,7 @@ internal sealed class SealFace : StampFace
 
     private readonly int seed;
 
-    private readonly List<TMP_Text> letters = new();
+    private readonly RimLetters rim = new();
 
     private TMP_Text text = null!;
 
@@ -244,9 +245,6 @@ internal sealed class SealFace : StampFace
 
     private StampLayout layout;
 
-    private string shownTop = string.Empty;
-
-    private string shownBottom = string.Empty;
 
     /// <param name="top">The words round the rim's top, for a ringed stamp.</param>
     /// <param name="bottom">The words round the rim's foot, for a ringed stamp.</param>
@@ -310,23 +308,75 @@ internal sealed class SealFace : StampFace
             return;
         }
 
-        string up = top?.Invoke() ?? string.Empty;
-        string down = bottom?.Invoke() ?? string.Empty;
-        if (up != shownTop || down != shownBottom)
+        if (rim.Show(ring, template, Words, LetterSize, layout.Letters, top?.Invoke() ?? string.Empty, bottom?.Invoke() ?? string.Empty))
         {
-            shownTop = up;
-            shownBottom = down;
-            RimLetters.Set(ring, template, letters, Words, LetterSize, layout.Letters, up, down);
             Paint();
         }
     }
 }
 
-/// <summary>Words set a letter at a time round a stamp's ring, upright to the reader at its top and foot.</summary>
-internal static class RimLetters
+/// <summary>
+/// Words set a letter at a time round a stamp's ring, upright to the reader
+/// at its top and foot. The figures of the foot, a date, stand on a dater's
+/// wheels (see <see cref="NumberingMachine"/>) and turn on when it changes.
+/// </summary>
+internal sealed class RimLetters
 {
-    /// <summary>Replaces <paramref name="letters"/> under <paramref name="ring"/> with <paramref name="up"/> and <paramref name="down"/>, keeping <paramref name="words"/> in step.</summary>
-    public static void Set(RectTransform ring, TMP_Text template, List<TMP_Text> letters, List<TMP_Text> words, float size, float radius, string up, string down)
+    private readonly List<TMP_Text> letters = new();
+
+    private string shownTop = string.Empty;
+
+    private string shownFoot = string.Empty;
+
+    private string footFrom = string.Empty;
+
+    private string footTo = string.Empty;
+
+    private float footSetAt;
+
+    /// <summary>
+    /// Sets <paramref name="up"/> and <paramref name="down"/> round <paramref name="ring"/>,
+    /// keeping <paramref name="words"/> in step; true when the letters were set
+    /// anew, and want painting.
+    /// </summary>
+    public bool Show(RectTransform ring, TMP_Text template, List<TMP_Text> words, float size, float radius, string up, string down)
+    {
+        float now = Time.unscaledTime;
+        if (down != footTo)
+        {
+            footFrom = footTo.Length > 0 && NumberingMachine.Seconds(shownFoot, down) > 0f ? shownFoot : down;
+            footTo = down;
+            footSetAt = now;
+        }
+
+        string foot = NumberingMachine.Shown(footFrom, footTo, now - footSetAt);
+        if (up != shownTop || !NumberingMachine.SameLayout(shownFoot, foot))
+        {
+            shownTop = up;
+            shownFoot = foot;
+            Set(ring, template, words, size, radius, up, foot);
+            return true;
+        }
+
+        if (foot != shownFoot)
+        {
+            // The same letters in the same places: only the turning figures change.
+            int at = letters.Count - foot.Count(letter => letter != ' ');
+            foreach (char letter in foot)
+            {
+                if (letter != ' ')
+                {
+                    PaperText.Set(letters[at++], letter.ToString());
+                }
+            }
+
+            shownFoot = foot;
+        }
+
+        return false;
+    }
+
+    private void Set(RectTransform ring, TMP_Text template, List<TMP_Text> words, float size, float radius, string up, string down)
     {
         foreach (TMP_Text letter in letters)
         {
@@ -397,23 +447,25 @@ internal sealed class PostmarkFace : StampFace
 
     private const float LetterSize = 12.5f;
 
+    /// <summary>How far apart the time's figure wheels stand, in em.</summary>
+    private const float ClockAdvance = 0.5f;
+
     private readonly Func<string> top;
 
     private readonly Func<string> bottom;
 
-    private readonly List<TMP_Text> letters = new();
+    private readonly RimLetters rim = new();
 
     private TMP_Text text = null!;
 
     private TMP_Text time = null!;
 
+    private NumberWheels dater = null!;
+
     private RectTransform ring = null!;
 
     private TMP_Text template = null!;
 
-    private string shownTop = string.Empty;
-
-    private string shownBottom = string.Empty;
 
     /// <param name="top">The office's name, round the ring's top.</param>
     /// <param name="bottom">The date, round the ring's foot.</param>
@@ -461,6 +513,7 @@ internal sealed class PostmarkFace : StampFace
         clock.anchoredPosition = new Vector2(0f, -15f);
         time = PaperText.Make(clock.gameObject, template, LetterSize, TextAlignmentOptions.Center);
         time.characterSpacing = 2f;
+        dater = NumberWheels.Add(time, ClockAdvance);
         Words.Add(text);
         Words.Add(time);
         Paint();
@@ -469,14 +522,9 @@ internal sealed class PostmarkFace : StampFace
     public override void Show(string word)
     {
         PaperText.Set(text, word);
-        PaperText.Set(time, DateTime.Now.ToString("hh:mm tt", System.Globalization.CultureInfo.InvariantCulture));
-        string up = top();
-        string down = bottom();
-        if (up != shownTop || down != shownBottom)
+        dater.Set(DateTime.Now.ToString("hh:mm tt", System.Globalization.CultureInfo.InvariantCulture));
+        if (rim.Show(ring, template, Words, LetterSize, Ring / 2f - 15f, top(), bottom()))
         {
-            shownTop = up;
-            shownBottom = down;
-            RimLetters.Set(ring, template, letters, Words, LetterSize, Ring / 2f - 15f, up, down);
             Paint();
         }
     }

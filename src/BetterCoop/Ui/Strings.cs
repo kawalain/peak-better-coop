@@ -337,9 +337,10 @@ internal static class Strings
     public static string PostmarkOffice => Korean ? "섬 분대 우체국" : "ISLAND TROOP P.O.";
 
     /// <summary>The date round a postmark's foot.</summary>
+    /// <remarks>Figures are kept to two places, as a dater's wheels set them.</remarks>
     public static string PostmarkDate(System.DateTime day) => Korean
-        ? day.ToString("yyyy. M. d.", System.Globalization.CultureInfo.InvariantCulture)
-        : day.ToString("MMM d yyyy", System.Globalization.CultureInfo.InvariantCulture).ToUpperInvariant();
+        ? day.ToString("yyyy. MM. dd.", System.Globalization.CultureInfo.InvariantCulture)
+        : day.ToString("MMM dd yyyy", System.Globalization.CultureInfo.InvariantCulture).ToUpperInvariant();
 
     public static string StampDiscard => Korean ? "버리기" : "Discard";
 

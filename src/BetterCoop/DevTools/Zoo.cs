@@ -67,6 +67,8 @@ internal sealed class ZooPage : PaperPage
 
     private int seed = 1;
 
+    private int days;
+
     private ZooLetter.Scene letterScene = ZooLetter.Scenes[0];
 
     private RunEnding ending = RunEnding.Summit;
@@ -89,6 +91,12 @@ internal sealed class ZooPage : PaperPage
     protected override string FormNumber() => T("Zoo 서식 제0호 · 견본", "Zoo Form No. 0 · Specimen");
 
     protected override string FormNote() => T($"찍은 횟수 {presses}", $"Stamped {presses}");
+
+    /// <summary>A serial on the numbering machine that moves on one with every stamp pressed.</summary>
+    protected override string FormSerial() => Strings.Serial(1_959_000 + presses);
+
+    /// <summary>The day the Zoo's daters are set to.</summary>
+    private DateTime Today() => DateTime.Now.AddDays(days);
 
     protected override void Fill(PaperList list)
     {
@@ -150,7 +158,7 @@ internal sealed class ZooPage : PaperPage
             () => T("통보", "Notified"),
             () => presses++,
             about: () => T("옛 우체국 소인처럼 찍히는 도장입니다. 도장의 얼굴만 바꿔 다른 도장을 만들 수 있습니다.", "A stamp that lands as an old post office's postmark; a stamp's face is all that makes it another kind."),
-            face: new PostmarkFace(() => T("ZOO 우체국", "ZOO P.O."), () => Strings.PostmarkDate(System.DateTime.Now)));
+            face: new PostmarkFace(() => T("ZOO 우체국", "ZOO P.O."), () => Strings.PostmarkDate(Today())));
         list.Stamp(
             () => T("값과 도장", "Value and stamp"),
             () => T("교대", "Swap"),
@@ -215,11 +223,11 @@ internal sealed class ZooPage : PaperPage
             on => on < 0f ? T("누르는 대로", "As pressed") : on <= 0f ? T("찍기 전", "Before striking") : on < 1f ? T("마르는 중", "Drying") : T("찍은 뒤", "Struck"));
         Specimen(list, T("1. 사무용 고무 도장", "1. Office rubber stamp"), T("취소", "Void"), new RubberFace());
         Specimen(list, T("2. 원형 일부인", "2. Circular date stamp"), T("통보", "Notify"),
-            new SealFace(StampShape.DateRing, FormDrawing.StampBlue, () => "BETTERCOOP P.O.", () => Strings.PostmarkDate(DateTime.Now), seed: 6));
+            new SealFace(StampShape.DateRing, FormDrawing.StampBlue, () => "BETTERCOOP P.O.", () => Strings.PostmarkDate(Today()), seed: 6));
         Specimen(list, T("3. 이중 원 일부인", "3. Double-ring date stamp"), T("섞기", "Shuffle"),
             new SealFace(StampShape.DoubleRing, FormDrawing.PostmarkInk, () => "BETTERCOOP TROOP", () => "★ ORDERS ★", seed: 7));
         Specimen(list, T("4. 듀플렉스 + 킬러 바", "4. Duplex with killer bars"), T("취소", "Cancel"),
-            new SealFace(StampShape.Duplex, FormDrawing.PostmarkInk, () => "BETTERCOOP P.O.", () => Strings.PostmarkDate(DateTime.Now), seed: 8));
+            new SealFace(StampShape.Duplex, FormDrawing.PostmarkInk, () => "BETTERCOOP P.O.", () => Strings.PostmarkDate(Today()), seed: 8));
         Specimen(list, T("5. 뮤트 오벌", "5. Mute oval"), T("열람", "Read"),
             new SealFace(StampShape.MuteOval, FormDrawing.StampViolet, seed: 9));
         Specimen(list, T("6. 타깃", "6. Target"), T("섞기", "Shuffle"),
@@ -231,7 +239,14 @@ internal sealed class ZooPage : PaperPage
         Specimen(list, T("9. 공증 인장", "9. Notary seal"), T("요청", "Ask"),
             new SealFace(StampShape.Notary, FormDrawing.StampBlue, () => "TROOP NOTARY", () => "BETTERCOOP", seed: 14));
         Specimen(list, T("10. 우편 소인 (지금 통보)", "10. Postmark (Notify now)"), T("통보", "Notify"),
-            new PostmarkFace(() => T("ZOO 우체국", "ZOO P.O."), () => Strings.PostmarkDate(DateTime.Now)));
+            new PostmarkFace(() => T("ZOO 우체국", "ZOO P.O."), () => Strings.PostmarkDate(Today())));
+        list.Stamp(
+            () => T("일부인 날짜 넘기기", "Turn the daters on a day"),
+            () => T("넘기기", "Turn"),
+            () => days++,
+            about: () => T(
+                "날짜가 들어간 도장들의 날짜 바퀴가 하루 앞으로 돌아갑니다. 서식 번호는 도장을 찍을 때마다 넘버링 머신처럼 하나씩 올라가고, 종이를 다시 올리면 0부터 돌아갑니다.",
+                "The dated stamps' wheels turn on a day. The serial goes up one with every stamp, as on a numbering machine, and rolls up from noughts when the paper rises again."));
 
         list.Header(() => T("알림", "Notices"));
         list.Note(() => T(
