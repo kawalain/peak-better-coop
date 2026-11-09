@@ -112,7 +112,11 @@ internal sealed class PaperQuestion : MonoBehaviour
         Label(cancel, stay);
         if (textPath != null && Find(copy.transform, textPath).GetComponentInChildren<TMP_Text>(true) is TMP_Text words)
         {
-            words.text = string.IsNullOrEmpty(note) ? question : $"{question}\n<size=70%>{note}</size>";
+            // The note set apart from the question by a little air, and kept clear of the window's edges.
+            words.text = string.IsNullOrEmpty(note) ? question : $"{question}\n<size=45%> </size>\n<size=68%>{note}</size>";
+            words.margin = new Vector4(words.margin.x + 36f, words.margin.y, words.margin.z + 36f, words.margin.w);
+            words.textWrappingMode = TextWrappingModes.Normal;
+            Shrink(words, 0.6f);
         }
 
         window.Open();
@@ -139,12 +143,24 @@ internal sealed class PaperQuestion : MonoBehaviour
 
     private static Transform Find(Transform root, string path) => path.Length == 0 ? root : root.Find(path);
 
+    /// <summary>Writes a button's word on one line, smaller if it would not fit.</summary>
     private static void Label(Button button, string text)
     {
         if (button.GetComponentInChildren<TMP_Text>(true) is TMP_Text label)
         {
             label.text = text;
+            label.textWrappingMode = TextWrappingModes.NoWrap;
+            Shrink(label, 0.55f);
         }
+    }
+
+    /// <summary>Lets the text shrink to <paramref name="share"/> of its size to fit its box.</summary>
+    private static void Shrink(TMP_Text text, float share)
+    {
+        float size = text.enableAutoSizing ? text.fontSizeMax : text.fontSize;
+        text.fontSizeMax = size;
+        text.fontSizeMin = size * share;
+        text.enableAutoSizing = true;
     }
 
     /// <summary>The question on a slip of paper laid over the page, for when the game's window is not there.</summary>

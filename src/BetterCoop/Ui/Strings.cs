@@ -179,8 +179,8 @@ internal static class Strings
     public static string DiscardDraft => Korean ? "초안을 버리겠습니까?" : "Throw the draft away?";
 
     public static string DiscardDraftNote => Korean
-        ? "통보하지 않은 짝 명단 초안이 있습니다. 버리면 지금의 짝 명단으로 돌아갑니다."
-        : "The Pairs you laid out have not been announced. Thrown away, the list goes back to the Pairs as they are.";
+        ? "통보하지 않은 짝 명단 초안이 있습니다.\n버리면 지금의 짝 명단으로 돌아갑니다."
+        : "The Pairs you laid out have not been announced.\nThrown away, the list goes back to the Pairs as they are.";
 
     public static string MenuDraft => Korean
         ? "초안입니다. 통보하기 전에는 아무도 바뀌지 않습니다."
