@@ -79,6 +79,36 @@
     </Task>
   </UsingTask>
 
+  <!--
+    The package's CHANGELOG.md is compiled from docs/changelogs/<version>.md,
+    newest first: each version's notes for players, without its commit list.
+  -->
+  <UsingTask TaskName="BetterCoopCompileChangelog" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Directory ParameterType="System.String" Required="true" />
+      <Destination ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        var files = new System.Collections.Generic.List<string>(System.IO.Directory.GetFiles(Directory, "*.md"));
+        files.Sort((a, b) => System.Version.Parse(System.IO.Path.GetFileNameWithoutExtension(b))
+            .CompareTo(System.Version.Parse(System.IO.Path.GetFileNameWithoutExtension(a))));
+        var text = new System.Text.StringBuilder("# Changelog\n");
+        foreach (string file in files)
+        {
+            var notes = new System.Collections.Generic.List<string>();
+            foreach (string line in System.IO.File.ReadAllLines(file))
+            {
+                if (line == "## Commits") break;
+                notes.Add(line.StartsWith("#") ? "#" + line : line);
+            }
+            text.Append("\n").Append(string.Join("\n", notes).TrimEnd()).Append("\n");
+        }
+        System.IO.File.WriteAllText(Destination, text.ToString());
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
   <Target Name="CheckNoDevTools" AfterTargets="Build" BeforeTargets="PackageTestBuild" Condition="'$(Configuration)' != 'Debug'">
     <BetterCoopFindNames File="$(TargetPath)" Names="BetterCoop.DevTools;OnStarted;OnPauseMenu;SoloPairWanted;OnHandPictured;ScoutIdOf;Solo Pair;ZooPage;Control Line;ControlLine">
       <Output TaskParameter="Found" PropertyName="DevToolsFound" />
@@ -114,7 +144,9 @@
 }]]></ManifestJson>
     </PropertyGroup>
     <RemoveDir Directories="$(PackageStageDir)" />
-    <Copy SourceFiles="$(TargetPath);$(MSBuildThisFileDirectory)..\..\README.md;$(MSBuildThisFileDirectory)..\..\CHANGELOG.md;$(MSBuildThisFileDirectory)..\..\LICENSE;$(MSBuildThisFileDirectory)..\..\icon.png" DestinationFolder="$(PackageStageDir)" />
+    <Copy SourceFiles="$(TargetPath);$(MSBuildThisFileDirectory)..\..\README.md;$(MSBuildThisFileDirectory)..\..\LICENSE;$(MSBuildThisFileDirectory)..\..\icon.png" DestinationFolder="$(PackageStageDir)" />
+    <Error Condition="!Exists('$(MSBuildThisFileDirectory)..\..\docs\changelogs\$(Version).md')" Text="docs/changelogs/$(Version).md is missing: write the changelog of the version being packaged." />
+    <BetterCoopCompileChangelog Directory="$(MSBuildThisFileDirectory)..\..\docs\changelogs" Destination="$(PackageStageDir)CHANGELOG.md" />
     <WriteLinesToFile File="$(PackageStageDir)manifest.json" Lines="$(ManifestJson)" Overwrite="true" />
     <MakeDir Directories="$(MSBuildThisFileDirectory)..\..\artifacts" />
     <ZipDirectory SourceDirectory="$(PackageStageDir)" DestinationFile="$(PackageZip)" Overwrite="true" />

@@ -112,6 +112,14 @@ Players must run the exact same version to depart, so bump `<Version>` in
 new features, patch for a build of fixes. Commits in between keep the version.
 A Release build writes the test build to `artifacts/BetterCoop-<version>.zip`.
 
+Every version has `docs/changelogs/<version>.md`: the date, a short summary,
+Breaking changes, New, Changed, and Fixed for players, then `## Commits`, the
+version's commits grouped by Conventional Commit type. Write it with the bump.
+The Release build refuses to package without it and compiles the zip's
+`CHANGELOG.md` from every version's notes above `## Commits`. Each version is
+tagged `v<version>` on its release commit, and its GitHub release carries that
+changelog as notes; only a version published to Thunderstore attaches its zip.
+
 ## Publish to Thunderstore
 
 Publish only when the user asks for this version to go out; a build, commit,
