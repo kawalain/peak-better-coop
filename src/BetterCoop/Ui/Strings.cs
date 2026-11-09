@@ -127,6 +127,8 @@ internal static class Strings
 
     public static string StampRestore => Korean ? "복구" : "Restore";
 
+    public static string StampReally => Korean ? "정말로?" : "Really?";
+
     public static string Serial(int number) => $"No. {number:D7}";
 
     /// <summary>A notice's words without the "Coop:" the game's log needs to tell them from its own.</summary>

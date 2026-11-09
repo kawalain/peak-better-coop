@@ -34,6 +34,33 @@ public class ScrollMotionTests
     }
 
     [Fact]
+    public void A_travel_arrives_in_its_time_easing_out()
+    {
+        ScrollMotion motion = List();
+        motion.Travel(300f, 0.45f);
+        Run(motion, 0.1f);
+
+        Assert.InRange(motion.Position, 100f, 299f);
+        Run(motion, 0.4f);
+        Assert.Equal(300f, motion.Position, 1);
+        Assert.False(motion.Travelling);
+    }
+
+    [Fact]
+    public void A_push_stops_a_travel_where_it_is()
+    {
+        ScrollMotion motion = List();
+        motion.Travel(400f, 0.45f);
+        Run(motion, 0.1f);
+        float stopped = motion.Position;
+        motion.Push(-10f);
+        Run(motion, 1f);
+
+        Assert.False(motion.Travelling);
+        Assert.Equal(stopped - 10f, motion.Position, 1);
+    }
+
+    [Fact]
     public void A_push_past_the_end_meets_resistance()
     {
         ScrollMotion motion = List(max: 0f);

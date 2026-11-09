@@ -99,7 +99,8 @@ internal sealed class PaperList
     }
 
     /// <summary>A numbered section heading with a dashed rule under it, as the paper's perforations are drawn.</summary>
-    public void Header(Func<string> text, Func<bool>? visible = null)
+    /// <returns>The header's row, for the page to scroll to.</returns>
+    public RectTransform Header(Func<string> text, Func<bool>? visible = null)
     {
         int number = ++section;
         PaperRow row = NewRow("Header", HeaderHeight, visible, TextAnchor.LowerLeft);
@@ -109,6 +110,7 @@ internal sealed class PaperList
         AddDrawing(row.Root.transform, "Rule", RuleHeight, size => PaperDrawing.DashedRule(size.x, size.y));
         row.Refreshers.Add(() => PaperText.Set(title, $"{number}.  {text()}"));
         Add(row);
+        return (RectTransform)row.Root.transform;
     }
 
     /// <summary>A small heading inside a section, grouping the rows under it.</summary>
@@ -217,6 +219,8 @@ internal sealed class PaperList
     /// <summary>
     /// A rubber stamp to press for an action. One not available now shows
     /// faint but still answers, to say why. Pressed, it comes down with a thump.
+    /// With <paramref name="confirm"/>, the first press only turns its word to
+    /// "Really?", and a second press soon after acts.
     /// </summary>
     public void Stamp(
         Func<string> label,
@@ -226,7 +230,8 @@ internal sealed class PaperList
         Func<string>? about = null,
         Func<bool>? visible = null,
         Func<string>? value = null,
-        StampFace? face = null)
+        StampFace? face = null,
+        bool confirm = false)
     {
         (PaperRow row, RectTransform line) = FieldRow(label, about, visible, leader: true);
         if (value != null)
@@ -236,7 +241,7 @@ internal sealed class PaperList
             row.Refreshers.Add(() => PaperText.Set(answer, value()));
         }
 
-        StampMark stamp = AddStamp(line, word, press, face);
+        StampMark stamp = new(line, template, word, press, face, confirm);
         row.First = stamp.Control;
         row.Refreshers.Add(() => stamp.Refresh(available?.Invoke() ?? true));
         Add(row);
@@ -619,25 +624,83 @@ internal sealed class PaperRow
 /// </summary>
 internal sealed class StampMark
 {
+    /// <summary>How long a stamp asking "Really?" waits for the second press.</summary>
+    private const float ArmedSeconds = 3f;
+
     private readonly Func<string> word;
 
     private readonly CanvasGroup ink;
 
     private readonly StampFace face;
 
-    public StampMark(Transform parent, TMP_Text template, Func<string> word, Action press, StampFace? face = null)
+    private readonly Action press;
+
+    private readonly bool confirm;
+
+    private float armedAt = float.NegativeInfinity;
+
+    private int usesWhenArmed;
+
+    /// <param name="confirm">Whether the first press only asks "Really?" and a second press acts.</param>
+    public StampMark(Transform parent, TMP_Text template, Func<string> word, Action press, StampFace? face = null, bool confirm = false)
     {
         this.word = word;
+        this.press = press;
+        this.confirm = confirm;
         this.face = face ?? new RubberFace();
         RectTransform holder = PaperList.NewRect("Stamp", parent);
         ink = holder.gameObject.AddComponent<CanvasGroup>();
         this.face.Build(holder, template);
         holder.gameObject.AddComponent<Image>().color = Color.clear;
-        Control = PaperControl.Add<StampControl>(holder.gameObject, press);
+        Control = PaperControl.Add<StampControl>(holder.gameObject, Pressed);
         Control.Visual = holder;
     }
 
     public PaperControl Control { get; }
+
+    /// <summary>Whether the stamp is waiting for the second press.</summary>
+    private bool Armed => Time.unscaledTime - armedAt < ArmedSeconds;
+
+    private void Pressed()
+    {
+        if (!confirm)
+        {
+            press();
+            return;
+        }
+
+        if (Armed)
+        {
+            Disarm();
+            press();
+            return;
+        }
+
+        armedAt = Time.unscaledTime;
+        usesWhenArmed = PaperControl.Uses;
+        face.Show(Strings.StampReally);
+        Control.Thump(1.3f);
+    }
+
+    private void Disarm() => armedAt = float.NegativeInfinity;
+
+    /// <summary>
+    /// Puts the stamp back to its word once its time runs out, another control
+    /// is used, or the selection moves on to something else.
+    /// </summary>
+    private void KeepArmed()
+    {
+        if (!Armed)
+        {
+            return;
+        }
+
+        GameObject? selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
+        if (PaperControl.Uses != usesWhenArmed || (selected != null && selected != Control.gameObject))
+        {
+            Disarm();
+        }
+    }
 
     /// <summary>Inks the stamp in another colour, as a stamp that only keeps things as they are.</summary>
     public void Recolour(Color color) => face.Recolour(new Ink(color.r, color.g, color.b));
@@ -645,7 +708,8 @@ internal sealed class StampMark
     /// <summary>Follows the word and whether the stamp is available, fading between faint and full.</summary>
     public void Refresh(bool available)
     {
-        face.Show(word());
+        KeepArmed();
+        face.Show(Armed ? Strings.StampReally : word());
         float alpha = available ? 1f : 0.35f;
         if (!Mathf.Approximately(ink.alpha, alpha))
         {

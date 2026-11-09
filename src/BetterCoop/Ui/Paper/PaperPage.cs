@@ -36,6 +36,9 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     /// <summary>Room between a perforation and the list, so rows never touch it.</summary>
     private const float ListGap = 10f;
 
+    /// <summary>How long the page takes to carry the eye to a part of the form.</summary>
+    private const float ShowSeconds = 0.45f;
+
     private const float WheelStep = 70f;
 
     private readonly Vector3[] corners = new Vector3[4];
@@ -594,6 +597,32 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     }
 
     /// <summary>Glides a row a gamepad moves to into view.</summary>
+    /// <summary>
+    /// Scrolls smoothly so a part of the form, from <paramref name="first"/>
+    /// to <paramref name="last"/>, starts at the top of the view, unless all of
+    /// it already shows. Scrolling by hand stops it.
+    /// </summary>
+    protected void ShowPart(RectTransform first, RectTransform last)
+    {
+        float top = Depth(first, 1);
+        float bottom = Depth(last, 0);
+        float view = viewport.rect.height;
+        if (top >= scroll.Position && bottom <= scroll.Position + view)
+        {
+            return;
+        }
+
+        scroll.Max = content.rect.height - view;
+        scroll.Travel(top - ListGap, ShowSeconds);
+    }
+
+    /// <summary>How far down from the list's top a corner of <paramref name="rect"/> is, as the scroll position is measured.</summary>
+    private float Depth(RectTransform rect, int corner)
+    {
+        rect.GetWorldCorners(corners);
+        return -content.InverseTransformPoint(corners[corner]).y;
+    }
+
     private void KeepSelectionInView()
     {
         GameObject? selected = EventSystem.current != null ? EventSystem.current.currentSelectedGameObject : null;
@@ -608,10 +637,9 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
             return;
         }
 
-        // Measured down from the list's top, as the scroll position is.
-        ((RectTransform)selected.transform).GetWorldCorners(corners);
-        float top = -content.InverseTransformPoint(corners[1]).y;
-        float bottom = -content.InverseTransformPoint(corners[0]).y;
+        var rect = (RectTransform)selected.transform;
+        float top = Depth(rect, 1);
+        float bottom = Depth(rect, 0);
         float view = viewport.rect.height;
         if (top < scroll.Position)
         {

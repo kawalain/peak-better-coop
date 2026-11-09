@@ -108,6 +108,9 @@ internal sealed class RosterPage : PaperPage
 
     private PairBoard? board;
 
+    /// <summary>The header over the board, where a shuffle carries the eye.</summary>
+    private RectTransform? pairsHeading;
+
     /// <summary>Where each scout's photo was before the board was drawn again, so it moves rather than jumps.</summary>
     private IReadOnlyDictionary<int, Vector3>? places;
 
@@ -139,6 +142,7 @@ internal sealed class RosterPage : PaperPage
         bool leads = room.InRoom && room.IsTroopLeader;
         PlayerRows.Add(list, room);
         board = null;
+        pairsHeading = null;
         if (room.Formed || room.Planning)
         {
             PairDraft shown;
@@ -153,12 +157,13 @@ internal sealed class RosterPage : PaperPage
                 shown = new PairDraft(Basis(), room.Players);
             }
 
-            board = PairRows.Add(list, room, shown, portraits, leads, Moved, StartOver, HandIn);
+            board = PairRows.Add(list, room, shown, portraits, leads, Moved, StartOver, HandIn, out RectTransform heading);
+            pairsHeading = heading;
         }
 
         if (leads)
         {
-            TroopLeaderRows.Add(list, room, DrawPlan);
+            TroopLeaderRows.Add(list, room, DrawPlan, ShowPairs);
         }
 
         PlayerRows.Sign(list, room);
@@ -193,6 +198,15 @@ internal sealed class RosterPage : PaperPage
         board?.Redraw();
     }
 
+    /// <summary>Carries the eye up to the Pairs, as after a shuffle, so the new Pairs can be checked.</summary>
+    private void ShowPairs()
+    {
+        if (pairsHeading != null && board != null)
+        {
+            ShowPart(pairsHeading, (RectTransform)board.transform);
+        }
+    }
+
     protected override void BeforeRefill() => places = board != null ? board.Places() : null;
 
     protected override void AfterRefill()
@@ -223,10 +237,11 @@ internal static class PairRows
         bool leads,
         Action<int> moved,
         Action startOver,
-        Action<Action> handIn)
+        Action<Action> handIn,
+        out RectTransform heading)
     {
         bool planning = !room.Formed;
-        list.Header(() => planning ? Strings.MenuPairPlan : Strings.MenuPairs);
+        heading = list.Header(() => planning ? Strings.MenuPairPlan : Strings.MenuPairs);
         if (planning)
         {
             list.Note(() => leads ? Strings.MenuPlanHelp : Strings.MenuPlanNone, visible: () => leads || room.Plan.Count == 0);
@@ -375,7 +390,8 @@ internal static class TroopLeaderRows
     private static readonly int[] Intervals = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60];
 
     /// <param name="drawPlan">At the Airport, draws a plan at random into the Troop Leader's draft.</param>
-    public static void Add(PaperList list, ICoopRoom room, Action drawPlan)
+    /// <param name="showPairs">Carries the eye up to the Pairs once they are shuffled.</param>
+    public static void Add(PaperList list, ICoopRoom room, Action drawPlan, Action showPairs)
     {
         list.Header(() => Strings.MenuTroopLeader);
         list.Stamp(
@@ -385,22 +401,31 @@ internal static class TroopLeaderRows
             {
                 if (room.Formed)
                 {
-                    Order(room.Shuffle());
+                    bool started = room.Shuffle();
+                    Order(started);
+                    if (!started)
+                    {
+                        return;
+                    }
                 }
                 else
                 {
                     drawPlan();
                 }
+
+                showPairs();
             },
             available: () => !room.Busy,
             about: () => room.Formed ? Strings.AboutShuffleNow : Strings.AboutShufflePlan,
-            visible: () => room.Formed || room.Planning);
+            visible: () => room.Formed || room.Planning,
+            confirm: true);
         list.Stamp(
             () => Strings.MenuRecover,
             () => Strings.StampRestore,
             room.Recover,
             about: () => Strings.AboutRecover,
-            visible: () => room.Formed);
+            visible: () => room.Formed,
+            confirm: true);
 
         list.Header(() => Strings.MenuRunRules);
         list.Subheading(() => Strings.RulesPairs);

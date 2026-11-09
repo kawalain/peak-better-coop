@@ -26,6 +26,9 @@ internal class PaperControl : Selectable, IPointerClickHandler, ISubmitHandler
 
     private float target = 1f;
 
+    /// <summary>Counts every press, step, or back on any paper control, so a stamp asking "Really?" knows another was used.</summary>
+    public static int Uses { get; private set; }
+
     /// <summary>A left click or submit.</summary>
     public Action? Pressed { get; set; }
 
@@ -70,6 +73,7 @@ internal class PaperControl : Selectable, IPointerClickHandler, ISubmitHandler
         }
         else if (eventData.button == PointerEventData.InputButton.Right && Back != null)
         {
+            Uses++;
             Play(click: true);
             Run(Back);
         }
@@ -94,6 +98,7 @@ internal class PaperControl : Selectable, IPointerClickHandler, ISubmitHandler
     {
         if (Step != null && (eventData.moveDir == MoveDirection.Left || eventData.moveDir == MoveDirection.Right))
         {
+            Uses++;
             Play(click: true);
             Run(() => Step(eventData.moveDir == MoveDirection.Left ? -1 : 1));
             eventData.Use();
@@ -123,6 +128,7 @@ internal class PaperControl : Selectable, IPointerClickHandler, ISubmitHandler
 
     protected virtual void Press()
     {
+        Uses++;
         Play(click: true);
         Thump(Sink);
         if (Pressed != null)

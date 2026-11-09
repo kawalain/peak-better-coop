@@ -29,7 +29,18 @@ internal sealed class ScrollMotion
 
     private float max;
 
+    private float travelFrom;
+
+    private float travelTo;
+
+    private float travelSeconds;
+
+    private float travelled = float.MaxValue;
+
     public float Position { get; private set; }
+
+    /// <summary>Whether a <see cref="Travel"/> is under way.</summary>
+    public bool Travelling => travelled < travelSeconds;
 
     /// <summary>How far the list scrolls; 0 when it fits.</summary>
     public float Max
@@ -59,12 +70,30 @@ internal sealed class ScrollMotion
             amount *= give * give * 0.5f;
         }
 
+        travelled = float.MaxValue;
         target = Clamp(target + amount, -Stretch, max + Stretch);
         sincePush = 0f;
     }
 
     /// <summary>Glides to a position within the list, as when the selection moves.</summary>
-    public void GlideTo(float position) => target = Clamp(position, 0f, max);
+    public void GlideTo(float position)
+    {
+        travelled = float.MaxValue;
+        target = Clamp(position, 0f, max);
+    }
+
+    /// <summary>
+    /// Travels to a position over <paramref name="seconds"/>, easing out, as
+    /// the page carrying the eye to something that just changed. A push or a
+    /// glide stops it where it is.
+    /// </summary>
+    public void Travel(float position, float seconds)
+    {
+        travelFrom = Position;
+        travelTo = Clamp(position, 0f, max);
+        travelSeconds = Math.Max(seconds, 0.0001f);
+        travelled = 0f;
+    }
 
     /// <summary>Jumps to a position at once, without any motion.</summary>
     public void Reset(float position = 0f)
@@ -83,6 +112,16 @@ internal sealed class ScrollMotion
         }
 
         sincePush += seconds;
+        if (Travelling)
+        {
+            travelled += seconds;
+            float t = Math.Min(1f, travelled / travelSeconds);
+            float eased = 1f - (1f - t) * (1f - t) * (1f - t);
+            Position = target = travelFrom + (Clamp(travelTo, 0f, max) - travelFrom) * eased;
+            velocity = 0f;
+            return;
+        }
+
         bool springing = false;
         if (sincePush >= HoldSeconds && (target < 0f || target > max))
         {
