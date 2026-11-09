@@ -63,15 +63,27 @@ internal static class PairShuffle
     {
         get
         {
-            Operation? room = PhotonNetwork.InRoom
-                && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Operation, out object value)
-                    ? Operation.Decode(value)
-                    : null;
+            Operation? room = RoomOperation();
             bool newer = published != null
                 && (room == null || published.Id > room.Id || (published.Id == room.Id && published.Done));
             return newer ? published : room;
         }
     }
+
+    private static Operation? RoomOperation() =>
+        PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Operation, out object value)
+            ? Operation.Decode(value)
+            : null;
+
+    /// <summary>
+    /// Whether the room shows the operation this host last wrote, and with it
+    /// the Pairs it wrote: until the server echoes a write back, the room
+    /// still shows the Pairs from before.
+    /// </summary>
+    private static bool Echoed =>
+        published == null
+        || (RoomOperation() is Operation room
+            && (room.Id > published.Id || (room.Id == published.Id && room.Done == published.Done)));
 
     /// <summary>Whether an operation is announced and not yet done.</summary>
     internal static bool Busy => Current is { Done: false };
@@ -263,7 +275,7 @@ internal static class PairShuffle
             }
         }
 
-        if (!Busy && Time.unscaledTime >= nextLatePairingCheck)
+        if (!Busy && Echoed && Time.unscaledTime >= nextLatePairingCheck)
         {
             nextLatePairingCheck = Time.unscaledTime + 1f;
             RequestLatePairing();
