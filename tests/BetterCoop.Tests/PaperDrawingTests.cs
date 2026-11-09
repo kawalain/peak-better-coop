@@ -42,6 +42,24 @@ public class PaperDrawingTests
     }
 
     [Fact]
+    public void A_corner_never_runs_past_a_perforation_near_it()
+    {
+        XElement slip = XElement.Parse(PaperDrawing.Slip(480f, 140f, 46f));
+        var edges = slip.Descendants(Svg + "path")
+            .Where(p => p.Attribute("stroke-width")?.Value == "1.6" || p.Attribute("fill")?.Value == PaperDrawing.InkBlack.Hex)
+            .Select(p => p.Attribute("d")!.Value);
+
+        foreach (string edge in edges)
+        {
+            // Down the right side: the corner's arc ends at or before the notch's starts.
+            string[] parts = edge.Split('V', 'A');
+            float cornerEnd = float.Parse(parts[1].Split(' ').Last(), CultureInfo.InvariantCulture);
+            float notchStart = float.Parse(parts[2], CultureInfo.InvariantCulture);
+            Assert.True(cornerEnd <= notchStart + 0.01f, $"{cornerEnd} > {notchStart} in {edge}");
+        }
+    }
+
+    [Fact]
     public void Each_edge_cuts_four_notches_with_arcs()
     {
         string edge = Draw().Descendants(Svg + "path").Skip(1).First().Attribute("d")!.Value;

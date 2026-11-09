@@ -105,8 +105,8 @@ internal static class PaperDrawing
         svg.Append(F($"<path d=\"{sheet.Edge(Outline)}\" fill=\"{Paper.Hex}\"/>"));
 
         var random = new Random(seed);
-        AppendBlotches(svg, random, width, height);
-        AppendFibres(svg, random, width, height);
+        AppendBlotches(svg, random, width, height, Paper);
+        AppendFibres(svg, random, width, height, Paper);
 
         svg.Append(F($"<path d=\"{sheet.Edge(RuleInset)}\" fill=\"none\" stroke=\"{Paper.Mix(PassportBlue, 0.5f).Hex}\" stroke-width=\"1.6\"/>"));
         AppendPerforation(svg, width, sheet.TopTear);
@@ -134,8 +134,8 @@ internal static class PaperDrawing
         svg.Append(F($"<path d=\"{sheet.Edge(0f)}\" fill=\"{InkBlack.Hex}\"/>"));
         svg.Append(F($"<path d=\"{sheet.Edge(Outline)}\" fill=\"{face.Hex}\"/>"));
         var random = new Random(seed);
-        AppendBlotches(svg, random, width, height);
-        AppendFibres(svg, random, width, height);
+        AppendBlotches(svg, random, width, height, face);
+        AppendFibres(svg, random, width, height, face);
         svg.Append(F($"<path d=\"{sheet.Edge(RuleInset)}\" fill=\"none\" stroke=\"{face.Mix(PassportBlue, 0.5f).Hex}\" stroke-width=\"1.6\"/>"));
         AppendPerforation(svg, width, tear);
         svg.Append("</g></svg>");
@@ -183,9 +183,9 @@ internal static class PaperDrawing
     /// Each is a few nested blobs a shade apart, so it darkens toward its
     /// middle as a wash does rather than showing one hard edge.
     /// </summary>
-    private static void AppendBlotches(StringBuilder svg, Random random, float width, float height)
+    private static void AppendBlotches(StringBuilder svg, Random random, float width, float height, Ink paper)
     {
-        var light = new Ink(1f, 0.99f, 0.95f);
+        Ink light = paper.Mix(new Ink(1f, 1f, 1f), 0.6f);
         int count = Math.Max(5, (int)(width * height / 80000f));
         for (int i = 0; i < count; i++)
         {
@@ -196,7 +196,7 @@ internal static class PaperDrawing
             float depth = dark ? Next(random, 0.02f, 0.035f) : Next(random, 0.1f, 0.18f);
             for (int layer = 1; layer <= 3; layer++)
             {
-                Ink tone = Paper.Mix(dark ? InkBlack : light, depth * layer / 3f);
+                Ink tone = paper.Mix(dark ? InkBlack : light, depth * layer / 3f);
                 float scale = 1f - 0.24f * (layer - 1);
                 svg.Append(F($"<path d=\"{Blob(random, cx, cy, size * scale)}\" fill=\"{tone.Hex}\"/>"));
             }
@@ -204,7 +204,7 @@ internal static class PaperDrawing
     }
 
     /// <summary>Tiny fibres and specks in the paper.</summary>
-    private static void AppendFibres(StringBuilder svg, Random random, float width, float height)
+    private static void AppendFibres(StringBuilder svg, Random random, float width, float height, Ink paper)
     {
         int count = (int)(width * height / 7000f);
         for (int i = 0; i < count; i++)
@@ -215,7 +215,7 @@ internal static class PaperDrawing
             double angle = random.NextDouble() * Math.PI;
             float dx = (float)Math.Cos(angle) * length / 2f;
             float dy = (float)Math.Sin(angle) * length / 2f;
-            string tone = Paper.Mix(InkBlack, Next(random, 0.07f, 0.16f)).Hex;
+            string tone = paper.Mix(InkBlack, Next(random, 0.07f, 0.16f)).Hex;
             svg.Append(F($"<path d=\"M{x - dx} {y - dy}L{x + dx} {y + dy}\" stroke=\"{tone}\" stroke-width=\"{Next(random, 0.6f, 1.1f)}\" stroke-linecap=\"round\" fill=\"none\"/>"));
         }
     }
@@ -277,9 +277,18 @@ internal static class PaperDrawing
         public string Edge(float inset)
         {
             float d = inset;
-            float r = Math.Max(1f, Radius - d);
             float n = Notch + d;
             float j = (float)Math.Sqrt(n * n - d * d);
+
+            // A perforation close to a corner leaves the corner less room: round it tighter
+            // rather than let the corner's arc run past the notch's.
+            float room = TopTear - j - d;
+            if (!float.IsNaN(BottomTear))
+            {
+                room = Math.Min(room, height - d - (BottomTear + j));
+            }
+
+            float r = Math.Max(1f, Math.Min(Radius - d, room));
             float left = d;
             float right = width - d;
             float top = d;
