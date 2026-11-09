@@ -342,11 +342,11 @@ internal sealed class ZooLetter : MonoBehaviour
         if (age < Countdown)
         {
             int left = Mathf.CeilToInt(Countdown - age);
-            letter.Show(swap ? 2 : null, swap ? false : null, known: swap, left.ToString(), Strings.LetterSoon(left));
+            letter.Show(swap ? 2 : null, swap ? false : null, known: swap, left.ToString(), Strings.LetterSoon(swap ? PairChangeForMe.Swaps : PairChangeForMe.Changes, left));
             return;
         }
 
-        letter.Show(swap ? 2 : 4, swap ? false : true, known: true, Strings.LetterArrived, Strings.LetterDone);
+        letter.Show(swap ? 2 : 4, swap ? false : true, known: true, Strings.LetterArrived, Strings.LetterDoneFor(swap ? PairChangeForMe.Swaps : PairChangeForMe.Changes));
         if (!closing)
         {
             closing = true;

@@ -21,6 +21,17 @@ public class NoticeRulesTests
     public void A_new_notice_sends_the_oldest_away_when_the_stack_is_full(int shown, int leaving) =>
         Assert.Equal(leaving, NoticeTiming.Overflow(shown));
 
+    [Theory]
+    [InlineData(null, null, 5, null, true, "Gains")]
+    [InlineData(2, true, 3, null, true, "Changes")]
+    [InlineData(2, true, 2, false, true, "Swaps")]
+    [InlineData(2, false, null, false, true, "Loses")]
+    [InlineData(2, true, null, null, false, "Changes")]
+    [InlineData(null, null, null, null, false, "Mixed")]
+    public void A_pair_letter_says_what_the_change_does_to_its_reader(
+        int? partner, bool? carried, int? next, bool? carries, bool known, string expected) =>
+        Assert.Equal(expected, PairLetterPlan.ChangeFor(partner, carried, next, carries, known).ToString());
+
     [Fact]
     public void A_role_swap_shows_the_partner_and_the_turned_role()
     {

@@ -292,7 +292,24 @@ internal static class Strings
     };
 
     /// <summary>Under the photos while the countdown runs.</summary>
-    public static string LetterSoon(int seconds) => Korean ? $"{seconds}초 뒤 몸이 바뀝니다" : $"Changing places in {seconds}";
+    /// <summary>The countdown on a Pair letter, saying what the change does to the reader.</summary>
+    public static string LetterSoon(PairChangeForMe change, int seconds) => change switch
+    {
+        PairChangeForMe.Gains => Korean ? $"{seconds}초 뒤 짝이 생깁니다" : $"Paired up in {seconds}",
+        PairChangeForMe.Swaps => Korean ? $"{seconds}초 뒤 자리를 바꿉니다" : $"Swapping places in {seconds}",
+        PairChangeForMe.Loses => Korean ? $"{seconds}초 뒤 짝이 풀립니다" : $"Pair ends in {seconds}",
+        PairChangeForMe.Mixed => Korean ? $"{seconds}초 뒤 짝을 섞습니다" : $"Shuffling Pairs in {seconds}",
+        _ => Korean ? $"{seconds}초 뒤 짝이 바뀝니다" : $"New partner in {seconds}",
+    };
+
+    /// <summary>The last line of a Pair letter once the change is made.</summary>
+    public static string LetterDoneFor(PairChangeForMe change) => change switch
+    {
+        PairChangeForMe.Swaps => Korean ? "자리를 바꿔 오릅니다" : "Climbing on, places swapped",
+        PairChangeForMe.Loses => LetterAlone,
+        PairChangeForMe.Mixed => LetterDone,
+        _ => LetterDone,
+    };
 
     public static string LetterDone => Korean ? "새 짝과 함께 오릅니다" : "Climbing with your partner";
 

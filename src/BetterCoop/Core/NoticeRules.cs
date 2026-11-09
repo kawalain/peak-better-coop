@@ -44,9 +44,57 @@ internal static class NoticeTiming
     public static int Overflow(int shown) => Math.Max(0, shown + 1 - MostShown);
 }
 
+/// <summary>What a Pair change does to one player, so the Pair letter can say it plainly.</summary>
+internal enum PairChangeForMe
+{
+    /// <summary>Not yet known, as before a Pair Shuffle: the Pairs are mixed.</summary>
+    Mixed,
+
+    /// <summary>An Unpaired Player gets a partner.</summary>
+    Gains,
+
+    /// <summary>A partner gives way to another.</summary>
+    Changes,
+
+    /// <summary>The same two trade Carrier and Rider.</summary>
+    Swaps,
+
+    /// <summary>The Pair ends and the player climbs alone.</summary>
+    Loses,
+}
+
 /// <summary>Who the Pair letter shows a player before an operation runs.</summary>
 internal static class PairLetterPlan
 {
+    /// <summary>
+    /// What a change does to a player who had <paramref name="partner"/>
+    /// (carrying or not, as <paramref name="carried"/>) and will have
+    /// <paramref name="next"/>, carrying as <paramref name="carries"/>.
+    /// Unless <paramref name="known"/>, the next partner is a surprise, so a
+    /// player with a partner has them changed and one without has the Pairs mixed.
+    /// </summary>
+    public static PairChangeForMe ChangeFor(int? partner, bool? carried, int? next, bool? carries, bool known)
+    {
+        if (!known)
+        {
+            return partner == null ? PairChangeForMe.Mixed : PairChangeForMe.Changes;
+        }
+
+        if (next == null)
+        {
+            return partner == null ? PairChangeForMe.Mixed : PairChangeForMe.Loses;
+        }
+
+        if (partner == null)
+        {
+            return PairChangeForMe.Gains;
+        }
+
+        return partner == next && carries != null && carried != null && carries != carried
+            ? PairChangeForMe.Swaps
+            : PairChangeForMe.Changes;
+    }
+
     /// <summary>
     /// The partner <paramref name="me"/> will have and whether they carry,
     /// as far as known before <paramref name="kind"/> runs: a Role Swap turns

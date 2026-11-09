@@ -29,6 +29,9 @@ internal static class PairLetters
 
     private static (int? Partner, bool? Carries)? preview;
 
+    /// <summary>The player's partner, and whether they carried, when the followed operation began.</summary>
+    private static (int? Partner, bool? Carries) before;
+
     private static bool closing;
 
     /// <summary>Follows an operation that involves the player; false when the letter cannot be shown, so the countdown goes to the log.</summary>
@@ -55,6 +58,8 @@ internal static class PairLetters
                 ? Arrangement.Decode(PhotonNetwork.CurrentRoom?.CustomProperties[RoomKeys.Assignment], op.Id)
                 : null;
             preview = PairLetterPlan.Preview(op.Kind, me, op.SwapCarrier, op.SwapRider, assignment);
+            Pair? had = PairRoster.Pairs.FirstOrDefault(p => p.Contains(me));
+            before = (had?.PartnerOf(me), had == null ? null : had.Carrier == me);
             letter.Open(Strings.LetterHeading(op.Kind), Portraits, NameOf, me);
             NoticeBoard.Chime(bad: false);
         }
@@ -79,7 +84,8 @@ internal static class PairLetters
             Pair? now = PairRoster.Pairs.FirstOrDefault(p => p.Contains(me));
             int? partner = now?.PartnerOf(me);
             bool? carries = now == null ? null : now.Carrier == me;
-            letter.Show(partner, carries, known: true, Strings.LetterArrived, partner == null ? Strings.LetterAlone : Strings.LetterDone);
+            PairChangeForMe done = PairLetterPlan.ChangeFor(before.Partner, before.Carries, partner, carries, known: true);
+            letter.Show(partner, carries, known: true, Strings.LetterArrived, Strings.LetterDoneFor(done));
             if (!closing)
             {
                 closing = true;
@@ -92,7 +98,8 @@ internal static class PairLetters
         (int? soon, bool? role) = preview ?? (null, null);
         bool known = !op.IsShuffle;
         string word = secondsLeft > 0 ? secondsLeft.ToString() : Strings.LetterArrived;
-        string line = secondsLeft > 0 ? Strings.LetterSoon(secondsLeft) : known && soon == null ? Strings.LetterAlone : Strings.LetterDone;
+        PairChangeForMe change = PairLetterPlan.ChangeFor(before.Partner, before.Carries, soon, role, known && (soon != null || preview != null));
+        string line = secondsLeft > 0 ? Strings.LetterSoon(change, secondsLeft) : Strings.LetterDoneFor(change);
         letter.Show(soon, role, known, word, line);
         return true;
     }
