@@ -32,6 +32,9 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
         RoomKeys.Report,
     ];
 
+    /// <summary>The room keys only the Troop Leader writes.</summary>
+    internal static IReadOnlyList<string> KeptKeys => Kept;
+
     private static readonly RoomWard Ward = new();
 
     /// <summary>How soon the Troop Leader puts values back again, however often another player writes them.</summary>
@@ -39,6 +42,9 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
 
     /// <summary>Kept keys another player changed, waiting to be put back.</summary>
     private static readonly HashSet<string> Changed = new();
+
+    /// <summary>Kept keys another player wrote and this client dropped: the room on the server holds that value, which this client never saw.</summary>
+    private static readonly HashSet<string> Dropped = new();
 
     private static double nextPutBack;
 
@@ -68,6 +74,25 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
         return Ward.IsOwn(key, value, Now);
     }
 
+    /// <summary>
+    /// Notes kept keys another player wrote, which <see cref="ForeignWrites"/>
+    /// dropped before this client applied them; as the Troop Leader, puts
+    /// back its own on the server.
+    /// </summary>
+    public static void Forged(IEnumerable<string> keys)
+    {
+        if (!PhotonNetwork.IsMasterClient)
+        {
+            return;
+        }
+
+        foreach (string key in keys)
+        {
+            Changed.Add(key);
+            Dropped.Add(key);
+        }
+    }
+
     public override void OnJoinedRoom() => Run("RoomWrites.OnJoinedRoom", TrustIfLeading);
 
     public override void OnMasterClientSwitched(PhotonPlayer newMasterClient) => Run("RoomWrites.OnMasterClientSwitched", TrustIfLeading);
@@ -76,6 +101,7 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
     {
         Ward.Clear();
         Changed.Clear();
+        Dropped.Clear();
     }
 
     private void Update() => Run("RoomWrites.Update", PutBackNow);
@@ -149,6 +175,7 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
         if (!PhotonNetwork.IsMasterClient)
         {
             Changed.Clear();
+            Dropped.Clear();
             return;
         }
 
@@ -156,13 +183,14 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
         foreach (string key in Changed)
         {
             object? value = PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(key, out object found) ? found : null;
-            if (!Ward.IsOwn(key, value, now))
+            if (Dropped.Contains(key) || !Ward.IsOwn(key, value, now))
             {
                 restore[key] = Ward.Restore(key);
             }
         }
 
         Changed.Clear();
+        Dropped.Clear();
         nextPutBack = now + PutBackSeconds;
         if (restore.Count == 0)
         {
