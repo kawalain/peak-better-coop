@@ -60,6 +60,11 @@ internal static class BackpackWheelSplit
 
     private static int lastHoverSent = int.MinValue;
 
+    /// <summary>The least time between two hovers sent: a pointer sweeping the wheel sends where it rests, not every slice it crosses.</summary>
+    private const float HoverInterval = 1f / 30f;
+
+    private static float nextHoverSend;
+
     private sealed class CarrierWheel(int session, int slotCount, bool riderPicks, int riderActor)
     {
         public int Session { get; } = session;
@@ -514,12 +519,13 @@ internal static class BackpackWheelSplit
         WheelSlice slice = pointing ? SliceOf(wheel.chosenSlice.Value) : WheelSlice.Slot;
         byte slot = pointing && slice == WheelSlice.Slot ? wheel.chosenSlice.Value.slotID : (byte)0;
         int key = WheelSignal.HoverKey(pointing ? slice : null, slot);
-        if (key == lastHoverSent)
+        if (key == lastHoverSent || Time.unscaledTime < nextHoverSend)
         {
             return;
         }
 
         lastHoverSent = key;
+        nextHoverSend = Time.unscaledTime + HoverInterval;
         Send(to, pointing ? WheelSignal.Hover(session, slice, slot) : WheelSignal.NoHover(session));
     }
 

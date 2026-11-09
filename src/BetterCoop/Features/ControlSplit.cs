@@ -29,6 +29,15 @@ internal static class ControlSplit
 
     private const float SendInterval = 1f / 30f;
 
+    /// <summary>
+    /// The least time between two reliable sends of the Rider's buttons. The
+    /// counters add up, so a change held back loses no press; it only goes
+    /// out with the next one.
+    /// </summary>
+    private const float ButtonSendInterval = 1f / 60f;
+
+    private static float nextButtonSend;
+
     // Rider side: what the Rider produced so far.
     private static ButtonCounters primaryOut;
     private static ButtonCounters secondaryOut;
@@ -375,6 +384,12 @@ internal static class ControlSplit
             return;
         }
 
+        if (buttonsChanged && Time.unscaledTime < nextButtonSend)
+        {
+            // Clicks or a spinning wheel faster than this go out together next time.
+            return;
+        }
+
         actions.Sequence = ++sequenceOut;
         lastSent = actions;
         nextSend = Time.unscaledTime + SendInterval;
@@ -387,6 +402,7 @@ internal static class ControlSplit
             buttonsChanged ? SendOptions.SendReliable : SendOptions.SendUnreliable);
         if (buttonsChanged)
         {
+            nextButtonSend = Time.unscaledTime + ButtonSendInterval;
             // A click should not wait for the next network tick.
             PhotonNetwork.SendAllOutgoingCommands();
         }

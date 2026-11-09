@@ -55,7 +55,10 @@ internal readonly struct CarrierHud : IEquatable<CarrierHud>
 /// <summary>
 /// Decides when the Carrier sends its HUD to the Rider: a new crosshair or
 /// rope length at once and reliably, the throw charge while it moves at a
-/// fixed rate, and its end reliably so the Rider's bar never sticks.
+/// fixed rate, and its end reliably so the Rider's bar never sticks. Changes
+/// go out at most <see cref="SendInterval"/> apart, so a crosshair flickering
+/// every frame still costs only so many reliable messages; the latest state
+/// goes out once the interval has passed.
 /// </summary>
 internal sealed class HudFeed
 {
@@ -64,6 +67,8 @@ internal sealed class HudFeed
     private CarrierHud? lastSent;
 
     private float nextSend;
+
+    private float nextReliable;
 
     public bool ShouldSend(CarrierHud hud, float now, out bool reliable)
     {
@@ -78,6 +83,11 @@ internal sealed class HudFeed
         }
         else if (!last.SameShape(hud) || (hud.ThrowCharge <= 0f && last.ThrowCharge > 0f))
         {
+            if (now < nextReliable)
+            {
+                return false;
+            }
+
             reliable = true;
         }
         else if (now < nextSend)
@@ -87,6 +97,11 @@ internal sealed class HudFeed
 
         lastSent = hud;
         nextSend = now + SendInterval;
+        if (reliable)
+        {
+            nextReliable = now + SendInterval;
+        }
+
         return true;
     }
 
@@ -95,5 +110,6 @@ internal sealed class HudFeed
     {
         lastSent = null;
         nextSend = 0f;
+        nextReliable = 0f;
     }
 }

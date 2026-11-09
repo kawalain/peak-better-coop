@@ -32,9 +32,39 @@ public class HudFeedTests
         var feed = new HudFeed();
         feed.ShouldSend(Hud(), 0f, out _);
 
-        Assert.True(feed.ShouldSend(Hud(reticle: 3), 0.001f, out bool reliable));
+        Assert.True(feed.ShouldSend(Hud(reticle: 3), 1f, out bool reliable));
         Assert.True(reliable);
-        Assert.True(feed.ShouldSend(Hud(reticle: 3, highlighted: true), 0.002f, out reliable));
+    }
+
+    [Fact]
+    public void A_crosshair_flickering_every_frame_goes_out_at_a_capped_rate()
+    {
+        var feed = new HudFeed();
+        feed.ShouldSend(Hud(), 0f, out _);
+
+        int sent = 0;
+        for (int frame = 1; frame <= 240; frame++)
+        {
+            if (feed.ShouldSend(Hud(highlighted: frame % 2 == 0), frame / 240f, out bool reliable))
+            {
+                Assert.True(reliable);
+                sent++;
+            }
+        }
+
+        // One second at 240 frames: no more than one change per interval.
+        Assert.InRange(sent, 1, (int)(1f / HudFeed.SendInterval) + 1);
+    }
+
+    [Fact]
+    public void A_change_held_back_goes_out_once_the_interval_passes()
+    {
+        var feed = new HudFeed();
+        feed.ShouldSend(Hud(), 0f, out _);
+        feed.ShouldSend(Hud(reticle: 3), 1f, out _);
+
+        Assert.False(feed.ShouldSend(Hud(reticle: 4), 1.001f, out _));
+        Assert.True(feed.ShouldSend(Hud(reticle: 4), 1f + HudFeed.SendInterval, out bool reliable));
         Assert.True(reliable);
     }
 
@@ -56,7 +86,7 @@ public class HudFeedTests
         var feed = new HudFeed();
         feed.ShouldSend(Hud(throwCharge: 0.5f), 0f, out _);
 
-        Assert.True(feed.ShouldSend(Hud(throwCharge: 0f), 0.001f, out bool reliable));
+        Assert.True(feed.ShouldSend(Hud(throwCharge: 0f), HudFeed.SendInterval, out bool reliable));
         Assert.True(reliable);
     }
 

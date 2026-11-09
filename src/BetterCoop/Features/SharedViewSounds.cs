@@ -36,6 +36,9 @@ internal static class SharedViewSounds
     /// <summary>The Carrier's item sounds play for the Rider so many a second at most, however many are sent.</summary>
     private static readonly RateGate SoundGate = new(capacity: 8, perSecond: 8);
 
+    /// <summary>The Carrier sends no more sounds than its Rider plays, however many different sounds an item makes.</summary>
+    private static readonly RateGate SendGate = new(capacity: 8, perSecond: 8);
+
     /// <summary>How deep the Carrier's client is in owner-only item steps for the Shared Body.</summary>
     private static int relaying;
 
@@ -148,7 +151,8 @@ internal static class SharedViewSounds
     {
         if (relaying <= 0
             || !PairRoster.TryGetPartner(Character.localCharacter, out Character rider)
-            || (LastSent.TryGetValue(sound.name, out float sentAt) && Time.unscaledTime - sentAt < ResendSeconds))
+            || (LastSent.TryGetValue(sound.name, out float sentAt) && Time.unscaledTime - sentAt < ResendSeconds)
+            || !SendGate.Take(Time.unscaledTimeAsDouble))
         {
             return;
         }
