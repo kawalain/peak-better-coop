@@ -23,6 +23,9 @@ and come back together.
 - Pairs change when a campfire is lit, and optionally on a timer. A Pair can
   also trade roles with **Swap Places**. Items and statuses carry over;
   nothing is lost.
+- **Late Pairing**: a player who joins mid-Run, or whose partner leaves, is
+  paired with the next player without a partner, without waiting for a
+  shuffle. A player who reconnects gets their partner back in their old role.
 - **Roster** in the ESC menu is a paper form: the Pairs as a yearbook page
   of the scouts' passport photos, the time to the next shuffle, and where you
   swap places and set the role you would like. Its Carry Record tallies how
@@ -88,7 +91,8 @@ Co-op Mod, and after a game update it does not fit yet.
 ## For mod developers
 
 `BetterCoop.Api` lets another mod read the Pairs without depending on
-BetterCoop's internals: `Enabled`, `RoleOf(character)`,
+BetterCoop's internals: `Enabled` (false while the mod is off, or sits out a
+room whose Troop Leader has another version), `RoleOf(character)`,
 `TryGetPartner(character, out partner)`, `TryGetSharedBody(character, out body)`
 (a Rider plays through their Carrier's body), and the events `PairsChanged`,
 `PairChangeStarting`, and `PairChangeFinished`. `ApiVersion` rises only when a
