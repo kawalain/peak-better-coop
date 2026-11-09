@@ -411,6 +411,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
             PaperText.Set(formText, FormNumber());
             PaperText.Set(noteText, FormNote());
             PaperText.Set(serialText, FormSerial());
+            PlaceNote(serialText.text.Length > 0);
             List.Refresh();
             KeepSelectionInView();
             scroll.Max = content.rect.height - viewport.rect.height;
@@ -531,10 +532,10 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         titleText.color = PaperText.Blue;
 
         // The form's number and note stay printed in the head of the paper, above everything that scrolls.
-        formText = Corner(titleRect, template, TextAlignmentOptions.TopLeft);
-        noteText = Corner(titleRect, template, TextAlignmentOptions.TopRight);
+        formText = Corner(titleRect, template, TextAlignmentOptions.MidlineLeft);
+        noteText = Corner(titleRect, template, TextAlignmentOptions.MidlineRight);
         serialText = Corner(titleRect, template, TextAlignmentOptions.TopRight);
-        serialText.rectTransform.offsetMax = new Vector2(-Padding, -40f);
+        serialText.rectTransform.offsetMax = new Vector2(-Padding, -((TitleHeight / 2f) + 1f));
         serialText.color = PaperList.StampRed;
         serialText.fontStyle = FontStyles.Bold;
         serialText.characterSpacing = 4f;
@@ -613,13 +614,29 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         }
     }
 
+    /// <summary>
+    /// Centres the note in the head of the paper; with a serial number under
+    /// it, the two sit either side of the middle, centred as a pair.
+    /// </summary>
+    private void PlaceNote(bool withSerial)
+    {
+        RectTransform rect = noteText.rectTransform;
+        float bottom = withSerial ? (TitleHeight / 2f) + 1f : 0f;
+        if (!Mathf.Approximately(rect.offsetMin.y, bottom))
+        {
+            rect.offsetMin = new Vector2(Padding, bottom);
+            noteText.alignment = withSerial ? TextAlignmentOptions.BottomRight : TextAlignmentOptions.MidlineRight;
+        }
+    }
+
+    /// <summary>A small line in the head of the paper, centred down the head's height.</summary>
     private static TMP_Text Corner(RectTransform head, TMP_Text template, TextAlignmentOptions alignment)
     {
         RectTransform rect = NewRect("Corner", head);
         rect.anchorMin = Vector2.zero;
         rect.anchorMax = Vector2.one;
         rect.offsetMin = new Vector2(Padding, 0f);
-        rect.offsetMax = new Vector2(-Padding, -14f);
+        rect.offsetMax = new Vector2(-Padding, 0f);
         TMP_Text text = PaperText.Make(rect.gameObject, template, PaperText.Note, alignment);
         text.color = new Color(PaperText.Ink.r, PaperText.Ink.g, PaperText.Ink.b, 0.7f);
         return text;
