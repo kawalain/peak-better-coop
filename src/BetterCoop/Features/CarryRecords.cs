@@ -142,6 +142,9 @@ internal static class CarryRecords
         }
     }
 
+    /// <summary>Who has been seen carrying whom as a rescue, logged once each.</summary>
+    private static readonly HashSet<(int, int)> Rescuing = new();
+
     /// <summary>
     /// Everyone carrying a Rescued now: both members of a Pair whose Rider
     /// carries one, and an Unpaired Player carrying a passed-out Shared Body.
@@ -157,12 +160,20 @@ internal static class CarryRecords
                 || body.data.carriedPlayer is not Character carried
                 // A scout who left while carried leaves the game's reference behind, destroyed.
                 || carried == null
+                // A Rescued is down until put down; one awake is a former Rider not yet dropped after a Pair change.
+                || carried.data.dead
+                || !(carried.data.passedOut || carried.data.fullyPassedOut)
                 || (PairRoster.TryGetPartner(body, out Character partner) && partner == carried))
             {
                 continue;
             }
 
             int actor = PairRoster.ActorOf(body);
+            if (Rescuing.Add((actor, PairRoster.ActorOf(carried))))
+            {
+                Plugin.Verbose($"Counting a rescue: {body.characterName} ({PairRoster.RoleOf(body)}) carries {carried.characterName}.");
+            }
+
             switch (PairRoster.RoleOf(body))
             {
                 case PairRole.Rider when PairRoster.TryGetPair(body, out Pair pair):
