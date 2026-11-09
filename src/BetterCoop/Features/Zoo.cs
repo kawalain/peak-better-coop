@@ -107,6 +107,14 @@ internal sealed class ZooPage : PaperPage
             available: () => false,
             about: () => T("흐리게 보이지만 누르면 이유를 알려 줍니다.", "Faint, but pressing it says why."));
         list.Stamp(
+            () => T("되묻는 도장", "Stamp that asks first"),
+            () => T("섞기", "Shuffle"),
+            () => presses++,
+            about: () => T(
+                "처음 누르면 \"정말로?\"로 바뀌고, 3초 안에 한 번 더 눌러야 찍힙니다. 다른 곳을 누르거나 선택을 옮기면 돌아옵니다.",
+                "The first press turns it to \"Really?\"; a second press within three seconds stamps it. Using or selecting anything else puts it back."),
+            confirm: true);
+        list.Stamp(
             () => T("우편 소인", "Postmark"),
             () => T("통보", "Notified"),
             () => presses++,
