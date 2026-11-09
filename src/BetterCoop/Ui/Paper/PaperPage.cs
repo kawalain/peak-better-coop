@@ -41,28 +41,11 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
 
     private const float WheelStep = 70f;
 
-    /// <summary>The cord under the title, tied with a square knot.</summary>
-    private static readonly Vector2 RopeSize = new(220f, 18f);
-
     /// <summary>How far apart the serial's figure wheels stand, in em.</summary>
     private const float SerialAdvance = 0.62f;
 
     /// <summary>How long after the paper starts to rise its serial is numbered: once it is mostly up.</summary>
     private const float SerialDelay = 0.35f;
-
-    /// <summary>When, after the paper starts to rise, its knot starts to pull tight, and how long that takes.</summary>
-    private const float KnotDelay = 0.18f;
-
-    private const float KnotSeconds = 0.55f;
-
-    /// <summary>How many drawings the knot is pulled tight through.</summary>
-    private const int KnotSteps = 10;
-
-    private VectorView knot = null!;
-
-    private float knotSeconds = float.PositiveInfinity;
-
-    private float knotTight = 1f;
 
     private readonly Vector3[] corners = new Vector3[4];
 
@@ -235,7 +218,6 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     public void Rise()
     {
         PaperSounds.Play(PaperSounds.Kind.Rise);
-        knotSeconds = 0f;
         serialWheels?.Roll(SerialDelay);
         away = false;
         motion = Motion.Rising;
@@ -462,7 +444,6 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
                 return;
             }
 
-            PullKnot();
             Tick();
             if (!filled || Shape() != shape)
             {
@@ -513,23 +494,6 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
 
         Pose();
         return true;
-    }
-
-    /// <summary>Pulls the title's square knot tight as the paper rises, as a scout snugs one up.</summary>
-    private void PullKnot()
-    {
-        if (knotSeconds > KnotDelay + KnotSeconds)
-        {
-            return;
-        }
-
-        knotSeconds += Time.unscaledDeltaTime;
-        float tight = Mathf.Round(Easing.Out((knotSeconds - KnotDelay) / KnotSeconds) * KnotSteps) / KnotSteps;
-        if (!Mathf.Approximately(tight, knotTight))
-        {
-            knotTight = tight;
-            knot.Redraw();
-        }
     }
 
     /// <summary>Places the paper where its motion has it now.</summary>
@@ -616,14 +580,6 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         titleText = PaperText.Make(titleRect.gameObject, template, PaperText.Title, TextAlignmentOptions.Midline);
         titleText.fontStyle = FontStyles.Bold;
         titleText.color = PaperText.Blue;
-        // The title stands over a fine cord tied with a square knot, as a troop's papers were ornamented.
-        titleText.margin = new Vector4(0f, 0f, 0f, RopeSize.y - 6f);
-        RectTransform rope = NewRect("Rope", titleRect);
-        rope.anchorMin = rope.anchorMax = new Vector2(0.5f, 0f);
-        rope.pivot = new Vector2(0.5f, 0f);
-        rope.sizeDelta = RopeSize;
-        rope.anchoredPosition = new Vector2(0f, 8f);
-        knot = VectorView.Add(rope, size => FormDrawing.Rope(size.x, size.y, knotTight), Color.clear);
 
         // The form's number and note stay printed in the head of the paper, above everything that scrolls.
         formText = Corner(titleRect, template, TextAlignmentOptions.MidlineLeft);

@@ -32,7 +32,7 @@ internal static partial class FormDrawing
     /// <summary>The trail signs that mark a form's sections, in turn.</summary>
     public static readonly TrailSign[] SectionSigns = [TrailSign.ThisWay, TrailSign.Arrow, TrailSign.TurnRight, TrailSign.Grass];
 
-    /// <summary>The paler print of the form's second colour, for stones, sticks, and rope.</summary>
+    /// <summary>The paler print of the form's second colour, for stones and sticks.</summary>
     public static Ink PrintTint => Paper.Mix(PaperDrawing.PassportBlue, 0.32f);
 
     /// <summary>The form's second printing colour at strength, for its rules.</summary>
@@ -157,81 +157,4 @@ internal static partial class FormDrawing
         svg.Append(F($"<rect x=\"0\" y=\"{height * 0.75f}\" width=\"{width}\" height=\"{height * 0.25f}\" fill=\"{blue}\"/>"));
         return Close(svg);
     }
-
-    /// <summary>
-    /// A fine printed cord across <paramref name="width"/>, tied in its middle
-    /// with a small square knot, the first knot a scout learns: two bights
-    /// linked through each other, each end lying beside its own standing part.
-    /// It is drawn as a single thin line in the form's second colour, an
-    /// ornament under the title rather than a rope in its own right.
-    /// <paramref name="tight"/>, 0 to 1, is how far the knot has been pulled
-    /// up: loose, its bights hang apart; tight, they close round each other.
-    /// </summary>
-    public static string Rope(float width, float height, float tight)
-    {
-        tight = Math.Max(0f, Math.Min(1f, tight));
-        var svg = Open(width, height);
-        float h = height;
-        float thick = Math.Max(1.2f, h * 0.12f);
-        float c = width / 2f;
-        float y = h / 2f;
-        float spread = Lerp(0.95f, 0.45f, tight) * h;
-        float rx = Lerp(0.85f, 0.7f, tight) * h;
-        float ry = Math.Min(h / 2f - thick, Lerp(0.36f, 0.3f, tight) * h);
-        float slack = Lerp(0.1f, 0f, tight) * h;
-        float tail = 0.6f * h;
-
-        // The loops: each cord's bight, left and right of the middle.
-        List<(float X, float Y)> Bight(float cx, int from, int to)
-        {
-            var points = new List<(float X, float Y)>();
-            for (int i = from; i <= to; i++)
-            {
-                double angle = i * Math.PI / 24;
-                points.Add((cx + rx * (float)Math.Cos(angle), y + ry * (float)Math.Sin(angle)));
-            }
-
-            return points;
-        }
-
-        // A standing part sags a little while the knot is loose.
-        List<(float X, float Y)> Standing(float from, float to)
-        {
-            var points = new List<(float X, float Y)>();
-            for (int i = 0; i <= 16; i++)
-            {
-                float t = i / 16f;
-                points.Add((Lerp(from, to, t), y + slack * (float)Math.Sin(t * Math.PI)));
-            }
-
-            return points;
-        }
-
-        float left = c - spread;
-        float right = c + spread;
-        // Seen from the front, angles run clockwise from the right, y down: the lower half is 0 to 24.
-        Strand(svg, Standing(thick, left - rx), thick);
-        Strand(svg, Bight(left, 0, 24), thick);
-        Strand(svg, Bight(right, -24, 24), thick);
-        Strand(svg, Standing(right + rx, width - thick), thick);
-        // Each end lies along its own side, as a square knot's ends do.
-        Strand(svg, [(right + rx * 0.3f, y + ry * 0.95f), (right + rx + tail, y + ry + 0.5f)], thick);
-        Strand(svg, Bight(left, -24, 0), thick);
-        Strand(svg, [(left - rx * 0.3f, y - ry * 0.95f), (left - rx - tail, y - ry - 0.5f)], thick);
-        return Close(svg);
-    }
-
-    /// <summary>One stretch of cord along <paramref name="points"/>.</summary>
-    private static void Strand(StringBuilder svg, IReadOnlyList<(float X, float Y)> points, float thick)
-    {
-        var path = new StringBuilder();
-        for (int i = 0; i < points.Count; i++)
-        {
-            path.Append(F($"{(i == 0 ? "M" : "L")}{points[i].X} {points[i].Y}"));
-        }
-
-        svg.Append(F($"<path d=\"{path}\" fill=\"none\" stroke=\"{PrintBlue.Hex}\" stroke-width=\"{thick}\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"));
-    }
-
-    private static float Lerp(float from, float to, float t) => from + (to - from) * t;
 }
