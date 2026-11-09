@@ -172,3 +172,40 @@ internal sealed class NoticeGate
         return true;
     }
 }
+
+/// <summary>
+/// Which notices another player's doing puts up, apart from the mod's own:
+/// at most one a few seconds from each player, and only so many from all of
+/// them, so one player asking and withdrawing again and again neither fills
+/// the screen nor uses up what <see cref="NoticeGate"/> lets through for
+/// Pair changes and rules.
+/// </summary>
+internal sealed class SourceGate
+{
+    public const double SourceSeconds = 3;
+
+    private readonly RateGate rate = new(capacity: 3, perSecond: 0.5);
+
+    private readonly Dictionary<int, double> shown = new();
+
+    public bool Allow(int source, double now)
+    {
+        if (shown.TryGetValue(source, out double at) && now - at < SourceSeconds && now >= at)
+        {
+            return false;
+        }
+
+        if (!rate.Take(now))
+        {
+            return false;
+        }
+
+        if (shown.Count > WireLimits.MaxScouts * 4)
+        {
+            shown.Clear();
+        }
+
+        shown[source] = now;
+        return true;
+    }
+}

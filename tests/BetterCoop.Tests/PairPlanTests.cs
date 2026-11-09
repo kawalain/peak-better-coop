@@ -92,7 +92,7 @@ public class PairPlanTests
         var room = new FakeRoom(4, troopLeader: true, formed: false);
         Assert.True(room.Planning);
 
-        Assert.True(room.SetPlan([new Pair(4, 1), new Pair(2, 3)]));
+        Assert.Equal(OrderOutcome.Done, room.SetPlan([new Pair(4, 1), new Pair(2, 3)]));
         room.Form();
 
         Assert.False(room.Planning);
@@ -107,8 +107,8 @@ public class PairPlanTests
         var formed = new FakeRoom(4, troopLeader: true, formed: true);
         var member = new FakeRoom(4, troopLeader: false, formed: false);
 
-        Assert.False(formed.SetPlan([new Pair(1, 2)]));
-        Assert.False(member.SetPlan([new Pair(1, 2)]));
+        Assert.Equal(OrderOutcome.Refused, formed.SetPlan([new Pair(1, 2)]));
+        Assert.Equal(OrderOutcome.Refused, member.SetPlan([new Pair(1, 2)]));
         Assert.Empty(member.Plan);
     }
 }

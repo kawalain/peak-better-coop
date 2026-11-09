@@ -20,7 +20,7 @@ public class FakeRoomTests
         Assert.False(room.Formed);
         Assert.Empty(room.Pairs);
         Assert.Equal(6, room.Unpaired().Count());
-        Assert.False(room.Shuffle());
+        Assert.Equal(OrderOutcome.Refused, room.Shuffle());
     }
 
     [Fact]
@@ -42,7 +42,7 @@ public class FakeRoomTests
         var room = new FakeRoom(8, troopLeader: true, formed: true);
         var before = room.Pairs.Select(p => (p.Carrier, p.Rider)).ToList();
 
-        Assert.True(room.Shuffle());
+        Assert.Equal(OrderOutcome.Done, room.Shuffle());
 
         Assert.True(EveryoneOnce(room));
         Assert.DoesNotContain(room.Pairs, p => before.Any(b =>
@@ -57,7 +57,7 @@ public class FakeRoomTests
         Pair first = room.Pairs[0];
         Pair second = room.Pairs[1];
 
-        Assert.True(room.Arrange(room.Pairs.Skip(2).Append(new Pair(first.Carrier, second.Carrier)).ToList()));
+        Assert.Equal(OrderOutcome.Done, room.Arrange(room.Pairs.Skip(2).Append(new Pair(first.Carrier, second.Carrier)).ToList()));
 
         Assert.Equal(3, room.Pairs.Count);
         Assert.Equal(2, room.Unpaired().Count());
@@ -101,7 +101,7 @@ public class FakeRoomTests
         Pair first = room.Pairs[0];
         Pair second = room.Pairs[1];
 
-        Assert.True(room.Arrange(room.Pairs.Skip(2).Append(new Pair(first.Carrier, second.Carrier)).ToList()));
+        Assert.Equal(OrderOutcome.Done, room.Arrange(room.Pairs.Skip(2).Append(new Pair(first.Carrier, second.Carrier)).ToList()));
 
         Assert.Contains(room.Pairs, p => p.Carrier == first.Carrier && p.Rider == second.Carrier);
         Assert.Contains(room.Pairs, p => p.Contains(first.Rider) && p.Contains(second.Rider));
@@ -113,8 +113,8 @@ public class FakeRoomTests
     public void An_assignment_needs_two_different_players_after_Pair_Formation()
     {
         var formed = new FakeRoom(4, troopLeader: true, formed: true);
-        Assert.False(formed.Arrange([new Pair(2, 2)]));
-        Assert.False(new FakeRoom(4, troopLeader: true, formed: false).Arrange([new Pair(1, 2)]));
+        Assert.Equal(OrderOutcome.Refused, formed.Arrange([new Pair(2, 2)]));
+        Assert.Equal(OrderOutcome.Refused, new FakeRoom(4, troopLeader: true, formed: false).Arrange([new Pair(1, 2)]));
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public class FakeRoomTests
     {
         var room = new FakeRoom(6, troopLeader: true, formed: true);
 
-        Assert.True(room.Arrange([new Pair(1, 2), new Pair(3, 4), new Pair(6, 5)]));
+        Assert.Equal(OrderOutcome.Done, room.Arrange([new Pair(1, 2), new Pair(3, 4), new Pair(6, 5)]));
 
         Assert.Equal([(1, 2), (3, 4), (6, 5)], room.Pairs.Select(p => (p.Carrier, p.Rider)));
     }

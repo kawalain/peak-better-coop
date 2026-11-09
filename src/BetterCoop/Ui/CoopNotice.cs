@@ -24,6 +24,25 @@ internal static class CoopNotice
     /// <summary>Something wrong with the party, as a caution.</summary>
     public static void Warning(string message) => Show(NoticeKind.Caution, message);
 
+    /// <summary>Holds back what another player's doing puts up, apart from <see cref="Gate"/>.</summary>
+    private static readonly SourceGate FromPlayers = new();
+
+    /// <summary>
+    /// A notice of something another player did, such as asking for a Role
+    /// Swap: it passes its own gate, by player, so it never crowds out the
+    /// mod's own notices.
+    /// </summary>
+    public static void From(int player, NoticeKind kind, string message)
+    {
+        if (!FromPlayers.Allow(player, Time.unscaledTimeAsDouble))
+        {
+            Plugin.Verbose($"[Notice held back] {message}");
+            return;
+        }
+
+        Put(kind, message);
+    }
+
     public static void Show(NoticeKind kind, string message)
     {
         if (!Gate.Allow(message, Time.unscaledTimeAsDouble))
@@ -31,6 +50,12 @@ internal static class CoopNotice
             Plugin.Verbose($"[Notice held back] {message}");
             return;
         }
+
+        Put(kind, message);
+    }
+
+    private static void Put(NoticeKind kind, string message)
+    {
 
         Plugin.Log.LogInfo($"[Notice] {message}");
         if (!NoticeBoard.TryShow(kind, Strings.Unprefixed(message)))

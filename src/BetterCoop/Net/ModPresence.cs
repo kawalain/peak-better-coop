@@ -35,9 +35,16 @@ internal sealed class ModPresence : MonoBehaviourPunCallbacks
     public static RolePreference PairingRoleOf(PhotonPlayer player) =>
         RunRules.FollowRolePreferences ? RoleOf(player) : RolePreference.Random;
 
+    /// <summary>The least time between two publishes for a changed Role Preference: each one reaches every client.</summary>
+    private const float PublishSeconds = 0.5f;
+
+    private static bool publishWanted;
+
+    private static float nextPublish;
+
     private void Start()
     {
-        CoopConfig.RolePreference.SettingChanged += (_, _) => Publish();
+        CoopConfig.RolePreference.SettingChanged += (_, _) => publishWanted = true;
     }
 
     public override void OnJoinedRoom()
@@ -61,6 +68,14 @@ internal sealed class ModPresence : MonoBehaviourPunCallbacks
     /// <summary>The game tells no one when a setting changes, so the Climb Input is looked at now and then.</summary>
     private void Update()
     {
+        if (publishWanted && Time.unscaledTime >= nextPublish)
+        {
+            // A preference changed again and again goes out as its latest, at most so often.
+            publishWanted = false;
+            nextPublish = Time.unscaledTime + PublishSeconds;
+            Publish();
+        }
+
         if (Time.unscaledTime < nextSettingCheck)
         {
             return;

@@ -384,6 +384,18 @@ internal static class Strings
 
     public static string StampCancel => Korean ? "취소" : "Cancel";
 
+    public static string MenuTooSoon => Korean
+        ? "코옵: 방금 한 일입니다. 잠시 뒤 다시 해 주세요."
+        : "Coop: that was just done; try again in a moment.";
+
+    public static string ShuffleQueued => Korean
+        ? "코옵: 진행 중인 짝 변경이 끝나면 짝을 섞습니다."
+        : "Coop: the Pairs will be shuffled once the Pair change under way is done.";
+
+    public static string PlanUnavailable => Korean
+        ? "코옵: 지금은 짝 계획을 정할 수 없습니다. 짝 계획은 공항에서 방에 있는 대원으로만 정합니다."
+        : "Coop: the Pair Plan cannot be set now. It is set at the Airport, from scouts in the room.";
+
     public static string MenuBusy => Korean
         ? "코옵: 다른 짝 변경이 진행 중이라 지금은 할 수 없습니다."
         : "Coop: another Pair change is under way; try again in a moment.";

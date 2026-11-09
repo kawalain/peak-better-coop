@@ -60,8 +60,20 @@ internal static class RoleSwap
             && !partner.data.dead;
     }
 
+    /// <summary>The least time between two presses that go through: each one is a write every client receives.</summary>
+    private const float ToggleSeconds = 1f;
+
+    private static float nextToggle;
+
     internal static void Toggle()
     {
+        if (Time.unscaledTime < nextToggle)
+        {
+            CoopNotice.Info(Strings.MenuTooSoon);
+            return;
+        }
+
+        nextToggle = Time.unscaledTime + ToggleSeconds;
         if (pending != null)
         {
             Withdraw(Strings.SwapCancelled);
@@ -214,7 +226,7 @@ internal static class RoleSwap
             partnerOffered = true;
             if (pending == null)
             {
-                CoopNotice.Show(NoticeKind.Memo, Strings.SwapOffered(KnownPlayers.NameOf(player, player.ActorNumber)));
+                CoopNotice.From(player.ActorNumber, NoticeKind.Memo, Strings.SwapOffered(KnownPlayers.NameOf(player, player.ActorNumber)));
             }
 
             return;
@@ -228,7 +240,7 @@ internal static class RoleSwap
                 && ServerClock.Since(PhotonNetwork.Time, op.At) < Operation.CountdownSeconds + 2;
             if (!swapping)
             {
-                CoopNotice.Show(NoticeKind.Memo, Strings.SwapWithdrawn(KnownPlayers.NameOf(player, player.ActorNumber)));
+                CoopNotice.From(player.ActorNumber, NoticeKind.Memo, Strings.SwapWithdrawn(KnownPlayers.NameOf(player, player.ActorNumber)));
             }
         }
     }

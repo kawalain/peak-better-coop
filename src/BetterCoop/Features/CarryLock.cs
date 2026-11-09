@@ -41,11 +41,11 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
     }
 
     /// <summary>The Troop Leader asks every client to re-attach its Pair and wake its Rider.</summary>
-    internal static void RequestRecovery()
+    internal static bool RequestRecovery()
     {
         if (!PhotonNetwork.IsMasterClient)
         {
-            return;
+            return false;
         }
 
         Plugin.Log.LogInfo("Troop Leader requested Pair recovery.");
@@ -54,6 +54,7 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
             null,
             new RaiseEventOptions { Receivers = ReceiverGroup.All },
             SendOptions.SendReliable);
+        return true;
     }
 
     private void Tick()

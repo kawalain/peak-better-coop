@@ -86,22 +86,21 @@ internal static partial class ControlCommands
         switch (what)
         {
             case "shuffle":
-                return Live.Shuffle();
+                return Live.Shuffle().ToString();
             case "callOff":
-                return Live.CallOffShuffle();
+                return Live.CallOffShuffle().ToString();
             case "assign":
             {
                 IReadOnlyList<Pair> pairs = PairsFrom(args["pairs"]);
-                return Live.CanArrange(pairs) ? Live.Arrange(pairs) : throw new InvalidOperationException("the Roster would not take these Pairs now");
+                return Live.CanArrange(pairs) ? Live.Arrange(pairs).ToString() : throw new InvalidOperationException("the Roster would not take these Pairs now");
             }
 
             case "plan":
-                return Live.SetPlan(PairsFrom(args["pairs"]));
+                return Live.SetPlan(PairsFrom(args["pairs"])).ToString();
             case "drawPlan":
                 return PairsJson(Live.DrawPlan());
             case "recover":
-                Live.Recover();
-                return true;
+                return Live.Recover().ToString();
             case "rule":
             {
                 RunRule rule = (RunRule)Enum.Parse(typeof(RunRule), (string?)args["rule"] ?? string.Empty, ignoreCase: true);

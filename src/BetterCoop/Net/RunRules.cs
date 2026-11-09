@@ -149,14 +149,30 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
         return (int)flags | (ShuffleInterval.Clamp(CoopConfig.TimedShuffleInterval.Value) << IntervalShift);
     }
 
+    /// <summary>The least time between two publishes for changed rules: each one reaches every client.</summary>
+    private const float PublishSeconds = 0.5f;
+
+    private static bool publishWanted;
+
+    private static float nextPublish;
+
     private void Start()
     {
         foreach (RunRule rule in All)
         {
-            Entry(rule).SettingChanged += (_, _) => PublishIfHost();
+            Entry(rule).SettingChanged += (_, _) => WantPublish();
         }
 
-        CoopConfig.TimedShuffleInterval.SettingChanged += (_, _) => PublishIfHost();
+        CoopConfig.TimedShuffleInterval.SettingChanged += (_, _) => WantPublish();
+    }
+
+    /// <summary>Rules changed again and again go out as their latest, at most every <see cref="PublishSeconds"/>.</summary>
+    private static void WantPublish()
+    {
+        if (!adopting)
+        {
+            publishWanted = true;
+        }
     }
 
     public override void OnJoinedRoom()
@@ -198,6 +214,20 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
 
     private void Update()
     {
+        if (publishWanted && Time.unscaledTime >= nextPublish)
+        {
+            publishWanted = false;
+            nextPublish = Time.unscaledTime + PublishSeconds;
+            try
+            {
+                PublishIfHost();
+            }
+            catch (Exception exception)
+            {
+                Guard.Report("RunRules.Publish", exception);
+            }
+        }
+
         if (untold is not (int from, float last) || Time.realtimeSinceStartup - last < TellAfterSeconds)
         {
             return;

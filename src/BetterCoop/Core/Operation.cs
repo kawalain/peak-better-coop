@@ -153,5 +153,8 @@ internal sealed class OperationQueue
         return new Operation(finished.Id + 1, kind, now + Operation.CountdownSeconds, -1, -1, false);
     }
 
+    /// <summary>The Pair Shuffle waiting for the operation under way, or None.</summary>
+    public OperationKind Waiting => waiting;
+
     public void Clear() => waiting = OperationKind.None;
 }

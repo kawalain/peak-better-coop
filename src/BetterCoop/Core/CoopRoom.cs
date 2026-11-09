@@ -97,26 +97,26 @@ internal interface ICoopRoom
     /// <summary>Asks for a Role Swap with the local player's partner, or cancels the ask.</summary>
     void ToggleSwap();
 
-    /// <summary>Orders a Pair Shuffle; false when it cannot start now.</summary>
-    bool Shuffle();
+    /// <summary>Orders a Pair Shuffle.</summary>
+    OrderOutcome Shuffle();
 
     /// <summary>Whether the Troop Leader could call off the coming Pair Shuffle now.</summary>
     bool CanCallOffShuffle { get; }
 
     /// <summary>Calls off the coming Pair Shuffle; the Timed Shuffle counts again from the start.</summary>
-    bool CallOffShuffle();
+    OrderOutcome CallOffShuffle();
 
     /// <summary>Re-attaches every Pair's carry and wakes every Rider.</summary>
-    void Recover();
+    OrderOutcome Recover();
 
     /// <summary>Whether a Pair Assignment setting these Pairs could run now.</summary>
     bool CanArrange(IReadOnlyList<Pair> pairs);
 
-    /// <summary>Orders a Pair Assignment setting these Pairs; false when it cannot start now.</summary>
-    bool Arrange(IReadOnlyList<Pair> pairs);
+    /// <summary>Orders a Pair Assignment setting these Pairs.</summary>
+    OrderOutcome Arrange(IReadOnlyList<Pair> pairs);
 
-    /// <summary>Announces a Pair Plan; false when it cannot be set now.</summary>
-    bool SetPlan(IReadOnlyList<Pair> plan);
+    /// <summary>Announces a Pair Plan.</summary>
+    OrderOutcome SetPlan(IReadOnlyList<Pair> plan);
 
     /// <summary>A plan drawn at random, as the Pair Formation would form the Pairs now.</summary>
     IReadOnlyList<Pair> DrawPlan();

@@ -183,6 +183,22 @@ internal static class PairShuffle
         return true;
     }
 
+    /// <summary>The Troop Leader orders a Pair Shuffle from the Roster: it starts, waits for the change under way, or is refused.</summary>
+    internal static OrderOutcome Order(OperationKind kind)
+    {
+        if (!PhotonNetwork.IsMasterClient || !PairRoster.Formed)
+        {
+            return OrderOutcome.Refused;
+        }
+
+        if (Request(kind))
+        {
+            return OrderOutcome.Done;
+        }
+
+        return Queue.Waiting != OperationKind.None ? OrderOutcome.Queued : OrderOutcome.Busy;
+    }
+
     /// <summary>
     /// The Troop Leader asks for a Pair Assignment setting these Pairs. They
     /// are written with the announcement, so a new Troop Leader can run it.

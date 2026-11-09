@@ -204,15 +204,15 @@ internal sealed class FakeRoom : ICoopRoom
         report = null;
     }
 
-    public bool SetPlan(IReadOnlyList<Pair> wanted)
+    public OrderOutcome SetPlan(IReadOnlyList<Pair> wanted)
     {
         if (!IsTroopLeader || !Planning || !PairingRules.IsPlan(wanted, players))
         {
-            return false;
+            return OrderOutcome.Refused;
         }
 
         plan = wanted.ToList();
-        return true;
+        return OrderOutcome.Done;
     }
 
     public IReadOnlyList<Pair> DrawPlan() => PairingRules.Form(Candidates(), random).Pairs;
@@ -242,27 +242,27 @@ internal sealed class FakeRoom : ICoopRoom
 
     public bool CanCallOffShuffle => IsTroopLeader && SecondsToTimedShuffle != null;
 
-    public bool CallOffShuffle()
+    public OrderOutcome CallOffShuffle()
     {
         if (!CanCallOffShuffle)
         {
-            return false;
+            return OrderOutcome.Refused;
         }
 
         untilShuffle = shuffleMinutes * 60.0;
-        return true;
+        return OrderOutcome.Done;
     }
 
-    public bool Shuffle()
+    public OrderOutcome Shuffle()
     {
         if (!Formed)
         {
-            return false;
+            return OrderOutcome.Refused;
         }
 
         Apply(PairingRules.Reshuffle(Candidates(), random, pairs, unpaired));
         untilShuffle = shuffleMinutes * 60.0;
-        return true;
+        return OrderOutcome.Done;
     }
 
     /// <summary>Turns a Pair round at once.</summary>
@@ -278,23 +278,21 @@ internal sealed class FakeRoom : ICoopRoom
         return true;
     }
 
-    public void Recover()
-    {
-    }
+    public OrderOutcome Recover() => OrderOutcome.Done;
 
     public bool CanArrange(IReadOnlyList<Pair> wanted) => Formed && Arranged(wanted) != null;
 
     /// <summary>A Pair Assignment, then the Late Pairing of the players it leaves Unpaired.</summary>
-    public bool Arrange(IReadOnlyList<Pair> wanted)
+    public OrderOutcome Arrange(IReadOnlyList<Pair> wanted)
     {
         if (!Formed || Arranged(wanted) is not PairingResult after)
         {
-            return false;
+            return OrderOutcome.Refused;
         }
 
         Apply(after);
         PairLeftovers();
-        return true;
+        return OrderOutcome.Done;
     }
 
     public bool Rule(RunRule rule) => rules[rule];

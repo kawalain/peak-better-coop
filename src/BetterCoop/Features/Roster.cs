@@ -371,7 +371,7 @@ internal static class PairRows
             return;
         }
 
-        handIn(() => TroopLeaderRows.Order(room.SetPlan(draft.Pairs)));
+        handIn(() => TroopLeaderRows.Order(room.SetPlan(draft.Pairs), Strings.PlanUnavailable));
     }
 
     /// <summary>Sends the draft as the Troop Leader's Pair Assignment, the paper handed in as it goes.</summary>
@@ -388,7 +388,7 @@ internal static class PairRows
             return;
         }
 
-        handIn(() => TroopLeaderRows.Order(room.Arrange(draft.Pairs)));
+        handIn(() => TroopLeaderRows.Order(room.Arrange(draft.Pairs), Strings.MenuAssignUnavailable));
     }
 }
 
@@ -565,9 +565,7 @@ internal static class TroopLeaderRows
             {
                 if (room.Formed)
                 {
-                    bool started = room.Shuffle();
-                    Order(started);
-                    if (!started)
+                    if (Order(room.Shuffle(), Strings.MenuBusy) != OrderOutcome.Done)
                     {
                         return;
                     }
@@ -587,13 +585,7 @@ internal static class TroopLeaderRows
         list.Stamp(
             () => Strings.MenuCallOffLabel,
             () => Strings.StampCallOff,
-            () =>
-            {
-                if (!room.CallOffShuffle())
-                {
-                    CoopNotice.Info(Strings.CallOffUnavailable);
-                }
-            },
+            () => Order(room.CallOffShuffle(), Strings.CallOffUnavailable),
             available: () => room.CanCallOffShuffle,
             about: () => Strings.AboutCallOff,
             visible: () => room.Formed && (room.SecondsToTimedShuffle != null || room.Busy),
@@ -603,20 +595,30 @@ internal static class TroopLeaderRows
         list.Stamp(
             () => Strings.MenuRecover,
             () => Strings.StampRestore,
-            room.Recover,
+            () => Order(room.Recover(), Strings.MenuBusy),
             about: () => Strings.AboutRecover,
             visible: () => room.Formed,
             face: new SealFace(StampShape.Inspection, FormDrawing.StampViolet, () => Strings.SealInspected, () => Strings.SealTroop, seed: 12),
             confirm: true);
     }
 
-    /// <summary>Says why a Pair change the Troop Leader ordered did not start.</summary>
-    internal static void Order(bool started)
+    /// <summary>Says why an order the Troop Leader gave did not start now; <paramref name="refused"/> says why it cannot.</summary>
+    internal static OrderOutcome Order(OrderOutcome outcome, string refused)
     {
-        if (!started)
+        string? why = outcome switch
         {
-            CoopNotice.Info(Strings.MenuBusy);
+            OrderOutcome.Queued => Strings.ShuffleQueued,
+            OrderOutcome.Busy => Strings.MenuBusy,
+            OrderOutcome.TooSoon => Strings.MenuTooSoon,
+            OrderOutcome.Refused => refused,
+            _ => null,
+        };
+        if (why != null)
+        {
+            CoopNotice.Info(why);
         }
+
+        return outcome;
     }
 }
 
@@ -745,19 +747,42 @@ internal sealed class LiveRoom : ICoopRoom
 
     public void ToggleSwap() => RoleSwap.Toggle();
 
-    public bool Shuffle() => PairShuffle.Request(OperationKind.OrderedShuffle);
+    /// <summary>Shared by every Roster, and the Control Line's: each order reaches every client.</summary>
+    private static readonly OrderPace Pace = new();
 
-    public void Recover() => CarryKeeper.RequestRecovery();
+    private static OrderOutcome Paced(string order, Func<OrderOutcome> run)
+    {
+        double now = Time.unscaledTimeAsDouble;
+        if (!Pace.Ready(order, now))
+        {
+            return OrderOutcome.TooSoon;
+        }
+
+        OrderOutcome outcome = run();
+        if (outcome is OrderOutcome.Done or OrderOutcome.Queued)
+        {
+            Pace.Went(order, now);
+        }
+
+        return outcome;
+    }
+
+    private static OrderOutcome DoneIf(bool done) => done ? OrderOutcome.Done : OrderOutcome.Refused;
+
+    public OrderOutcome Shuffle() => Paced(nameof(Shuffle), () => PairShuffle.Order(OperationKind.OrderedShuffle));
+
+    public OrderOutcome Recover() => Paced(nameof(Recover), () => DoneIf(CarryKeeper.RequestRecovery()));
 
     public bool CanCallOffShuffle => PairShuffle.CanCallOff;
 
-    public bool CallOffShuffle() => PairShuffle.CallOff();
+    public OrderOutcome CallOffShuffle() => Paced(nameof(CallOffShuffle), () => DoneIf(PairShuffle.CallOff()));
 
     public bool CanArrange(IReadOnlyList<Pair> pairs) => PairShuffle.CanArrange(pairs);
 
-    public bool Arrange(IReadOnlyList<Pair> pairs) => PairShuffle.RequestAssignment(pairs);
+    public OrderOutcome Arrange(IReadOnlyList<Pair> pairs) =>
+        Paced(nameof(Arrange), () => PairShuffle.RequestAssignment(pairs) ? OrderOutcome.Done : PairShuffle.Busy ? OrderOutcome.Busy : OrderOutcome.Refused);
 
-    public bool SetPlan(IReadOnlyList<Pair> plan) => PairPlans.Announce(plan);
+    public OrderOutcome SetPlan(IReadOnlyList<Pair> plan) => Paced(nameof(SetPlan), () => DoneIf(PairPlans.Announce(plan)));
 
     public IReadOnlyList<Pair> DrawPlan() => PairPlans.Draw();
 
