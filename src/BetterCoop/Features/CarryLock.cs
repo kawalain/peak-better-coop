@@ -369,6 +369,37 @@ internal static class CarryLockPatches
     }
 
     /// <summary>
+    /// An Unmodded Player's game lets them pick up a passed-out member of a
+    /// Pair, which <see cref="PairsAreNotCarriable"/> never sees on their
+    /// client: the Troop Leader sets the member down again at once.
+    /// </summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(CharacterCarrying), nameof(CharacterCarrying.RPCA_StartCarry))]
+    private static void SetDownUnmoddedCarry(CharacterCarrying __instance, PhotonView targetView)
+    {
+        if (!PhotonNetwork.IsMasterClient || targetView == null)
+        {
+            return;
+        }
+
+        Character carrier = __instance.character;
+        Character target = targetView.GetComponent<Character>();
+        if (carrier == null
+            || target == null
+            || carrier.data.carriedPlayer != target
+            || carrier.photonView.Owner is not Photon.Realtime.Player owner
+            || owner.IsLocal
+            || RoomProtocol.Speaks(owner)
+            || PairRoster.RoleOf(target) == PairRole.None)
+        {
+            return;
+        }
+
+        Plugin.Log.LogInfo($"Unmodded Player {owner.ActorNumber} picked up Pair member {PairRoster.ActorOf(target)}; set down.");
+        carrier.refs.carriying.Drop(target);
+    }
+
+    /// <summary>
     /// A Pair's carry keeps the Carrier's back item: the game would empty the
     /// back slot onto the ground when a carry starts, as after a revival.
     /// </summary>
