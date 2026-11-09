@@ -24,7 +24,8 @@ internal static class Arrangement
             || parts[0] is not int owner
             || owner != id
             || parts[1] is not int[] flat
-            || flat.Length % 2 != 0)
+            || flat.Length % 2 != 0
+            || flat.Length > 2 * WireLimits.MaxScouts)
         {
             return null;
         }

@@ -34,6 +34,16 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
 
     private static readonly RoomWard Ward = new();
 
+    /// <summary>How soon the Troop Leader puts values back again, however often another player writes them.</summary>
+    private const double PutBackSeconds = 0.5;
+
+    /// <summary>Kept keys another player changed, waiting to be put back.</summary>
+    private static readonly HashSet<string> Changed = new();
+
+    private static double nextPutBack;
+
+    private static double nextWarning;
+
     private static double Now => Time.realtimeSinceStartupAsDouble;
 
     /// <summary>Writes room properties as the Troop Leader, noting each kept value as its own.</summary>
@@ -62,7 +72,13 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
 
     public override void OnMasterClientSwitched(PhotonPlayer newMasterClient) => Run("RoomWrites.OnMasterClientSwitched", TrustIfLeading);
 
-    public override void OnLeftRoom() => Ward.Clear();
+    public override void OnLeftRoom()
+    {
+        Ward.Clear();
+        Changed.Clear();
+    }
+
+    private void Update() => Run("RoomWrites.Update", PutBackNow);
 
     public override void OnRoomPropertiesUpdate(PhotonHashtable changed) => Run("RoomWrites.OnRoomPropertiesUpdate", () => PutBack(changed));
 
@@ -106,21 +122,59 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
         }
 
         double now = Now;
-        var restore = new PhotonHashtable();
         foreach (string key in Kept)
         {
             if (changed.ContainsKey(key) && !Ward.IsOwn(key, changed[key], now))
+            {
+                Changed.Add(key);
+            }
+        }
+
+        PutBackNow();
+    }
+
+    /// <summary>
+    /// Puts back what other players changed, at most every
+    /// <see cref="PutBackSeconds"/>: each put-back goes to every client, so a
+    /// player writing again and again cannot make the Troop Leader flood the room.
+    /// </summary>
+    private static void PutBackNow()
+    {
+        double now = Now;
+        if (Changed.Count == 0 || now < nextPutBack || !PhotonNetwork.InRoom)
+        {
+            return;
+        }
+
+        if (!PhotonNetwork.IsMasterClient)
+        {
+            Changed.Clear();
+            return;
+        }
+
+        var restore = new PhotonHashtable();
+        foreach (string key in Changed)
+        {
+            object? value = PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(key, out object found) ? found : null;
+            if (!Ward.IsOwn(key, value, now))
             {
                 restore[key] = Ward.Restore(key);
             }
         }
 
+        Changed.Clear();
+        nextPutBack = now + PutBackSeconds;
         if (restore.Count == 0)
         {
             return;
         }
 
-        Plugin.Log.LogWarning($"Another player changed {string.Join(", ", restore.Keys.Cast<object>())}; the Troop Leader put it back.");
+        if (now >= nextWarning)
+        {
+            nextWarning = now + 10;
+            Plugin.Log.LogWarning($"Another player changed {string.Join(", ", restore.Keys.Cast<object>())}; the Troop Leader put it back.");
+        }
+
         Set(restore);
     }
 }

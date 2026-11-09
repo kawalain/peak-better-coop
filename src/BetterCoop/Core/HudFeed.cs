@@ -46,6 +46,7 @@ internal readonly struct CarrierHud : IEquatable<CarrierHud>
         && parts[0] is int reticle and >= sbyte.MinValue and <= sbyte.MaxValue
         && parts[1] is bool highlighted
         && parts[2] is float throwCharge
+        && WireLimits.IsFinite(throwCharge)
         && parts[3] is short ropeSegments
             ? new CarrierHud((sbyte)reticle, highlighted, throwCharge, ropeSegments)
             : null;

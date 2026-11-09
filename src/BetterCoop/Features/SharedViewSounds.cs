@@ -1,3 +1,4 @@
+using BetterCoop.Core;
 using System;
 using System.Collections.Generic;
 using ExitGames.Client.Photon;
@@ -31,6 +32,9 @@ internal static class SharedViewSounds
     private static readonly Dictionary<string, float> LastSent = new();
 
     private static float nextLookup;
+
+    /// <summary>The Carrier's item sounds play for the Rider so many a second at most, however many are sent.</summary>
+    private static readonly RateGate SoundGate = new(capacity: 8, perSecond: 8);
 
     /// <summary>How deep the Carrier's client is in owner-only item steps for the Shared Body.</summary>
     private static int relaying;
@@ -163,9 +167,12 @@ internal static class SharedViewSounds
         if (photonEvent.Code != RoomKeys.ItemSoundEvent
             || photonEvent.CustomData is not object[] { Length: 2 } parts
             || parts[0] is not string name
+            || !WireLimits.IsText(name)
             || parts[1] is not Vector3 position
+            || !WireLimits.IsFinite(position.x) || !WireLimits.IsFinite(position.y) || !WireLimits.IsFinite(position.z)
             || RiderHud.ObservedCarrier() is not Character carrier
-            || photonEvent.Sender != PairRoster.ActorOf(carrier))
+            || photonEvent.Sender != PairRoster.ActorOf(carrier)
+            || !SoundGate.Take(Time.unscaledTimeAsDouble))
         {
             return;
         }

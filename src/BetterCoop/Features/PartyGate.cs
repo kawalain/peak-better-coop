@@ -23,7 +23,7 @@ internal static class PartyGate
         {
             foreach (PhotonPlayer player in PhotonNetwork.PlayerList)
             {
-                members.Add(new PartyMember(player.NickName, ModPresence.VersionOf(player)));
+                members.Add(new PartyMember(KnownPlayers.NameOf(player, player.ActorNumber), ModPresence.VersionOf(player)));
             }
         }
 

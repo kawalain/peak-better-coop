@@ -201,7 +201,7 @@ internal static class RoleSwap
             partnerOffered = true;
             if (pending == null)
             {
-                CoopNotice.Show(NoticeKind.Memo, Strings.SwapOffered(player.NickName));
+                CoopNotice.Show(NoticeKind.Memo, Strings.SwapOffered(KnownPlayers.NameOf(player, player.ActorNumber)));
             }
 
             return;
@@ -215,7 +215,7 @@ internal static class RoleSwap
                 && ServerClock.Since(PhotonNetwork.Time, op.At) < Operation.CountdownSeconds + 2;
             if (!swapping)
             {
-                CoopNotice.Show(NoticeKind.Memo, Strings.SwapWithdrawn(player.NickName));
+                CoopNotice.Show(NoticeKind.Memo, Strings.SwapWithdrawn(KnownPlayers.NameOf(player, player.ActorNumber)));
             }
         }
     }

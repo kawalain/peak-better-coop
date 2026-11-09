@@ -121,6 +121,5 @@ internal static class PairLetters
         return true;
     }
 
-    private static string NameOf(int actor) =>
-        PhotonNetwork.CurrentRoom?.GetPlayer(actor)?.NickName ?? $"#{actor}";
+    private static string NameOf(int actor) => KnownPlayers.NameOf(actor);
 }

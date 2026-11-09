@@ -157,6 +157,12 @@ internal static class TroopLeaderRevive
     }
 
     /// <summary>Carries out a member's request, on the Troop Leader's client.</summary>
+    /// <summary>How soon the Troop Leader relays another revive of the same scout.</summary>
+    private const float RelaySeconds = 1.5f;
+
+    /// <summary>When the Troop Leader last relayed a revive, by the target's view.</summary>
+    private static readonly System.Collections.Generic.Dictionary<int, float> Relayed = new();
+
     internal static void Handle(EventData photonEvent)
     {
         if (photonEvent.Code != RoomKeys.ReviveRequestEvent
@@ -188,11 +194,22 @@ internal static class TroopLeaderRevive
         bool needed = atPosition
             ? target.data.dead
             : !target.data.dead && (target.data.passedOut || target.data.fullyPassedOut);
-        if (!needed)
+        // Each revive the Troop Leader sends reaches every client: one per
+        // target every so often, however often a member asks.
+        float now = Time.unscaledTime;
+        if (!needed
+            || (Relayed.TryGetValue(viewId, out float last) && now - last < RelaySeconds)
+            || !WireLimits.IsFinite(position.x) || !WireLimits.IsFinite(position.y) || !WireLimits.IsFinite(position.z))
         {
             return;
         }
 
+        if (Relayed.Count > 64)
+        {
+            Relayed.Clear();
+        }
+
+        Relayed[viewId] = now;
         Send(target, atPosition, position, applyStatus, statueSegment);
     }
 

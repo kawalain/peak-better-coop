@@ -13,7 +13,9 @@ namespace BetterCoop.Net;
 internal sealed class ModPresence : MonoBehaviourPunCallbacks
 {
     public static string? VersionOf(PhotonPlayer player) =>
-        player.CustomProperties.TryGetValue(RoomKeys.Version, out object value) ? value as string : null;
+        player.CustomProperties.TryGetValue(RoomKeys.Version, out object value) && value is string version && version.Length <= 32
+            ? WireLimits.Name(version, string.Empty)
+            : null;
 
     public static RolePreference RoleOf(PhotonPlayer player) =>
         player.CustomProperties.TryGetValue(RoomKeys.Role, out object value)

@@ -111,11 +111,16 @@ internal sealed class HandoverPlan
         }
 
         int count = carriers.Length;
-        if (sources.Length != count
-            || places.Length != count * 3
+        if (count > WireLimits.MaxScouts
             || statusCount < 0
+            || statusCount > WireLimits.MaxStatuses
+            || sources.Length != count
+            || places.Length != count * 3
             || statuses.Length != count * statusCount
-            || stamina.Length != count * 2)
+            || stamina.Length != count * 2
+            || !WireLimits.AllFinite(places)
+            || !WireLimits.AllFinite(statuses)
+            || !WireLimits.AllFinite(stamina))
         {
             return null;
         }

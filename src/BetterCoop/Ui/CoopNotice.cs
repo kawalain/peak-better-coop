@@ -15,6 +15,9 @@ internal static class CoopNotice
 {
     private static PlayerConnectionLog? log;
 
+    /// <summary>Holds back the same notice again soon, and a flood of them.</summary>
+    private static readonly NoticeGate Gate = new();
+
     /// <summary>News from the Troop Leader or the mod, on a telegram.</summary>
     public static void Info(string message) => Show(NoticeKind.Telegram, message);
 
@@ -23,6 +26,12 @@ internal static class CoopNotice
 
     public static void Show(NoticeKind kind, string message)
     {
+        if (!Gate.Allow(message, Time.unscaledTimeAsDouble))
+        {
+            Plugin.Verbose($"[Notice held back] {message}");
+            return;
+        }
+
         Plugin.Log.LogInfo($"[Notice] {message}");
         if (!NoticeBoard.TryShow(kind, Strings.Unprefixed(message)))
         {

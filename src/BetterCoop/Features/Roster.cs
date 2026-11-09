@@ -685,8 +685,7 @@ internal sealed class LiveRoom : ICoopRoom
         }
     }
 
-    public string NameOf(int actor) =>
-        PhotonNetwork.CurrentRoom?.GetPlayer(actor)?.NickName ?? $"#{actor}";
+    public string NameOf(int actor) => KnownPlayers.NameOf(actor);
 
     public void ToggleSwap() => RoleSwap.Toggle();
 

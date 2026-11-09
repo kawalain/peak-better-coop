@@ -187,20 +187,23 @@ internal sealed class CarryRecord
             || titles.Length != segments.Length
             || carriers.Length != segments.Length
             || riders.Length != segments.Length
-            || seconds.Length != segments.Length)
+            || seconds.Length != segments.Length
+            || ids.Length > WireLimits.MaxScouts
+            || segments.Length > WireLimits.MaxStretches)
         {
             return null;
         }
 
         var record = new CarryRecord();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
         for (int i = 0; i < ids.Length; i++)
         {
-            if (record.Find(ids[i]) != null)
+            if (!WireLimits.IsId(ids[i]) || !seen.Add(ids[i]))
             {
                 return null;
             }
 
-            record.scouts.Add(new Scout(ids[i], names[i])
+            record.scouts.Add(new Scout(ids[i], WireLimits.Name(names[i], ids[i]))
             {
                 Carried = Amount(carried[i]),
                 Ridden = Amount(ridden[i]),
@@ -210,7 +213,9 @@ internal sealed class CarryRecord
 
         for (int i = 0; i < segments.Length; i++)
         {
-            if (carriers[i] < 0 || carriers[i] >= ids.Length || riders[i] < 0 || riders[i] >= ids.Length || carriers[i] == riders[i])
+            if (carriers[i] < 0 || carriers[i] >= ids.Length || riders[i] < 0 || riders[i] >= ids.Length || carriers[i] == riders[i]
+                || segments[i] is < 0 or > 255
+                || !WireLimits.IsId(titles[i]))
             {
                 return null;
             }

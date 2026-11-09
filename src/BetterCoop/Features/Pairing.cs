@@ -88,7 +88,10 @@ internal static class PairRoster
             || value is not object[] { Length: 3 } parts
             || parts[0] is not int[] flat
             || parts[1] is not int[] unpaired
-            || parts[2] is not int[] overridden)
+            || parts[2] is not int[] overridden
+            || flat.Length > 2 * WireLimits.MaxScouts
+            || unpaired.Length > WireLimits.MaxScouts
+            || overridden.Length > WireLimits.MaxScouts)
         {
             return null;
         }
@@ -141,19 +144,31 @@ internal static class PairPlans
     {
         if (!PhotonNetwork.InRoom
             || !PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Plan, out object value)
-            || value is not int[] flat)
+            || value is not int[] flat
+            || flat.Length > 2 * WireLimits.MaxScouts)
         {
             return [];
         }
 
-        var plan = new List<Pair>();
-        for (int i = 0; i + 1 < flat.Length; i += 2)
+        // The Roster asks every frame; the value is read again only when it changes.
+        if (!ReferenceEquals(flat, readPlanFrom))
         {
-            plan.Add(new Pair(flat[i], flat[i + 1]));
+            var plan = new List<Pair>();
+            for (int i = 0; i + 1 < flat.Length; i += 2)
+            {
+                plan.Add(new Pair(flat[i], flat[i + 1]));
+            }
+
+            readPlanFrom = flat;
+            readPlan = plan;
         }
 
-        return plan;
+        return readPlan;
     }
+
+    private static int[]? readPlanFrom;
+
+    private static IReadOnlyList<Pair> readPlan = [];
 
     /// <summary>As the Troop Leader at the Airport, announces the plan to the room; false when it cannot be set now.</summary>
     public static bool Announce(IReadOnlyList<Pair> plan)
@@ -575,6 +590,5 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         }
     }
 
-    private static string NameOf(int actor) =>
-        PhotonNetwork.CurrentRoom?.GetPlayer(actor)?.NickName ?? $"#{actor}";
+    private static string NameOf(int actor) => KnownPlayers.NameOf(actor);
 }

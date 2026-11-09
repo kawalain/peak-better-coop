@@ -53,11 +53,11 @@ internal sealed class PartedPairs
     public static PartedPairs Decode(object? value)
     {
         var entries = new List<(string, string)>();
-        if (value is string[] flat && flat.Length % 2 == 0)
+        if (value is string[] flat && flat.Length % 2 == 0 && flat.Length <= 2 * WireLimits.MaxParted)
         {
             for (int i = 0; i < flat.Length; i += 2)
             {
-                if (!string.IsNullOrEmpty(flat[i]) && !string.IsNullOrEmpty(flat[i + 1]))
+                if (WireLimits.IsId(flat[i]) && WireLimits.IsId(flat[i + 1]))
                 {
                     entries.Add((flat[i], flat[i + 1]));
                 }

@@ -92,7 +92,9 @@ internal sealed class RiderActions
         actions.ScrollForward = new ButtonCounters((held & Held.ScrollForward) != 0, Next(), 0);
         actions.ScrollBackward = new ButtonCounters((held & Held.ScrollBackward) != 0, Next(), 0);
         actions.ScrollTotal = BitConverter.ToSingle(buffer, offset);
-        return true;
+
+        // A look that is not a number would carry the Shared Body's camera off with it.
+        return WireLimits.IsFinite(actions.Yaw) && WireLimits.IsFinite(actions.Pitch) && WireLimits.IsFinite(actions.ScrollTotal);
     }
 
     private static void Write(byte[] buffer, ref int offset, byte[] bytes)

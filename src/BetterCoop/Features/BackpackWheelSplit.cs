@@ -630,6 +630,9 @@ internal static class BackpackWheelSplit
             new RaiseEventOptions { TargetActors = [actor] },
             SendOptions.SendReliable);
 
+    /// <summary>A Carrier's wheel opens on the Rider's screen a few times a second at most, however often it is sent.</summary>
+    private static readonly RateGate OpenGate = new(capacity: 3, perSecond: 2);
+
     internal static void Receive(EventData photonEvent)
     {
         if (photonEvent.Code != RoomKeys.BackpackWheelEvent || !WheelSignal.TryDecode(photonEvent.CustomData, out WheelSignal signal))
@@ -660,7 +663,7 @@ internal static class BackpackWheelSplit
 
         switch (signal.Kind)
         {
-            case WheelSignalKind.Open:
+            case WheelSignalKind.Open when OpenGate.Take(Time.unscaledTimeAsDouble):
                 RiderOpen(signal, carrier, photonEvent.Sender);
                 break;
             case WheelSignalKind.Close when showing && signal.Session == shownSession:

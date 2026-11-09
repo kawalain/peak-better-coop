@@ -229,5 +229,5 @@ internal static class CarryRecords
 
     private static string IdOf(int actor) => KnownPlayers.UserIdOf(actor) ?? $"#{actor}";
 
-    private static string NameOf(int actor) => PhotonNetwork.CurrentRoom?.GetPlayer(actor)?.NickName ?? string.Empty;
+    private static string NameOf(int actor) => KnownPlayers.NameOf(actor);
 }
