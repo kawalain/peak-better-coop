@@ -19,6 +19,27 @@ _Avoid_: game, match, session, level
 The player who hosts the room; the game's own name for the host.
 _Avoid_: host, 방장 (in player text)
 
+**Carry Record** (업기 기록):
+What each player has done in Pairs over a Run: the time spent as Carrier, the
+time spent as Rider, and the height climbed while carrying, counting only
+climbs, not falls. Time with no partner or with the Shared Body dead does not
+count. It follows the player through leaving and rejoining, and starts afresh
+when the next Run departs.
+_Avoid_: stats, score, leaderboard
+
+**Run Report** (원정 보고서):
+The paper the party gets back at the Airport after a Run: how it ended, how
+long it took, who carried whom in each segment, everyone's Carry Record, and
+the Merit Badges. Players who left during the Run are on it too. It lasts
+until the next Run departs.
+_Avoid_: end screen, summary, results
+
+**Merit Badge** (공로 배지):
+A playful title on the Run Report for the best Carry Record in one thing: the
+most time carrying, the most time carried, the most height climbed carrying,
+and the two who stayed a Pair the longest.
+_Avoid_: achievement, award, trophy
+
 ### Teams
 
 **Pair** (짝):
@@ -64,7 +85,9 @@ _Avoid_: 짝짓기, 짝 짓기, matchmaking
 The Pairs the Troop Leader sets at the Airport before a Run, naming who carries
 in each. Nobody is carried at the Airport; the Pair Formation on arrival uses
 the plan, over Role Preferences, and the plan ends there or when the party is
-back at the Airport. Every player sees it on the Roster.
+back at the Airport. Every player sees it on the Roster. When the same scouts
+gather again, the Troop Leader's plan starts from the Pairs the last Run ended
+with.
 _Avoid_: pre-pairing, lobby pairs, 예약 짝
 
 **Role Preference** (원하는 역할):
@@ -75,7 +98,9 @@ say otherwise. A Pair Plan and a Pair Assignment always come before it.
 **Pair Shuffle** (짝 섞기):
 Forming the Pairs anew in the middle of a Run so that every Pair changes:
 new partners where there are enough players, otherwise the same two with
-their roles traded. Role Preferences hold where they allow it.
+their roles traded. Role Preferences hold where they allow it. The Troop
+Leader can call off a Pair Shuffle while it counts down; the Timed Shuffle
+then counts again from the start.
 _Avoid_: re-pairing, reshuffle
 
 **Late Pairing** (짝 이어주기):
@@ -127,9 +152,9 @@ _Avoid_: solo player, odd player
 
 **Roster** (편성표):
 The page of the pause menu for the mod, drawn as a paper form: every player sees the Pairs and the
-Unpaired Players, sets their Role Preference, and asks for a Role Swap; the
-Troop Leader also changes the Pairs and the Run Rules there, and at the Airport
-sets the Pair Plan.
+Unpaired Players, reads the Run Rules, sets their Role Preference, and asks for
+a Role Swap; the Troop Leader also changes the Pairs and the Run Rules there,
+and at the Airport sets the Pair Plan.
 _Avoid_: Coop Menu, 코옵 메뉴, coop panel, admin menu
 
 **Run Rules** (원정 규칙):
@@ -138,7 +163,7 @@ Preferences are followed, whether Role Swaps may be asked for, whether Late
 Pairing happens, odd player counts, shuffles, Body Handover, carry weight, and
 who picks from the backpack wheel. Every rule that changes play is one; each
 starts out leaving players free. A new Troop Leader keeps the rules the room
-has.
+has. Every player can read them on the Roster and is told when they change.
 _Avoid_: host settings, room settings
 
 **Solo Pair** (1인 짝 테스트):
