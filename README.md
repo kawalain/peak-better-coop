@@ -7,6 +7,8 @@ and come back together.
 
 [한국어](https://github.com/kawalain/peak-better-coop/blob/main/README.ko.md)
 
+![A Pair Shuffle letter counting down to a new partner](https://raw.githubusercontent.com/kawalain/peak-better-coop/main/docs/images/en-shuffle-letter.webp)
+
 ## How it plays
 
 | Carrier (keyboard) | Rider (mouse) |
@@ -15,82 +17,28 @@ and come back together.
 | Interact, pick up, drop, throw | Use the held item |
 | Hotbar, emotes, open the backpack wheel | Scroll, ping, pick from the backpack wheel |
 
-- The body walks where the Rider looks. To climb, the Rider holds the grip and
-  the Carrier climbs.
-- Both players see through the Carrier's eyes, with the same HUD.
-- Tap the back-slot key to bring the back item to hand; hold it to open your
-  own backpack, then the Rider clicks the item.
-- Pairs change when a campfire is lit, and optionally on a timer. A Pair can
-  also trade roles with **Swap Places**. Items and statuses carry over;
-  nothing is lost.
-- **Late Pairing**: a player who joins mid-Run, or whose partner leaves, is
-  paired with another player without a partner, without waiting for a
-  shuffle. A player who reconnects gets their partner back in their old role.
-- **Rescue Carry**: a Pair, or a player without one, picks up a passed-out
-  scout as in the plain game, and the Pair's Rider holds them. Their time
-  stops running out while they are carried.
-- **Roster** in the ESC menu is a paper form: the Pairs as a yearbook page
-  of the scouts' passport photos, the time to the next shuffle, and where you
-  swap places and set the role you would like. Its Carry Record tallies how
-  long each scout carried, rode and rescued this Run, and how high they
-  climbed carrying.
-- The **Run Report** on the Roster follows the Run as it goes, and back at
-  the Airport a telegram says it is complete: how the Run ended and how long
-  it took, who carried whom in each segment, everyone's Carry Record, and
-  pencilled Merit Badges for the steadiest back, the comfiest passenger, the
-  Rescue Ranger, and the best buddies. It stays until the next Run departs,
-  and mods that shorten or skip the end screen leave it whole.
-- News comes in on paper from the left: a telegram, a scout's memo, a
-  baggage tag for your things, or a red-stamped caution. When your own Pair
-  or role is about to change, a little airmail letter pops out with your
-  photo and your partner's and counts down in its postmark.
+- The **Roster** in the ESC menu shows the Pairs, your role, and the Run
+  Report with its Merit Badges.
+- Only the Troop Leader (host) needs the mod; players without it climb along
+  without a Pair.
+- BetterCoop works beside other mods, and while you are in a Pair its rules
+  win. It turns itself off beside Co-op Mod, or after a game update it does
+  not fit yet.
 
-## Installing
-
-Install with a mod manager (Gale, r2modman, or Thunderstore Mod Manager).
-The Troop Leader (host) needs the mod. Players whose version works with the
-Troop Leader's are paired; anyone without the mod, or with a version that does not work with
-the Troop Leader's, climbs along without a Pair, and everyone is told who. The
-players who can pair need to be an even number unless the Troop Leader allows
-an odd one.
+| Roster at the Airport | Roster during a Run | Run Report |
+| --- | --- | --- |
+| ![The Pair Plan on the Roster, with each scout's photo in album corners](https://raw.githubusercontent.com/kawalain/peak-better-coop/main/docs/images/en-airport-plan.webp) | ![Your Pair on the Roster: partner, role, Swap Places, and Role Preference](https://raw.githubusercontent.com/kawalain/peak-better-coop/main/docs/images/en-roster-run.webp) | ![The Run Report's Merit Badges and the Pairs by segment](https://raw.githubusercontent.com/kawalain/peak-better-coop/main/docs/images/en-report.webp) |
 
 ## Settings
 
-In the **Roster** of the ESC menu, or in your mod manager's config editor
-under `in.kawala.bettercoop`. The Troop Leader's values apply to the room,
-except your own Role Preference and the Debug settings; a new Troop Leader
-keeps the room's rules. Everyone reads the Run Rules on the Roster, and a
-telegram tells them when the rules change. The Troop Leader's
-Roster can also shuffle the Pairs at once, call off the coming shuffle,
-put every Pair back together, and lay the
-Pairs out as they like by moving the photos about as a draft, then announce
-them to everyone with a postmark: the Scoutmaster's hand reaches down and
-takes the paper. A discarded draft is crumpled up and tossed. At the
-Airport the Troop Leader plans the Pairs the same way before departure; the
-Pairs form as planned on arrival, and anyone left out is paired by lot. When
-the same scouts gather again, the plan's draft starts from the Pairs the last
-Run ended with.
+The Troop Leader sets the Run Rules on the Roster, where each one is
+explained: Honour Role Preferences, Allow Role Swaps, Late Pairing, Allow Odd
+Player Count, Campfire Shuffle, Timed Shuffle, Hand Over Place and Items,
+Rescue Carry, Carry Weight, and Rider Picks From Backpack. Each player sets
+their own Role Preference there. When reporting a bug, turn on **Verbose Log**
+in your mod manager's config and send `BepInEx/LogOutput.log`.
 
-| Setting | Default | |
-| --- | --- | --- |
-| Role Preference | Random | Carrier, Rider, or Random for either. |
-| Honour Role Preferences | On | Off: roles are drawn by lot. |
-| Allow Role Swaps | On | Off: only the Troop Leader sets roles. |
-| Late Pairing | On | Off: players without a partner climb alone until the next shuffle. |
-| Rider Picks From Backpack | On | Off: the Carrier picks from the backpack wheel. |
-| Allow Odd Player Count | Off | The extra player plays without a Pair. |
-| Campfire Shuffle | On | New Pairs at each campfire. |
-| Timed Shuffle, Interval | Off, 10 | New Pairs every few minutes (1–60). |
-| Hand Over Place, Items | On, On | A new Carrier takes over the place and items of the Carrier before them. |
-| Rescue Carry | On | Off: Pairs carry no passed-out scout, and no one carries a passed-out Pair. |
-| Carry Weight | Off | Carriers feel the weight of a person. |
-| Verbose Log | Off | Turn on when reporting a bug, and send `BepInEx/LogOutput.log`. |
-
-## Compatibility
-
-BetterCoop works next to other mods, including ones that change carrying;
-while you are in a Pair, the Pair's rules win. It turns itself off beside
-Co-op Mod, and after a game update it does not fit yet.
+![The Run Rules on the Roster, each with what it does](https://raw.githubusercontent.com/kawalain/peak-better-coop/main/docs/images/en-rules.webp)
 
 ## For mod developers
 
@@ -123,18 +71,15 @@ public class MyPlugin : BaseUnityPlugin
 
 ## Antivirus warnings
 
-Some antivirus programs flag `BetterCoop.dll` with a name ending in `!ml`: a
-machine-learning guess, common for mods because they change a game's code
-while it runs. BetterCoop runs only inside PEAK, downloads and starts
-nothing, and talks only to players in your room. Its source is at
-<https://github.com/kawalain/peak-better-coop>. Report the file as a false
-positive and restore it, or reinstall.
+Some antivirus programs flag `BetterCoop.dll` by a machine-learning guess, a
+name ending in `!ml`, as they often do with mods. Allow the file and install
+the mod again. The source is open at
+<https://github.com/kawalain/peak-better-coop>.
 
 ## Credits
 
-- [Sappheiros009](https://github.com/Sappheiros009/CoopMod): the original
-  idea, from Co-op Mod. BetterCoop began as a fork of Co-op Mod and has since
-  been rewritten; none of Co-op Mod's code remains.
+- [Sappheiros009](https://github.com/Sappheiros009/CoopMod): Co-op Mod, the
+  original idea that BetterCoop grew from.
 - [Puro](https://steamcommunity.com/profiles/76561198105109754): ideas and
   testing.
 - [kawalain](https://steamcommunity.com/profiles/76561198436496102):
