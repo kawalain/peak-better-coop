@@ -45,6 +45,15 @@ public class ScoutPrintTests
     }
 
     [Fact]
+    public void An_advancement_chart_rules_a_line_between_each_pair_of_columns()
+    {
+        XElement ruling = XElement.Parse(FormDrawing.ColumnRules(1000f, 300f, [600f, 760f, 920f, 1200f]));
+
+        // The line past the chart's edge is left out.
+        Assert.Equal(3, ruling.Descendants(Svg + "rect").Count());
+    }
+
+    [Fact]
     public void The_rope_knot_pulls_tight_and_stays_within_its_strip()
     {
         string loose = FormDrawing.Rope(380f, 30f, 0f);

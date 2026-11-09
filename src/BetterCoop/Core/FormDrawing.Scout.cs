@@ -128,6 +128,26 @@ internal static partial class FormDrawing
         return path.Append('Z').ToString();
     }
 
+    /// <summary>
+    /// The ruling of a troop's advancement chart, <paramref name="width"/> by
+    /// <paramref name="height"/>: a printed line down at each of
+    /// <paramref name="at"/>, between the columns.
+    /// </summary>
+    public static string ColumnRules(float width, float height, IReadOnlyList<float> at)
+    {
+        var svg = Open(width, height);
+        string blue = Paper.Mix(PaperDrawing.PassportBlue, 0.5f).Hex;
+        foreach (float x in at)
+        {
+            if (x > 0f && x < width)
+            {
+                svg.Append(F($"<rect x=\"{x - 0.6f}\" y=\"0\" width=\"1.2\" height=\"{height}\" fill=\"{blue}\"/>"));
+            }
+        }
+
+        return Close(svg);
+    }
+
     /// <summary>A printed rule under a heading, a heavy line over a hairline, in the form's second colour.</summary>
     public static string HeadingRule(float width, float height)
     {

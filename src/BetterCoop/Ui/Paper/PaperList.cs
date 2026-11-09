@@ -35,6 +35,14 @@ internal sealed class PaperList
     /// <summary>The latest a row's typing starts, however far down the form it lies.</summary>
     private const float TypeInLongest = 0.9f;
 
+    /// <summary>The gap between table columns, as a line lays its cells.</summary>
+    private const float TableGap = 12f;
+
+    /// <summary>How soon after the line above a table's next line is typed as the form first opens, and the longest all its lines take.</summary>
+    private const float TableLineStep = 0.09f;
+
+    private const float TableTyping = 1.2f;
+
     /// <summary>The size of the trail sign before a heading.</summary>
     private const float SignSize = 40f;
 
@@ -482,6 +490,15 @@ internal sealed class PaperList
 
         AddDrawing(row.Root.transform, "Rule", RuleHeight, size => FormDrawing.HeadingRule(size.x, size.y));
         RectTransform body = NewRect("Body", row.Root.transform);
+        // The ruling of a troop's advancement chart: a line down between the columns, under the heading and the entries alike.
+        RectTransform ruling = NewRect("Ruling", row.Root.transform);
+        ruling.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+        ruling.anchorMin = Vector2.zero;
+        ruling.anchorMax = Vector2.one;
+        ruling.offsetMin = new Vector2(12f, 6f);
+        ruling.offsetMax = new Vector2(-12f, -6f);
+        ruling.SetAsFirstSibling();
+        VectorView.Add(ruling, size => FormDrawing.ColumnRules(size.x, size.y, ColumnLines(ruling, headTexts)), Color.clear);
         VerticalLayoutGroup stack = body.gameObject.AddComponent<VerticalLayoutGroup>();
         stack.childControlWidth = stack.childControlHeight = true;
         stack.childForceExpandWidth = true;
@@ -496,6 +513,8 @@ internal sealed class PaperList
         }
 
         var lines = new List<(GameObject Root, CanvasGroup Faint, TMP_Text[] Cells)>();
+        bool opening = fills <= 1;
+        bool firstLines = true;
         row.Refreshers.Add(() =>
         {
             IReadOnlyList<string> printed = heads();
@@ -505,20 +524,35 @@ internal sealed class PaperList
             }
 
             IReadOnlyList<TableEntry> now = entries();
+            // Typed in from the top as the form first opens, each line soon after the last; a line added later is typed at once.
+            float each = Mathf.Min(TableLineStep, TableTyping / Mathf.Max(1, now.Count));
             while (lines.Count < now.Count)
             {
                 RectTransform line = Line(body);
                 line.gameObject.AddComponent<LayoutElement>().minHeight = 36f;
                 CanvasGroup faint = line.gameObject.AddComponent<CanvasGroup>();
+                Image ruled = NewRect("Ruled", line).gameObject.AddComponent<Image>();
+                ruled.raycastTarget = false;
+                ruled.color = Faded(PaperText.Dash, 0.45f);
+                ruled.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+                RectTransform under = ruled.rectTransform;
+                under.anchorMin = Vector2.zero;
+                under.anchorMax = new Vector2(1f, 0f);
+                under.pivot = new Vector2(0.5f, 1f);
+                under.sizeDelta = new Vector2(0f, 1.2f);
+                under.anchoredPosition = new Vector2(0f, -1f);
                 var cells = new TMP_Text[columns];
                 for (int i = 0; i < columns; i++)
                 {
                     cells[i] = Cell(line, i, PaperText.Value);
-                    cells[i].color = i == 0 ? PaperText.Ink : Pen;
+                    cells[i].color = PaperText.Ink;
+                    Typewritten.Add(cells[i], typeIn: !firstLines || opening, delay: firstLines ? TypeInDelay + lines.Count * each : 0f);
                 }
 
                 lines.Add((line.gameObject, faint, cells));
             }
+
+            firstLines = false;
 
             for (int n = 0; n < lines.Count; n++)
             {
@@ -623,6 +657,21 @@ internal sealed class PaperList
         TMP_Text text = PaperText.Make(rect.gameObject, template, size, TextAlignmentOptions.BottomRight);
         PaperText.Fit(text, size * 0.7f);
         return text;
+    }
+
+    /// <summary>Where the lines between a table's columns fall across <paramref name="ruling"/>: midway in the gap left of each column after the first.</summary>
+    private static IReadOnlyList<float> ColumnLines(RectTransform ruling, IReadOnlyList<TMP_Text> heads)
+    {
+        var at = new List<float>();
+        Rect area = ruling.rect;
+        for (int i = 1; i < heads.Count; i++)
+        {
+            RectTransform cell = heads[i].rectTransform;
+            Vector3 left = ruling.InverseTransformPoint(cell.TransformPoint(new Vector3(cell.rect.xMin, 0f, 0f)));
+            at.Add(left.x - area.xMin - TableGap / 2f);
+        }
+
+        return at;
     }
 
     /// <summary>A whole piece of form the caller lays out itself, such as a board of cards.</summary>
