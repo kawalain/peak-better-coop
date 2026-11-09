@@ -56,7 +56,8 @@ internal static class Roster
         Button button = PaperList.CloneButton(template, parent, "BetterCoop.MenuButton." + label, open);
         if (button.GetComponentInChildren<TMP_Text>(true) is TMP_Text text)
         {
-            text.text = label;
+            // In capitals beside the game's own buttons, where its language writes them so.
+            text.text = LocalizedText.languageSupportsAllCaps ? label.ToUpperInvariant() : label;
         }
 
         GameObject clone = button.gameObject;
