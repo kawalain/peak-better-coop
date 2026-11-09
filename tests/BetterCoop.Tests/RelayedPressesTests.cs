@@ -47,4 +47,26 @@ public class RelayedPressesTests
         Assert.True(presses.Step());
         Assert.False(presses.Step());
     }
+
+    [Fact]
+    public void Presses_past_the_backlog_are_dropped()
+    {
+        var presses = new RelayedPresses();
+        presses.Receive(0);
+        presses.Receive(200);
+
+        int played = Enumerable.Range(0, 1000).Count(_ => presses.Step());
+        Assert.Equal(RelayedPresses.MostWaiting, played);
+    }
+
+    [Fact]
+    public void A_counter_that_jumps_back_plays_no_more_than_the_backlog()
+    {
+        var presses = new RelayedPresses();
+        presses.Receive(500);
+        presses.Receive(10);
+
+        int played = Enumerable.Range(0, 70000).Count(_ => presses.Step());
+        Assert.True(played <= RelayedPresses.MostWaiting);
+    }
 }

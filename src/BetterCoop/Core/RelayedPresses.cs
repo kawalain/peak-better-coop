@@ -2,10 +2,16 @@ namespace BetterCoop.Core;
 
 /// <summary>
 /// Replays a remote press counter on the Carrier's client, one press per
-/// frame, so presses that arrive together are not merged into one.
+/// frame, so presses that arrive together are not merged into one. At most
+/// <see cref="MostWaiting"/> presses wait: a Rider pressing faster than the
+/// Carrier's frames play them, or a counter that jumps, never leaves the
+/// Shared Body pressing on after the Rider has stopped.
 /// </summary>
 internal sealed class RelayedPresses
 {
+    /// <summary>The most presses waiting to play; older ones are dropped.</summary>
+    public const int MostWaiting = 3;
+
     private ushort latest;
 
     private ushort applied;
@@ -21,6 +27,10 @@ internal sealed class RelayedPresses
         }
 
         latest = presses;
+        if ((ushort)(latest - applied) > MostWaiting)
+        {
+            applied = (ushort)(latest - MostWaiting);
+        }
     }
 
     public void Reset()

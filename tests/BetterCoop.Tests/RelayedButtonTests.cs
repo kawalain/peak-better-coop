@@ -146,4 +146,33 @@ public class RelayedButtonTests
         Assert.True(frame.WasPressed);
         Assert.True(frame.IsPressed);
     }
+
+    [Fact]
+    public void Clicks_past_the_backlog_are_dropped_and_the_rest_still_alternate()
+    {
+        var button = new RelayedButton();
+        button.Receive(State(false, 0, 0));
+        button.Step();
+
+        // A Rider clicking far faster than the Carrier's frames.
+        button.Receive(State(false, 500, 500));
+
+        ButtonFrame[] frames = Enumerable.Range(0, 10).Select(_ => button.Step()).ToArray();
+        Assert.Equal(RelayedButton.MostWaiting, frames.Count(f => f.WasPressed));
+        Assert.Equal(RelayedButton.MostWaiting, frames.Count(f => f.WasReleased));
+        Assert.False(frames[^1].IsPressed);
+    }
+
+    [Fact]
+    public void Counters_that_jump_back_never_replay_thousands_of_clicks()
+    {
+        var button = new RelayedButton();
+        button.Receive(State(false, 500, 500));
+        button.Step();
+
+        button.Receive(State(false, 10, 10));
+
+        int presses = Enumerable.Range(0, 1000).Count(_ => button.Step().WasPressed);
+        Assert.True(presses <= RelayedButton.MostWaiting);
+    }
 }

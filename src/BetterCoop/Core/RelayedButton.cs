@@ -1,3 +1,5 @@
+using System;
+
 namespace BetterCoop.Core;
 
 /// <summary>One frame of a button as the game reads it.</summary>
@@ -23,10 +25,16 @@ internal readonly struct ButtonFrame
 /// Replays a remote button on the Carrier's client, one edge per frame, so a
 /// quick click still shows as a press and then a release. Between snapshots
 /// the button keeps its last known state: a packet gap never lets go of a
-/// held climbing grip (ADR 0002).
+/// held climbing grip (ADR 0002). At most <see cref="MostWaiting"/> clicks
+/// wait to play: a Rider clicking faster than the Carrier's frames play
+/// them, or counters that jump, never leave the Shared Body clicking on
+/// after the Rider has stopped.
 /// </summary>
 internal sealed class RelayedButton
 {
+    /// <summary>The most presses waiting to play; older clicks are dropped whole.</summary>
+    public const int MostWaiting = 2;
+
     private ButtonCounters latest;
 
     private ushort appliedPresses;
@@ -47,6 +55,14 @@ internal sealed class RelayedButton
         }
 
         latest = counters;
+        int waiting = (ushort)(latest.Presses - appliedPresses);
+        if (waiting > MostWaiting)
+        {
+            // Drop the oldest clicks whole, a press with its release, so the edges still alternate.
+            int dropped = waiting - MostWaiting;
+            appliedPresses = (ushort)(appliedPresses + dropped);
+            appliedReleases = (ushort)(appliedReleases + Math.Min(dropped, (ushort)(latest.Releases - appliedReleases)));
+        }
     }
 
     public void Reset()
