@@ -33,6 +33,25 @@ internal sealed class PaperList
 
     private const float SignatureWidth = 400f;
 
+    /// <summary>The corner the credits are scrawled over.</summary>
+    private static readonly Vector2 CreditsSize = new(260f, 112f);
+
+    /// <summary>Where each maker's name fell among the doodles, and its slant, crossing them.</summary>
+    private static readonly (Vector2 Spot, float Slant)[] CreditSpots =
+    [
+        (new Vector2(84f, 56f), 13f),
+        (new Vector2(166f, 30f), -19f),
+    ];
+
+    /// <summary>How a scrawled name shifts (x, y) and turns (z, degrees) in each boil frame.</summary>
+    private static readonly Vector3[] NameWobble =
+    [
+        new(0f, 0f, 0f),
+        new(0.6f, -0.4f, 0.7f),
+        new(-0.5f, 0.3f, -0.5f),
+        new(0.3f, 0.5f, 0.4f),
+    ];
+
     /// <summary>How far in from the blank's left the name starts.</summary>
     private const float SignatureInset = 16f;
 
@@ -308,44 +327,67 @@ internal sealed class PaperList
     }
 
     /// <summary>
-    /// The makers' names pencilled small in the form's bottom-left corner, as
-    /// a doodle in the margin, with a silly sea anemone and a clumsy pony beside them. Pressed,
-    /// a name opens its maker's page; pointed at, it is underlined.
+    /// The makers' names scrawled in the form's bottom-left corner among a
+    /// silly sea anemone and a clumsy pony, each at its own slant and
+    /// crossing the others, as doodles left in a margin. The names boil with
+    /// the doodles. Pressed, a name opens its maker's page; pointed at, it is
+    /// underlined.
     /// </summary>
     public void Credits(IReadOnlyList<(string Name, Action Open)> makers)
     {
         PaperRow row = NewRow("Credits", 0f);
         row.Root.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(16, 12, 0, 6);
         RectTransform line = Line(row.Root.transform);
-        line.GetComponent<HorizontalLayoutGroup>().spacing = 4f;
-        line.localRotation = Quaternion.Euler(0f, 0f, 1.5f);
+
+        // Laid out by hand rather than by the row: each piece where it fell.
+        RectTransform scrawl = Fixed(line, "Scrawl", CreditsSize.x, CreditsSize.y);
+        Scribble(scrawl, "Anemone", new Vector2(64f, 56f), new Vector2(132f, 64f), -12f, size => FormDrawing.Anemone(size.x, size.y, Boil.Frame));
+        Scribble(scrawl, "Pony", new Vector2(80f, 62f), new Vector2(196f, 60f), 9f, size => FormDrawing.Pony(size.x, size.y, Boil.Frame));
+
         Color lead = ToColor(FormDrawing.Lead);
         for (int i = 0; i < makers.Count; i++)
         {
-            if (i > 0)
-            {
-                TMP_Text dot = AddText(line, "Dot", PaperText.Note, TextAlignmentOptions.BottomLeft, flexible: false);
-                dot.color = lead;
-                PaperText.Set(dot, "·");
-            }
-
-            TMP_Text name = AddText(line, makers[i].Name, PaperText.Note, TextAlignmentOptions.BottomLeft, flexible: false);
+            (Vector2 spot, float slant) = CreditSpots[i % CreditSpots.Length];
+            RectTransform holder = NewRect(makers[i].Name, scrawl);
+            holder.anchorMin = holder.anchorMax = Vector2.zero;
+            holder.pivot = new Vector2(0.5f, 0.5f);
+            holder.anchoredPosition = spot + new Vector2(0f, CreditsSize.y * (i / CreditSpots.Length));
+            TMP_Text name = PaperText.Make(holder.gameObject, template, PaperText.Note * 1.1f, TextAlignmentOptions.Center);
             name.fontStyle = FontStyles.Italic;
             name.color = lead;
             name.raycastTarget = true;
             PaperText.Set(name, makers[i].Name);
-            LinkControl link = PaperControl.Add<LinkControl>(name.gameObject, makers[i].Open);
+            holder.sizeDelta = new Vector2(name.preferredWidth + 6f, name.preferredHeight + 2f);
+            LinkControl link = PaperControl.Add<LinkControl>(holder.gameObject, makers[i].Open);
             link.Text = name;
             row.First ??= link;
+
+            // The name boils with the doodles, a step behind its neighbour.
+            int offset = i;
+            Vector2 rest = holder.anchoredPosition;
+            row.Refreshers.Add(() =>
+            {
+                int frame = (Boil.Frame + offset) % Boil.Frames;
+                holder.localRotation = Quaternion.Euler(0f, 0f, slant + NameWobble[frame].z);
+                holder.anchoredPosition = rest + new Vector2(NameWobble[frame].x, NameWobble[frame].y);
+            });
         }
 
-        RectTransform doodle = Fixed(line, "Anemone", 64f, 56f);
-        VectorView.Add(doodle, size => FormDrawing.Anemone(size.x, size.y, Boil.Frame), Color.clear, boil: true);
-        RectTransform pony = Fixed(line, "Pony", 80f, 62f);
-        VectorView.Add(pony, size => FormDrawing.Pony(size.x, size.y, Boil.Frame), Color.clear, boil: true);
         RectTransform spare = NewRect("Spare", line);
         spare.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
         Add(row);
+    }
+
+    /// <summary>A doodle dropped into <paramref name="scrawl"/>, centred on <paramref name="spot"/> at a slant, boiling.</summary>
+    private static void Scribble(RectTransform scrawl, string name, Vector2 size, Vector2 spot, float slant, Func<Vector2, string> drawing)
+    {
+        RectTransform rect = NewRect(name, scrawl);
+        rect.anchorMin = rect.anchorMax = Vector2.zero;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.sizeDelta = size;
+        rect.anchoredPosition = spot;
+        rect.localRotation = Quaternion.Euler(0f, 0f, slant);
+        VectorView.Add(rect, drawing, Color.clear, boil: true);
     }
 
     /// <summary>A whole piece of form the caller lays out itself, such as a board of cards.</summary>
