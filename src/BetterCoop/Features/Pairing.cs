@@ -82,7 +82,7 @@ internal static class PairRoster
     public static int ActorOf(Character character) => character.photonView.Owner.ActorNumber;
 
     /// <summary>The Pairs as the room shows them, which every client follows.</summary>
-    public static PairingResult? Read() => RoomProtocol.TryGet(RoomKeys.Pairs, out object value) ? Decode(value) : null;
+    public static PairingResult? Read() => RoomProtocol.TryGet(RoomKeys.Pairs, out object value) ? PairingResult.Decode(value) : null;
 
     /// <summary>
     /// The Pairs a change works from, on the Troop Leader: the ones it last
@@ -92,39 +92,10 @@ internal static class PairRoster
     /// back over the new ones.
     /// </summary>
     public static PairingResult? ReadLeading() =>
-        RoomWrites.TryOwn(RoomKeys.Pairs, out object? value) ? Decode(value) : Read();
-
-    private static PairingResult? Decode(object? value)
-    {
-        if (value is not object[] { Length: 3 } parts
-            || parts[0] is not int[] flat
-            || parts[1] is not int[] unpaired
-            || parts[2] is not int[] overridden
-            || flat.Length > 2 * WireLimits.MaxScouts
-            || unpaired.Length > WireLimits.MaxScouts
-            || overridden.Length > WireLimits.MaxScouts)
-        {
-            return null;
-        }
-
-        var pairs = new List<Pair>();
-        for (int i = 0; i + 1 < flat.Length; i += 2)
-        {
-            pairs.Add(new Pair(flat[i], flat[i + 1]));
-        }
-
-        return new PairingResult(PairingRules.Distinct(pairs), unpaired, overridden);
-    }
+        RoomWrites.TryOwn(RoomKeys.Pairs, out object? value) ? PairingResult.Decode(value) : Read();
 
     /// <summary>The room property value of <paramref name="result"/>, for writing it with other keys.</summary>
-    public static object? Encode(PairingResult? result) => result == null
-        ? null
-        : new object[]
-        {
-            result.Pairs.SelectMany(p => new[] { p.Carrier, p.Rider }).ToArray(),
-            result.Unpaired.ToArray(),
-            result.PreferenceOverridden.ToArray(),
-        };
+    public static object? Encode(PairingResult? result) => result?.Encode();
 
     /// <summary>Reloads the cache; returns the previous value.</summary>
     public static PairingResult? Reload()

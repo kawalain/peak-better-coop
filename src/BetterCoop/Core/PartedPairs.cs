@@ -22,11 +22,19 @@ internal sealed class PartedPairs
 
     public IReadOnlyList<(string Carrier, string Rider)> Entries => entries;
 
-    /// <summary>Records a parted Pair; each player keeps only their latest former partner.</summary>
+    /// <summary>
+    /// Records a parted Pair; each player keeps only their latest former
+    /// partner, and past <see cref="WireLimits.MaxParted"/>, which every reader
+    /// takes at most, the oldest record goes.
+    /// </summary>
     public void Add(string carrier, string rider)
     {
         entries.RemoveAll(e => e.Carrier == carrier || e.Rider == carrier || e.Carrier == rider || e.Rider == rider);
         entries.Add((carrier, rider));
+        if (entries.Count > WireLimits.MaxParted)
+        {
+            entries.RemoveRange(0, entries.Count - WireLimits.MaxParted);
+        }
     }
 
     /// <summary>Forgets the record of these two, in either role.</summary>

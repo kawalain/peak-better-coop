@@ -161,22 +161,58 @@ internal sealed class CarryRecord
         return badges;
     }
 
+    /// <summary>
+    /// The room property value, never past <see cref="WireLimits"/>, which
+    /// every reader refuses whole: a Run with more scouts shares those with
+    /// the most time in Pairs and rescuing, and one with more segment-and-Pair
+    /// entries shares the longest. The full record stays with this client.
+    /// </summary>
     public object[] Encode()
     {
-        int IndexOf(string id) => scouts.FindIndex(s => s.Id == id);
+        List<Scout> shared = scouts.Count <= WireLimits.MaxScouts
+            ? scouts
+            : scouts
+                .Select((scout, order) => (scout, order))
+                .OrderByDescending(s => s.scout.Carried + s.scout.Ridden + s.scout.Rescuing)
+                .ThenBy(s => s.order)
+                .Take(WireLimits.MaxScouts)
+                .OrderBy(s => s.order)
+                .Select(s => s.scout)
+                .ToList();
+        var index = new Dictionary<string, int>(StringComparer.Ordinal);
+        for (int i = 0; i < shared.Count; i++)
+        {
+            index[shared[i].Id] = i;
+        }
+
+        var kept = stretches
+            .Select((stretch, order) => (stretch, order))
+            .Where(s => index.ContainsKey(s.stretch.Carrier) && index.ContainsKey(s.stretch.Rider))
+            .ToList();
+        if (kept.Count > WireLimits.MaxStretches)
+        {
+            kept = kept
+                .OrderByDescending(s => s.stretch.Seconds)
+                .ThenBy(s => s.order)
+                .Take(WireLimits.MaxStretches)
+                .OrderBy(s => s.order)
+                .ToList();
+        }
+
+        List<Stretch> sharedStretches = kept.Select(s => s.stretch).ToList();
         return
         [
-            scouts.Select(s => s.Id).ToArray(),
-            scouts.Select(s => s.Name).ToArray(),
-            scouts.Select(s => s.Carried).ToArray(),
-            scouts.Select(s => s.Ridden).ToArray(),
-            scouts.Select(s => s.Climbed).ToArray(),
-            scouts.Select(s => s.Rescuing).ToArray(),
-            stretches.Select(s => s.Segment).ToArray(),
-            stretches.Select(s => s.Title).ToArray(),
-            stretches.Select(s => IndexOf(s.Carrier)).ToArray(),
-            stretches.Select(s => IndexOf(s.Rider)).ToArray(),
-            stretches.Select(s => s.Seconds).ToArray(),
+            shared.Select(s => s.Id).ToArray(),
+            shared.Select(s => s.Name).ToArray(),
+            shared.Select(s => s.Carried).ToArray(),
+            shared.Select(s => s.Ridden).ToArray(),
+            shared.Select(s => s.Climbed).ToArray(),
+            shared.Select(s => s.Rescuing).ToArray(),
+            sharedStretches.Select(s => s.Segment).ToArray(),
+            sharedStretches.Select(s => s.Title).ToArray(),
+            sharedStretches.Select(s => index[s.Carrier]).ToArray(),
+            sharedStretches.Select(s => index[s.Rider]).ToArray(),
+            sharedStretches.Select(s => s.Seconds).ToArray(),
         ];
     }
 

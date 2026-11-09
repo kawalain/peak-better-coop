@@ -52,6 +52,41 @@ internal sealed class PairingResult
 
     /// <summary>Players who got the role opposite to their Role Preference.</summary>
     public IReadOnlyList<int> PreferenceOverridden { get; }
+
+    /// <summary>
+    /// The room property value: the Pairs flat, Carrier then Rider, then the
+    /// Unpaired Players and those whose preference was overridden. Never past
+    /// <see cref="WireLimits"/>, which every reader refuses whole.
+    /// </summary>
+    public object[] Encode() =>
+    [
+        Pairs.Take(WireLimits.MaxScouts).SelectMany(p => new[] { p.Carrier, p.Rider }).ToArray(),
+        Unpaired.Take(WireLimits.MaxScouts).ToArray(),
+        PreferenceOverridden.Take(WireLimits.MaxScouts).ToArray(),
+    ];
+
+    /// <summary>The Pairs a room property value holds, or null when it holds none or is past the limits.</summary>
+    public static PairingResult? Decode(object? value)
+    {
+        if (value is not object[] { Length: 3 } parts
+            || parts[0] is not int[] flat
+            || parts[1] is not int[] unpaired
+            || parts[2] is not int[] overridden
+            || flat.Length > 2 * WireLimits.MaxScouts
+            || unpaired.Length > WireLimits.MaxScouts
+            || overridden.Length > WireLimits.MaxScouts)
+        {
+            return null;
+        }
+
+        var pairs = new List<Pair>();
+        for (int i = 0; i + 1 < flat.Length; i += 2)
+        {
+            pairs.Add(new Pair(flat[i], flat[i + 1]));
+        }
+
+        return new PairingResult(PairingRules.Distinct(pairs), unpaired, overridden);
+    }
 }
 
 /// <summary>Forms Pairs at random, honouring Role Preferences where possible.</summary>
@@ -321,10 +356,12 @@ internal static class PairingRules
 
     /// <summary>
     /// Dissolves every Pair with a member no longer in the room; the partner
-    /// left behind becomes unpaired. Idempotent, so the host may apply it to a
-    /// stale copy of the Pairs and still converge.
+    /// left behind becomes unpaired. Players no longer in the room leave the
+    /// Unpaired Players too, so a long Run of players coming and going never
+    /// grows the list past what a reader takes. Idempotent, so the host may
+    /// apply it to a stale copy of the Pairs and still converge.
     /// </summary>
-    /// <returns>False when every Pair is complete.</returns>
+    /// <returns>False when every Pair is complete and every listed player is present.</returns>
     public static bool TryDissolveAbsent(
         PairingResult result,
         Func<int, bool> isPresent,
@@ -332,7 +369,7 @@ internal static class PairingRules
     {
         reconciled = result;
         var kept = result.Pairs.Where(p => isPresent(p.Carrier) && isPresent(p.Rider)).ToList();
-        if (kept.Count == result.Pairs.Count)
+        if (kept.Count == result.Pairs.Count && result.Unpaired.All(isPresent) && result.PreferenceOverridden.All(isPresent))
         {
             return false;
         }
@@ -343,8 +380,8 @@ internal static class PairingRules
             .Where(isPresent);
         reconciled = new PairingResult(
             kept,
-            result.Unpaired.Concat(leftBehind).Distinct().ToList(),
-            result.PreferenceOverridden);
+            result.Unpaired.Where(isPresent).Concat(leftBehind).Distinct().ToList(),
+            result.PreferenceOverridden.Where(isPresent).ToList());
         return true;
     }
 
