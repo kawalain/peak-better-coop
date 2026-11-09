@@ -7,15 +7,27 @@ the game started by Steam sees the real one.
 Usage:
   python -I tools/dev_profile.py install <profile_dir> <cache_dir> <Owner-Package>...
   python -I tools/dev_profile.py launch <profile_dir> <game_dir>
+  python -I tools/dev_profile.py twin <profile_dir> <game_dir> [<twin_dir>] [--plugin <BetterCoop.dll>]
 
 install resolves dependencies to their latest versions, downloads each
 package from Thunderstore into <cache_dir>, and lays it out like Gale does:
 BepInExPack at the profile root, other packages under BepInEx/<subdir>/<name>/.
 launch copies the doorstop proxy into the game folder and starts the game
 through Steam with the profile's preloader.
+
+twin starts the Twin, a second copy of the game that joins the first copy's
+room as a second player (development builds only; see GLOSSARY.md). It copies
+<profile_dir> to <twin_dir> (default ~/BetterCoopTwin), so the two copies keep
+their own config and logs, then starts PEAK.exe directly in a small window
+with that profile's preloader. Steam must be running, and the first copy must
+be a development build in a room: it writes the room's name to its
+BepInEx/cache/BetterCoop-room.txt, which the Twin reads. --plugin gives the
+Twin another BetterCoop.dll than the profile's, as one just built while the
+first copy holds the profile's open.
 """
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -108,11 +120,54 @@ def launch(profile: Path, game: Path) -> None:
     subprocess.Popen(command)
 
 
+def twin(profile: Path, game: Path, twin_dir: Path, plugin: Path | None) -> None:
+    def leave_out(folder: str, names: list[str]) -> set[str]:
+        here = Path(folder)
+        skipped = {n for n in names if n.startswith("LogOutput") or n == "in.kawala.bettercoop.twin-id.txt"}
+        if here == profile / "BepInEx":
+            skipped.add("cache")
+        return skipped
+
+    shutil.copytree(profile, twin_dir, ignore=leave_out, dirs_exist_ok=True)
+    if plugin is not None:
+        for installed in (twin_dir / "BepInEx" / "plugins").rglob("BetterCoop.dll"):
+            shutil.copy2(plugin, installed)
+            print(f"twin uses {plugin}")
+    preloader = twin_dir / "BepInEx" / "core" / "BepInEx.Preloader.dll"
+    major = (twin_dir / ".doorstop_version").read_text().strip().split(".")[0]
+    enable, target = (
+        ("--doorstop-enabled", "--doorstop-target-assembly")
+        if major == "4"
+        else ("--doorstop-enable", "--doorstop-target")
+    )
+    card = profile / "BepInEx" / "cache" / "BetterCoop-room.txt"
+    command = [
+        str(game / "PEAK.exe"),
+        enable, "true", target, str(preloader),
+        "-screen-fullscreen", "0", "-screen-width", "960", "-screen-height", "540",
+        "-logFile", str(twin_dir / "Player.log"),
+        f"--bettercoop-twin={card}",
+    ]
+    # Started directly rather than through Steam, which would only bring the
+    # first copy forward; the app id lets Steamworks start without relaunching.
+    env = dict(os.environ, SteamAppId=PEAK_APP_ID, SteamGameId=PEAK_APP_ID)
+    print(" ".join(command))
+    subprocess.Popen(command, cwd=game, env=env)
+
+
 def main(argv: list[str]) -> None:
     if len(argv) >= 4 and argv[1] == "install":
         install(Path(argv[2]), Path(argv[3]), argv[4:])
     elif len(argv) == 4 and argv[1] == "launch":
         launch(Path(argv[2]), Path(argv[3]))
+    elif len(argv) >= 4 and argv[1] == "twin":
+        rest = argv[4:]
+        plugin = None
+        if "--plugin" in rest:
+            at = rest.index("--plugin")
+            plugin = Path(rest[at + 1])
+            del rest[at : at + 2]
+        twin(Path(argv[2]), Path(argv[3]), Path(rest[0]) if rest else Path.home() / "BetterCoopTwin", plugin)
     else:
         sys.exit(__doc__)
 

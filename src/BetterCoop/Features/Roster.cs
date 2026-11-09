@@ -643,7 +643,7 @@ internal sealed class LiveRoom : ICoopRoom
 
     /// <summary>A player is known by user id, or by actor number when Photon gives none.</summary>
     public bool Present(string id) =>
-        PhotonNetwork.InRoom && PhotonNetwork.PlayerList.Any(p => !p.IsInactive && (p.UserId == id || $"#{p.ActorNumber}" == id));
+        PhotonNetwork.InRoom && PhotonNetwork.PlayerList.Any(p => !p.IsInactive && (KnownPlayers.IdOf(p) == id || $"#{p.ActorNumber}" == id));
 
     public int Me => Character.localCharacter is Character local
         ? PairRoster.ActorOf(local)

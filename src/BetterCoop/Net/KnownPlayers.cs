@@ -16,11 +16,15 @@ internal static class KnownPlayers
     public static void Remember(PhotonPlayer? player)
     {
         // Kept for parted Pairs; a flood of joins cannot grow it without end.
-        if (player != null && WireLimits.IsId(player.UserId) && (UserIds.Count < 256 || UserIds.ContainsKey(player.ActorNumber)))
+        string? id = player == null ? null : IdOf(player);
+        if (player != null && WireLimits.IsId(id) && (UserIds.Count < 256 || UserIds.ContainsKey(player.ActorNumber)))
         {
-            UserIds[player.ActorNumber] = player.UserId;
+            UserIds[player.ActorNumber] = id!;
         }
     }
+
+    /// <summary>The user id the mod knows a player by. Read it here, never from <c>Player.UserId</c>.</summary>
+    public static string IdOf(PhotonPlayer player) => DevHooks.ScoutId(player);
 
     /// <summary>A player's name as the mod shows it, made safe (see <see cref="WireLimits.Name"/>).</summary>
     public static string NameOf(PhotonPlayer? player, int actor) => WireLimits.Name(player?.NickName, $"#{actor}");

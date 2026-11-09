@@ -50,6 +50,17 @@ internal static partial class DevHooks
     /// <summary>A picture of the Scoutmaster's hand as taken, to keep for a look.</summary>
     public static void HandPictured(Texture2D picture, string name) => OnHandPictured(picture, name);
 
+    /// <summary>
+    /// The user id the mod knows a player by: Photon's, unless a development
+    /// build knows better (the Twin shares its first copy's Steam account).
+    /// </summary>
+    public static string ScoutId(Photon.Realtime.Player player)
+    {
+        string id = player.UserId;
+        ScoutIdOf(player, ref id);
+        return id;
+    }
+
     static partial void OnStarted(BaseUnityPlugin plugin, GameObject runtime);
 
     static partial void OnPauseMenu(PauseMenuMainPage menu, UIPageHandler handler, PauseMenuControlsPage controls, Button after, Func<string, Action, Button, Button> add);
@@ -59,4 +70,6 @@ internal static partial class DevHooks
     static partial void SoloPairLatency(ref float seconds);
 
     static partial void OnHandPictured(Texture2D picture, string name);
+
+    static partial void ScoutIdOf(Photon.Realtime.Player player, ref string id);
 }

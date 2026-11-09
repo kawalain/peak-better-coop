@@ -17,9 +17,10 @@ internal static partial class DevHooks
     static partial void OnStarted(BaseUnityPlugin plugin, GameObject runtime)
     {
         DevTools.SoloPair.Bind(plugin.Config);
+        DevTools.Twin.Start(runtime);
         runtime.AddComponent<DevTools.SoloPairNotice>();
         PhotoDarkroom.More = DevTools.ZooPortraits.WarmOne;
-        Plugin.Log.LogWarning("This is a development build: the Zoo and Solo Pair are in it. Never hand it to players.");
+        Plugin.Log.LogWarning("This is a development build: the Zoo, Solo Pair, and the Twin are in it. Never hand it to players.");
     }
 
     static partial void OnPauseMenu(PauseMenuMainPage menu, UIPageHandler handler, PauseMenuControlsPage controls, Button after, Func<string, Action, Button, Button> add)
@@ -32,6 +33,8 @@ internal static partial class DevHooks
     static partial void SoloPairWanted(ref bool on) => on = DevTools.SoloPair.Wanted;
 
     static partial void SoloPairLatency(ref float seconds) => seconds = DevTools.SoloPair.Latency.Value / 1000f;
+
+    static partial void ScoutIdOf(Photon.Realtime.Player player, ref string id) => id = DevTools.Twin.ScoutId(player, id);
 
     static partial void OnHandPictured(Texture2D picture, string name)
     {

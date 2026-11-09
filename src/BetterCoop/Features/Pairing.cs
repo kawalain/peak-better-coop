@@ -226,7 +226,7 @@ internal static class PairPlans
         {
             return LastRunPairs.Map(
                 LastRunPairs.Decode(System.IO.File.ReadAllText(LastRunFile)),
-                id => PhotonNetwork.PlayerList.FirstOrDefault(p => !p.IsInactive && p.UserId == id)?.ActorNumber);
+                id => PhotonNetwork.PlayerList.FirstOrDefault(p => !p.IsInactive && KnownPlayers.IdOf(p) == id)?.ActorNumber);
         }
         catch (Exception exception)
         {
@@ -264,7 +264,7 @@ internal static class FormerPairs
 
     /// <summary>The former Pairs whose two players are both in the room now.</summary>
     public static IReadOnlyList<Pair> InRoom() => HostCopy().Resolve(userId =>
-        PhotonNetwork.PlayerList.FirstOrDefault(p => !p.IsInactive && p.UserId == userId)?.ActorNumber);
+        PhotonNetwork.PlayerList.FirstOrDefault(p => !p.IsInactive && KnownPlayers.IdOf(p) == userId)?.ActorNumber);
 }
 
 /// <summary>

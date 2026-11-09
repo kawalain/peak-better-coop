@@ -76,6 +76,16 @@ project file).
   or not, which changes its Pairs by the real rules without touching the
   config, the room, or the network. Add a new paper component to the Zoo along
   with it.
+- The Twin: `python -I tools/dev_profile.py twin <profile_dir> <PeakGameDir>
+  [--plugin <BetterCoop.dll>]` copies the profile to `~/BetterCoopTwin` and
+  starts a second copy of the game in a small window, which joins the room of
+  the first copy (a Debug build at the Airport) as a second scout. Photon takes
+  only Steam sign-in, so both copies share one Steam account: a Debug build's
+  rooms let one account join twice, and the Twin shows a scout id and name of
+  its own. The mod knows players by `KnownPlayers.IdOf`, never by
+  `Player.UserId`, so the two stay apart. The Twin leaves the account and the
+  first copy's files alone (no achievements, stats, rich presence, Steam lobby,
+  quicksave, or saved settings), though Unity may still save its window size.
 
 ## Test builds and versions
 

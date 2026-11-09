@@ -22,6 +22,7 @@
     <Reference Include="$(PeakManagedDir)\Assembly-CSharp.dll" Publicize="true" Private="false" />
     <Reference Include="$(PeakManagedDir)\Assembly-CSharp-firstpass.dll" Private="false" />
     <Reference Include="$(PeakManagedDir)\com.rlabrecque.steamworks.net.dll" Private="false" />
+    <Reference Include="$(PeakManagedDir)\SteamCommon.dll" Private="false" />
     <Reference Include="$(PeakManagedDir)\UnityEngine*.dll" Private="false" />
     <Reference Include="$(PeakManagedDir)\Unity.TextMeshPro.dll" Private="false" />
     <Reference Include="$(PeakManagedDir)\Unity.InputSystem.dll" Private="false" />
@@ -78,7 +79,7 @@
   </UsingTask>
 
   <Target Name="CheckNoDevTools" AfterTargets="Build" BeforeTargets="PackageTestBuild" Condition="'$(Configuration)' != 'Debug'">
-    <BetterCoopFindNames File="$(TargetPath)" Names="BetterCoop.DevTools;OnStarted;OnPauseMenu;SoloPairWanted;OnHandPictured;Solo Pair;ZooPage">
+    <BetterCoopFindNames File="$(TargetPath)" Names="BetterCoop.DevTools;OnStarted;OnPauseMenu;SoloPairWanted;OnHandPictured;ScoutIdOf;Solo Pair;ZooPage">
       <Output TaskParameter="Found" PropertyName="DevToolsFound" />
     </BetterCoopFindNames>
     <Error Condition="'$(DevToolsFound)' != ''" Text="The $(Configuration) build still has development tools in it: $(DevToolsFound). Keep them in DevTools/ and reach them only through DevHooks." />
