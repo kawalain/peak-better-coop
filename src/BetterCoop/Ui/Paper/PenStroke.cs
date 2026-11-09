@@ -167,6 +167,12 @@ internal sealed class PenMark : MonoBehaviour
 
     private readonly System.Random hand = new();
 
+    /// <summary>The wobble of the mark now on the paper, so a mark fitted again keeps its hand.</summary>
+    private int strokeSeed;
+
+    /// <summary>The size the mark on the paper was made for.</summary>
+    private Vector2 madeFor;
+
     private bool wanted;
 
     private float drawSeconds;
@@ -229,6 +235,18 @@ internal sealed class PenMark : MonoBehaviour
     /// <summary>Whether the path still has to be made once the rect has its size.</summary>
     private bool pending;
 
+    /// <summary>Makes the mark's path for <paramref name="size"/>: a fresh hand each time it is written anew, the same hand when only fitted again.</summary>
+    private void Make(Vector2 size, bool fresh)
+    {
+        if (fresh)
+        {
+            strokeSeed = hand.Next();
+        }
+
+        madeFor = size;
+        stroke.Points = path(size, new System.Random(strokeSeed));
+    }
+
     private void LateUpdate()
     {
         try
@@ -244,10 +262,16 @@ internal sealed class PenMark : MonoBehaviour
 
     private void Step(float seconds)
     {
-        if (pending && stroke.rectTransform.rect.width > 1f)
+        Vector2 size = stroke.rectTransform.rect.size;
+        if (pending && size.x > 1f)
         {
             pending = false;
-            stroke.Points = path(stroke.rectTransform.rect.size, hand);
+            Make(size, fresh: true);
+        }
+        else if (phase != Phase.Hidden && size.x > 1f && (size - madeFor).sqrMagnitude > 0.25f)
+        {
+            // Its place was laid out again, as the page settling on opening: the same mark, fitted to it.
+            Make(size, fresh: false);
         }
 
         switch (phase)
@@ -256,7 +280,7 @@ internal sealed class PenMark : MonoBehaviour
                 wait -= seconds;
                 if (wait <= 0f)
                 {
-                    stroke.Points = path(stroke.rectTransform.rect.size, hand);
+                    Make(size, fresh: true);
                     stroke.Erased = 0f;
                     stroke.Drawn = 0f;
                     progress = 0f;
