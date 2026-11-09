@@ -148,8 +148,13 @@ internal static class CarryRecords
         reported = false;
     }
 
-    /// <summary>The game ends the Run on every client; the Troop Leader writes its report.</summary>
-    [HarmonyPostfix]
+    /// <summary>
+    /// The game ends the Run on every client; the Troop Leader writes its
+    /// report first, by the game's own win check, so a mod that shortens or
+    /// skips what follows (the cutscene, the end screen, the credits) changes
+    /// nothing here.
+    /// </summary>
+    [HarmonyPrefix]
     [HarmonyPatch(typeof(Character), nameof(Character.RPCEndGame))]
     private static void EndRun()
     {
@@ -159,7 +164,7 @@ internal static class CarryRecords
         }
 
         Sample(current);
-        bool summit = Character.AllCharacters.Any(c => c != null && c.refs.stats != null && c.refs.stats.won);
+        bool summit = Character.AllCharacters.Any(c => c != null && Character.CheckWinCondition(c));
         var properties = new PhotonHashtable();
         Write(summit ? RunEnding.Summit : RunEnding.Lost, properties);
         RoomWrites.Set(properties);
