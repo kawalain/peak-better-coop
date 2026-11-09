@@ -18,8 +18,8 @@ and not one who eats every mushroom.
 
 - The **Roster** in the ESC menu shows who carries whom, and the Run Report
   hands out Merit Badges to the steadiest back and the comfiest passenger.
-- Only the Troop Leader (host) needs the mod. Anyone without it makes the
-  climb alone, and a little lonely.
+- Everyone who wants a partner needs the mod. Anyone without it can still
+  join the Run, but makes the climb alone, and a little lonely.
 - BetterCoop gets along with other mods, though its rules win while you are
   in a Pair. It steps aside for Co-op Mod, which does the same job, and for a
   game update it has not caught up with.
