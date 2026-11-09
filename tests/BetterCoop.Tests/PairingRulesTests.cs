@@ -252,4 +252,12 @@ public class PairingRulesTests
         Assert.Null(Arrange(before, [new Pair(3, 4), new Pair(1, 5)], dead: [1, 2]));
         Assert.NotNull(Arrange(before, [new Pair(1, 2), new Pair(3, 5)], dead: [1, 2]));
     }
+
+    [Fact]
+    public void Received_Pairs_keep_each_player_once_and_nobody_carrying_themselves()
+    {
+        var pairs = PairingRules.Distinct([new Pair(1, 2), new Pair(3, 3), new Pair(2, 4), new Pair(5, 6)]);
+
+        Assert.Equal([(1, 2), (5, 6)], pairs.Select(p => (p.Carrier, p.Rider)));
+    }
 }

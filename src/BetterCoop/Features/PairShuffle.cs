@@ -185,7 +185,7 @@ internal static class PairShuffle
         published = op;
         PhotonHashtable properties = with ?? new PhotonHashtable();
         properties[RoomKeys.Operation] = op.Encode();
-        PhotonNetwork.CurrentRoom.SetCustomProperties(properties);
+        RoomWrites.Set(properties);
         Plugin.Verbose($"Announced {op.Kind} #{op.Id} at server time {op.At:F2}.");
     }
 
@@ -210,14 +210,15 @@ internal static class PairShuffle
             {
                 // Pairs end at the Airport; so does an operation on them.
                 published = op.Finished();
-                PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable { [RoomKeys.Operation] = published.Encode() });
+                RoomWrites.Set(new PhotonHashtable { [RoomKeys.Operation] = published.Encode() });
             }
 
             return;
         }
 
         double now = PhotonNetwork.Time;
-        if (op is { Done: false } && ServerClock.Since(now, op.At) >= 0 && op.Id > executedId)
+        // Only an operation this Troop Leader announced, or found announced on taking over, runs.
+        if (op is { Done: false } && ServerClock.Since(now, op.At) >= 0 && op.Id > executedId && (op == published || RoomWrites.IsOwn(RoomKeys.Operation)))
         {
             Execute(op);
             return;
@@ -328,7 +329,7 @@ internal static class PairShuffle
 
         Operation finished = op.Finished();
         published = finished;
-        PhotonNetwork.CurrentRoom.SetCustomProperties(properties);
+        RoomWrites.Set(properties);
         if (Queue.After(finished, PhotonNetwork.Time) is Operation next)
         {
             Publish(next);
@@ -660,6 +661,7 @@ internal static class PairShuffle
         double? room = PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.ShuffleClock, out object value)
             && value is double clock
             && ServerClock.IsTime(clock)
+            && ServerClock.Since(PhotonNetwork.Time, clock) >= -ServerClock.Skew
                 ? clock
                 : null;
         return ServerClock.Later(room, hostClock);
@@ -671,7 +673,7 @@ internal static class PairShuffle
     private static void StartClock()
     {
         hostClock = PhotonNetwork.Time;
-        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable { [RoomKeys.ShuffleClock] = hostClock });
+        RoomWrites.Set(new PhotonHashtable { [RoomKeys.ShuffleClock] = hostClock });
     }
 
     /// <summary>The local share of the latest handover, once per operation, after the Pairs reload.</summary>

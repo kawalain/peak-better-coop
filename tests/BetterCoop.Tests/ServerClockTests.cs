@@ -50,4 +50,13 @@ public class ServerClockTests
 
         Assert.Null(Operation.Decode(op.Encode()));
     }
+
+    [Fact]
+    public void A_time_from_the_future_is_not_recent()
+    {
+        Assert.True(ServerClock.IsRecent(100, 90, 30));
+        Assert.True(ServerClock.IsRecent(100, 102, 30));
+        Assert.False(ServerClock.IsRecent(100, 60, 30));
+        Assert.False(ServerClock.IsRecent(100, 100000, 30));
+    }
 }

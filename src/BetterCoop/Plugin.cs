@@ -66,6 +66,7 @@ public sealed class Plugin : BaseUnityPlugin
         }
 
         runtime.AddComponent<ModPresence>();
+        runtime.AddComponent<RoomWrites>();
         runtime.AddComponent<RunRules>();
         runtime.AddComponent<PairingDirector>();
         runtime.AddComponent<CarryKeeper>();

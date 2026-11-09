@@ -30,6 +30,20 @@ internal static class ServerClock
     public static double? Later(double? a, double? b) =>
         a is double first && b is double second ? Later(first, second) : a ?? b;
 
+    /// <summary>How far ahead of this client's server time another client's may run.</summary>
+    public const double Skew = 5;
+
+    /// <summary>
+    /// Whether <paramref name="then"/> lies within the last <paramref name="seconds"/>
+    /// before <paramref name="now"/>; a time further ahead than clocks drift
+    /// apart was not stamped now, so it is not recent.
+    /// </summary>
+    public static bool IsRecent(double now, double then, double seconds)
+    {
+        double since = Since(now, then);
+        return since >= -Skew && since <= seconds;
+    }
+
     /// <summary>Whether a received server time is a number at all.</summary>
     public static bool IsTime(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
 }

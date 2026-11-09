@@ -1,6 +1,7 @@
 using System;
 using BetterCoop.Core;
 using Photon.Pun;
+using UnityEngine;
 using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
 using PhotonPlayer = Photon.Realtime.Player;
 
@@ -37,6 +38,15 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
 
     /// <summary>Set while the room's rules are written into the config, so the half-written config is not published.</summary>
     private static bool adopting;
+
+    /// <summary>How long the room's rules must stand before a new Troop Leader trusts them.</summary>
+    private const float SteadySeconds = 2f;
+
+    /// <summary>The room's rules as last seen, and since when.</summary>
+    private static (int Value, float Since)? seen;
+
+    /// <summary>The last rules that stood in the room for a while, as the Troop Leader puts back any others.</summary>
+    private static int? steady;
 
     public static bool AllowOddPlayerCount => Has(Flags.AllowOddPlayerCount);
 
@@ -142,12 +152,59 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
     {
         try
         {
+            if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Rules, out object value) && value is int rules)
+            {
+                See(rules);
+            }
+
             TakeOver();
         }
         catch (Exception exception)
         {
             Guard.Report("RunRules.OnJoinedRoom", exception);
         }
+    }
+
+    public override void OnRoomPropertiesUpdate(PhotonHashtable changed)
+    {
+        if (changed.ContainsKey(RoomKeys.Rules) && changed[RoomKeys.Rules] is int rules)
+        {
+            See(rules);
+        }
+    }
+
+    public override void OnLeftRoom()
+    {
+        seen = null;
+        steady = null;
+    }
+
+    /// <summary>Notes the room's rules; the ones they replace become steady if they stood long enough.</summary>
+    private static void See(int rules)
+    {
+        float now = Time.realtimeSinceStartup;
+        if (seen is (int value, float since) && value != rules && now - since >= SteadySeconds)
+        {
+            steady = value;
+        }
+
+        if (seen is not (int same, _) || same != rules)
+        {
+            seen = (rules, now);
+        }
+    }
+
+    /// <summary>
+    /// The rules a new Troop Leader keeps: the room's, unless they only just
+    /// changed, as when another player wrote them a moment before the old
+    /// Troop Leader left; then the ones that stood before.
+    /// </summary>
+    private static int? Trusted(int room)
+    {
+        See(room);
+        return seen is (_, float since) && Time.realtimeSinceStartup - since < SteadySeconds && steady is int before
+            ? before
+            : room;
     }
 
     public override void OnMasterClientSwitched(PhotonPlayer newMasterClient)
@@ -174,7 +231,9 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
             return;
         }
 
-        if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Rules, out object value) && value is int rules)
+        if (PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Rules, out object value)
+            && value is int room
+            && Trusted(room) is int rules)
         {
             Adopt(rules);
             Plugin.Verbose("Kept the room's Run rules as the new Troop Leader.");
@@ -209,7 +268,7 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
         }
 
         int rules = LocalRules();
-        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable { [RoomKeys.Rules] = rules });
+        RoomWrites.Set(new PhotonHashtable { [RoomKeys.Rules] = rules });
         Plugin.Verbose($"Published Run rules {(Flags)(rules & FlagMask)}, Timed Shuffle every {rules >> IntervalShift} min.");
     }
 }

@@ -88,6 +88,24 @@ internal static class PairingRules
         return new PairingResult(kept.Concat(rest.Pairs).ToList(), rest.Unpaired, rest.PreferenceOverridden);
     }
 
+    /// <summary>Pairs as received, keeping each player in one Pair at most and nobody carrying themselves.</summary>
+    public static List<Pair> Distinct(IEnumerable<Pair> pairs)
+    {
+        var named = new HashSet<int>();
+        var kept = new List<Pair>();
+        foreach (Pair pair in pairs)
+        {
+            if (pair.Carrier != pair.Rider && !named.Contains(pair.Carrier) && !named.Contains(pair.Rider))
+            {
+                named.Add(pair.Carrier);
+                named.Add(pair.Rider);
+                kept.Add(pair);
+            }
+        }
+
+        return kept;
+    }
+
     /// <summary>Whether a Pair Plan names only players in the room, each in one Pair at most.</summary>
     public static bool IsPlan(IReadOnlyList<Pair> plan, IEnumerable<int> players)
     {

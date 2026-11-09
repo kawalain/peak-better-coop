@@ -158,7 +158,7 @@ internal static class RoleSwap
     }
 
     private static bool Asks(PhotonPlayer player, int partner, double now) =>
-        ReadRequest(player) is (int asked, double at) && asked == partner && ServerClock.Since(now, at) <= RequestSeconds;
+        ReadRequest(player) is (int asked, double at) && asked == partner && ServerClock.IsRecent(now, at, RequestSeconds);
 
     private static (int Partner, double At)? ReadRequest(PhotonPlayer player) =>
         player.CustomProperties.TryGetValue(RoomKeys.SwapRequest, out object value)
@@ -196,7 +196,7 @@ internal static class RoleSwap
         }
 
         int me = PairRoster.ActorOf(local);
-        if (ReadRequest(player) is (int asked, double at) && asked == me && ServerClock.Since(PhotonNetwork.Time, at) <= RequestSeconds)
+        if (ReadRequest(player) is (int asked, double at) && asked == me && ServerClock.IsRecent(PhotonNetwork.Time, at, RequestSeconds))
         {
             partnerOffered = true;
             if (pending == null)

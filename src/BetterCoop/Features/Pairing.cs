@@ -99,11 +99,8 @@ internal static class PairRoster
             pairs.Add(new Pair(flat[i], flat[i + 1]));
         }
 
-        return new PairingResult(pairs, unpaired, overridden);
+        return new PairingResult(PairingRules.Distinct(pairs), unpaired, overridden);
     }
-
-    public static void Write(PairingResult? result) =>
-        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable { [RoomKeys.Pairs] = Encode(result) });
 
     /// <summary>The room property value of <paramref name="result"/>, for writing it with other keys.</summary>
     public static object? Encode(PairingResult? result) => result == null
@@ -170,7 +167,7 @@ internal static class PairPlans
         }
 
         object? flat = plan.Count == 0 ? null : plan.SelectMany(p => new[] { p.Carrier, p.Rider }).ToArray();
-        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable { [RoomKeys.Plan] = flat });
+        RoomWrites.Set(new PhotonHashtable { [RoomKeys.Plan] = flat });
         Plugin.Verbose($"Announced a Pair Plan: {string.Join(", ", plan.Select(p => $"{p.Carrier}>{p.Rider}"))}.");
         return true;
     }
@@ -283,10 +280,20 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         }
     }
 
+    private const float PlanNoticeSeconds = 10f;
+
+    private static float nextPlanNotice;
+
     private static void RoomPropertiesChanged(PhotonHashtable changed)
     {
-        if (changed.ContainsKey(RoomKeys.Plan) && changed[RoomKeys.Plan] != null && !GameHandler.IsOnIsland && !PhotonNetwork.IsMasterClient)
+        if (changed.ContainsKey(RoomKeys.Plan)
+            && changed[RoomKeys.Plan] != null
+            && !GameHandler.IsOnIsland
+            && !PhotonNetwork.IsMasterClient
+            && Time.unscaledTime >= nextPlanNotice)
         {
+            // A plan announced again and again tells everyone once in a while.
+            nextPlanNotice = Time.unscaledTime + PlanNoticeSeconds;
             CoopNotice.Show(NoticeKind.Telegram, Strings.PlanAnnounced);
         }
 
@@ -348,7 +355,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
             }
         }
 
-        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable
+        RoomWrites.Set(new PhotonHashtable
         {
             [RoomKeys.Pairs] = PairRoster.Encode(reconciled),
             [RoomKeys.Parted] = parted.Encode(),
@@ -395,7 +402,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
                 || room.ContainsKey(RoomKeys.Parted))
             {
                 Plugin.Verbose("Back at the Airport; clearing Pairs.");
-                PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable
+                RoomWrites.Set(new PhotonHashtable
                 {
                     [RoomKeys.Pairs] = null,
                     [RoomKeys.ShuffleClock] = null,
@@ -454,7 +461,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
             $"Formed {result.Pairs.Count} Pairs: "
             + string.Join(", ", result.Pairs.Select(p => $"{p.Carrier}>{p.Rider}"))
             + $"; unpaired [{string.Join(", ", result.Unpaired)}].");
-        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable
+        RoomWrites.Set(new PhotonHashtable
         {
             [RoomKeys.Pairs] = PairRoster.Encode(result),
             [RoomKeys.ShuffleClock] = PhotonNetwork.Time,
