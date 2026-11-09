@@ -77,6 +77,14 @@ internal sealed class PaperList
 
     private const float RingStroke = 2.8f;
 
+    /// <summary>A stepped answer's narrowest width, and its widest before the words shrink.</summary>
+    private const float StepperWidth = 140f;
+
+    private const float StepperWidest = 460f;
+
+    /// <summary>Air either side of the longest stepped answer.</summary>
+    private const float StepperPadding = 24f;
+
     /// <summary>The room each Merit Badge takes, patch and words.</summary>
     private static readonly Vector2 BadgeCell = new(250f, 290f);
 
@@ -282,7 +290,7 @@ internal sealed class PaperList
         }
         else
         {
-            Stepper(row, line, get, name, StepBy);
+            Stepper(row, line, choices, get, name, StepBy);
         }
 
         Add(row);
@@ -873,14 +881,35 @@ internal sealed class PaperList
         });
     }
 
-    private void Stepper<T>(PaperRow row, RectTransform line, Func<T> get, Func<T, string> name, Action<int> step)
+    private void Stepper<T>(PaperRow row, RectTransform line, Func<IReadOnlyList<T>> choices, Func<T> get, Func<T, string> name, Action<int> step)
     {
         RectTransform back = Arrow(line, "Back", true);
         RectTransform answer = NewRect("Answer", line);
         LayoutElement width = answer.gameObject.AddComponent<LayoutElement>();
-        width.minWidth = width.preferredWidth = 140f;
+        width.minWidth = width.preferredWidth = StepperWidth;
         width.minHeight = 40f;
         SlidingText text = SlidingText.Add(answer, template, PaperText.Label, Pen);
+
+        // As wide as the longest answer, so none spills past the arrows; one longer than the line can give shrinks.
+        string widest = string.Empty;
+        void Fit()
+        {
+            string all = string.Join("\n", choices().Select(name));
+            if (all == widest)
+            {
+                return;
+            }
+
+            widest = all;
+            float wanted = 0f;
+            foreach (T value in choices())
+            {
+                wanted = Mathf.Max(wanted, text.Text.GetPreferredValues(name(value)).x);
+            }
+
+            width.minWidth = width.preferredWidth = Mathf.Clamp(wanted + StepperPadding, StepperWidth, StepperWidest);
+        }
+
         int stepped = 1;
         void Go(int by)
         {
@@ -904,7 +933,11 @@ internal sealed class PaperList
         AddArrow(back, () => Go(-1));
         AddArrow(forward, () => Go(1));
         row.First = control;
-        row.Refreshers.Add(() => text.Set(name(get()), stepped));
+        row.Refreshers.Add(() =>
+        {
+            Fit();
+            text.Set(name(get()), stepped);
+        });
     }
 
     private static RectTransform Arrow(Transform parent, string name, bool back)

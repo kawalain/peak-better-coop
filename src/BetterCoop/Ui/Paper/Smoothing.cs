@@ -63,6 +63,7 @@ internal sealed class SlidingText : MonoBehaviour
         rect.anchorMax = Vector2.one;
         rect.offsetMin = rect.offsetMax = Vector2.zero;
         TMP_Text text = PaperText.Make(rect.gameObject, template, size, TextAlignmentOptions.Bottom);
+        PaperText.Fit(text, size * 0.6f);
         text.color = color;
         return text;
     }
