@@ -68,10 +68,6 @@ gets a hook rather than a reference from the plugin. Any other build fails if
 the DLL still names something from `DevTools/` (`CheckNoDevTools` in the
 project file).
 
-- `[Debug] Solo Pair`: alone in a room, your mouse takes the Rider's path
-  (encoded, delayed by the set latency, replayed) before it reaches your body,
-  and a solo Run may depart. The loopback itself stays in the Control Split,
-  run only while `DevHooks.SoloPair` is true.
 - The Zoo, a pause menu button, shows every paper component in `Ui/Paper/` in
   its states. It also opens the Roster on a `FakeRoom` of any size, led by you
   or not, which changes its Pairs by the real rules without touching the

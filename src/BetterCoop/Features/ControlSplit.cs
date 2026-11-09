@@ -7,8 +7,6 @@ using BetterCoop.Ui;
 using Photon.Pun;
 using Photon.Realtime;
 using UnityEngine;
-using Zorro.ControllerSupport;
-using Zorro.Settings;
 
 namespace BetterCoop.Features;
 
@@ -18,11 +16,6 @@ namespace BetterCoop.Features;
 /// Carrier's. The Rider's client samples those actions and sends them to the
 /// Carrier, whose client plays them into the Shared Body.
 /// </summary>
-/// <remarks>
-/// Solo Pair (development builds only, see DevHooks) runs both halves on one client: the player's
-/// mouse goes through the Rider's path, is encoded, held back for a set
-/// latency instead of crossing the network, and replayed on the Carrier's path.
-/// </remarks>
 [HarmonyPatch]
 [HarmonyWrapSafe]
 internal static class ControlSplit
@@ -32,11 +25,9 @@ internal static class ControlSplit
         None,
         Carrier,
         Rider,
-        Solo,
     }
 
     private const float SendInterval = 1f / 30f;
-    private const int SoloPartner = -2;
 
     // Rider side: what the Rider produced so far.
     private static ButtonCounters primaryOut;
@@ -62,30 +53,17 @@ internal static class ControlSplit
     private static int lastSequenceIn = int.MinValue;
     private static int lookFrame = -1;
 
-    // Solo Pair: the Rider's look kept apart from the body, and the stand-in network.
-    private static readonly DelayQueue<byte[]> SoloWire = new();
-    private static Vector2 soloLook;
-
     private static int partnerActor = -1;
     private static Character? linkedLocal;
     private static Character? linkedPartner;
 
-    /// <summary>
-    /// Whether the local player has the Carrier's side of a Shared Body: a
-    /// Carrier with a living Rider, or Solo Pair, where the Rider is the player too.
-    /// </summary>
-    internal static bool LocalCarrier(out Character rider, out bool solo)
-    {
-        Mode mode = CurrentMode(out rider);
-        solo = mode == Mode.Solo;
-        return mode == Mode.Carrier || solo;
-    }
+    /// <summary>Whether the local player has the Carrier's side of a Shared Body, with a living Rider.</summary>
+    internal static bool LocalCarrier(out Character rider) => CurrentMode(out rider) == Mode.Carrier;
 
     private static Mode CurrentMode(out Character partner)
     {
         Character local = Character.localCharacter;
         partner = null!;
-        bool soloWanted = DevHooks.SoloPair;
 
         if (local == null || local.data.dead)
         {
@@ -106,32 +84,22 @@ internal static class ControlSplit
             return role == PairRole.Carrier ? Mode.Carrier : Mode.Rider;
         }
 
-        if (soloWanted)
-        {
-            partner = local;
-            if (Enter(SoloPartner, local, local, "itself (loopback)"))
-            {
-                soloLook = local.data.lookValues;
-            }
-
-            return Mode.Solo;
-        }
-
         Forget();
         return Mode.None;
     }
 
     /// <summary>
-    /// Starts a fresh link to a partner; true when it changed. A respawned
-    /// character (each scene load spawns new ones) also starts a fresh link.
+    /// Starts a fresh link to a partner, unless it is the current one. A
+    /// respawned character (each scene load spawns new ones) also starts a
+    /// fresh link.
     /// </summary>
-    private static bool Enter(int actor, Character local, Character partner, string label)
+    private static void Enter(int actor, Character local, Character partner, string label)
     {
         if (actor == partnerActor
             && ReferenceEquals(local, linkedLocal)
             && ReferenceEquals(partner, linkedPartner))
         {
-            return false;
+            return;
         }
 
         Forget();
@@ -139,7 +107,6 @@ internal static class ControlSplit
         linkedLocal = local;
         linkedPartner = partner;
         Plugin.Verbose($"Control Split active as {label} (partner {actor}).");
-        return true;
     }
 
     private static void Forget()
@@ -158,7 +125,6 @@ internal static class ControlSplit
         ScrollForwardPresses.Reset();
         ScrollBackwardPresses.Reset();
         LookIn.Reset();
-        SoloWire.Clear();
         receivedAny = false;
         lastSequenceIn = int.MinValue;
     }
@@ -195,16 +161,6 @@ internal static class ControlSplit
                 RiderIntent.Clear();
                 PlayRiderActions(__instance, playerMovementActive);
                 break;
-            case Mode.Solo:
-                if (!BackpackWheelSplit.HoldsRiderButtons())
-                {
-                    CaptureRiderActions(__instance);
-                }
-
-                CaptureSoloLook(local, __instance);
-                DeliverSoloWire();
-                PlayRiderActions(__instance, playerMovementActive);
-                break;
         }
     }
 
@@ -234,27 +190,6 @@ internal static class ControlSplit
         input.scrollBackwardWasPressed = input.scrollForwardWasPressed = false;
         input.scrollBackwardIsPressed = input.scrollForwardIsPressed = false;
         input.emoteIsPressed = false;
-    }
-
-    /// <summary>Turns the mouse into the Rider's look, as the game's CameraLook would.</summary>
-    private static void CaptureSoloLook(Character local, CharacterInput input)
-    {
-        CharacterMovement movement = local.refs.movement;
-        bool mouse = InputHandler.GetCurrentUsedInputScheme() == InputScheme.KeyboardMouse;
-        float sensitivity = mouse ? movement.mouseSensSetting.Value : movement.controllerSensSetting.Value;
-        float invertX = movement.invertXSetting.Value == OffOnMode.OFF ? 1f : -1f;
-        float invertY = movement.invertYSetting.Value == OffOnMode.OFF ? 1f : -1f;
-        soloLook.x += input.lookInput.x * sensitivity * invertX;
-        soloLook.y = Mathf.Clamp(soloLook.y + (input.lookInput.y * sensitivity * invertY), -85f, 85f);
-    }
-
-    private static void DeliverSoloWire()
-    {
-        float delay = DevHooks.SoloPairDelay;
-        while (SoloWire.TryDequeue(Time.unscaledTime, delay, out byte[] payload))
-        {
-            Accept(payload);
-        }
     }
 
     /// <summary>The Carrier's own look and mouse actions give way to the Rider's.</summary>
@@ -323,8 +258,7 @@ internal static class ControlSplit
             return;
         }
 
-        Mode mode = CurrentMode(out _);
-        if (mode != Mode.Carrier && mode != Mode.Solo)
+        if (CurrentMode(out _) != Mode.Carrier)
         {
             return;
         }
@@ -356,7 +290,7 @@ internal static class ControlSplit
     [HarmonyPatch(typeof(RopeSpool), "Update")]
     private static void HoldRiderScrollForSpool(RopeSpool __instance)
     {
-        if (!LocalCarrier(out _, out _)
+        if (!LocalCarrier(out _)
             || __instance.item.holderCharacter != Character.localCharacter
             || !__instance.photonView.IsMine)
         {
@@ -394,13 +328,12 @@ internal static class ControlSplit
     /// <summary>Called every frame after input: the Rider sends a snapshot.</summary>
     internal static void SendFromRider()
     {
-        Mode mode = CurrentMode(out Character partner);
-        if (mode != Mode.Rider && mode != Mode.Solo)
+        if (CurrentMode(out Character partner) != Mode.Rider)
         {
             return;
         }
 
-        Vector2 look = mode == Mode.Solo ? soloLook : Character.localCharacter.data.lookValues;
+        Vector2 look = Character.localCharacter.data.lookValues;
         var actions = new RiderActions
         {
             Yaw = look.x,
@@ -426,12 +359,6 @@ internal static class ControlSplit
         actions.Sequence = ++sequenceOut;
         lastSent = actions;
         nextSend = Time.unscaledTime + SendInterval;
-
-        if (mode == Mode.Solo)
-        {
-            SoloWire.Enqueue(actions.Encode(), Time.unscaledTime);
-            return;
-        }
 
         var options = new RaiseEventOptions { TargetActors = [PairRoster.ActorOf(partner)] };
         PhotonNetwork.RaiseEvent(

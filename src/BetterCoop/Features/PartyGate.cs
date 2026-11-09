@@ -29,7 +29,7 @@ internal static class PartyGate
             }
         }
 
-        return PartyGateRules.Evaluate(members, RunRules.AllowOddPlayerCount || DevHooks.SoloPair);
+        return PartyGateRules.Evaluate(members, RunRules.AllowOddPlayerCount);
     }
 
     private static bool AllowDeparture(string source)

@@ -173,12 +173,6 @@ starts out leaving players free. A new Troop Leader keeps the rules the room
 has. Every player can read them on the Roster and is told when they change.
 _Avoid_: host settings, room settings
 
-**Solo Pair** (1인 짝 테스트):
-A debug mode in which a player alone in the room plays both Carrier and Rider
-of one Shared Body, with the Rider's actions held back as if sent over the
-network.
-_Avoid_: solo mode, loopback
-
 **Twin** (분신):
 A copy of the game started for testing on the same computer, in a development
 build, apart from the player's own game: its own profile, its own scout, and

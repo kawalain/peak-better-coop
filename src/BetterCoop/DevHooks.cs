@@ -25,17 +25,6 @@ internal static partial class DevHooks
     public static void PauseMenu(PauseMenuMainPage menu, UIPageHandler handler, PauseMenuControlsPage controls, Button after, Func<string, Action, Button, Button> add) =>
         OnPauseMenu(menu, handler, controls, after, add);
 
-    /// <summary>Whether Solo Pair applies now: switched on in a development build, and alone in a room.</summary>
-    public static bool SoloPair
-    {
-        get
-        {
-            bool on = false;
-            SoloPairWanted(ref on);
-            return on;
-        }
-    }
-
     /// <summary>
     /// Whether this copy stands in for an Unmodded Player: a development
     /// build's Twin asked to. The plugin then starts only the tools.
@@ -47,17 +36,6 @@ internal static partial class DevHooks
             bool on = false;
             UnmoddedWanted(ref on);
             return on;
-        }
-    }
-
-    /// <summary>How long Solo Pair holds the Rider's actions back, in seconds.</summary>
-    public static float SoloPairDelay
-    {
-        get
-        {
-            float seconds = 0f;
-            SoloPairLatency(ref seconds);
-            return seconds;
         }
     }
 
@@ -79,11 +57,7 @@ internal static partial class DevHooks
 
     static partial void OnPauseMenu(PauseMenuMainPage menu, UIPageHandler handler, PauseMenuControlsPage controls, Button after, Func<string, Action, Button, Button> add);
 
-    static partial void SoloPairWanted(ref bool on);
-
     static partial void UnmoddedWanted(ref bool on);
-
-    static partial void SoloPairLatency(ref float seconds);
 
     static partial void OnHandPictured(Texture2D picture, string name);
 

@@ -16,7 +16,6 @@ internal static partial class DevHooks
 {
     static partial void OnStarted(BaseUnityPlugin plugin, GameObject runtime)
     {
-        DevTools.SoloPair.Bind(plugin.Config);
         DevTools.ControlLine.Bind(plugin.Config);
         DevTools.Twin.Start(runtime);
         if (DevTools.ControlLine.Asked)
@@ -24,9 +23,8 @@ internal static partial class DevHooks
             runtime.AddComponent<DevTools.ControlLine>();
         }
 
-        runtime.AddComponent<DevTools.SoloPairNotice>();
         PhotoDarkroom.More = DevTools.ZooPortraits.WarmOne;
-        Plugin.Log.LogWarning("This is a development build: the Zoo, Solo Pair, the Twin, and the Control Line are in it. Never hand it to players.");
+        Plugin.Log.LogWarning("This is a development build: the Zoo, the Twin, and the Control Line are in it. Never hand it to players.");
     }
 
     static partial void OnPauseMenu(PauseMenuMainPage menu, UIPageHandler handler, PauseMenuControlsPage controls, Button after, Func<string, Action, Button, Button> add)
@@ -36,11 +34,7 @@ internal static partial class DevHooks
         add("Zoo", () => (zoo ??= DevTools.ZooPage.Build(handler, controls, template, menu)).Open(), after);
     }
 
-    static partial void SoloPairWanted(ref bool on) => on = DevTools.SoloPair.Wanted;
-
     static partial void UnmoddedWanted(ref bool on) => on = DevTools.Twin.Unmodded;
-
-    static partial void SoloPairLatency(ref float seconds) => seconds = DevTools.SoloPair.Latency.Value / 1000f;
 
     static partial void ScoutIdOf(Photon.Realtime.Player player, ref string id) => id = DevTools.Twin.ScoutId(player, id);
 
