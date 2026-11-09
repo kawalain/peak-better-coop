@@ -422,7 +422,16 @@ internal static class PlayerRows
         list.Header(() => Strings.MenuYou);
         Func<bool> paired = () => room.PairOf(room.Me) != null;
 
-        // Role Swap first: the one thing here a partner may be waiting on.
+        // Who the partner is and which role is whose come first, then what can be done about it.
+        list.Field(() => Strings.MenuPartner, () => PartnerName(room), visible: paired);
+        list.Field(() => Strings.MenuYourRole, () => Strings.RoleOf(room.PairOf(room.Me)?.Carrier == room.Me), visible: paired);
+        list.Field(
+            () => Strings.MenuPartner,
+            () => Strings.None,
+            about: () => Strings.Sentences(Strings.MenuNoPartner, Strings.AboutNoPartner),
+            visible: () => room.Formed && !paired());
+
+        // Role Swap next: the one thing here a partner may be waiting on.
         // Asking and agreeing are different stamps, so a request is never
         // mistaken for an answer; a request made stays struck until it lapses.
         Func<bool> answering = () => room.PartnerAsksSwap && !room.SwapPending;
@@ -455,13 +464,6 @@ internal static class PlayerRows
             Strings.RoleName,
             about: () => wishesHeard() ? Strings.AboutRolePreference : Strings.AboutRolePreferenceIgnored,
             locked: () => wishesHeard() ? null : Strings.AboutRolePreferenceIgnored);
-        list.Field(() => Strings.MenuPartner, () => PartnerName(room), visible: paired);
-        list.Field(() => Strings.MenuYourRole, () => Strings.RoleOf(room.PairOf(room.Me)?.Carrier == room.Me), visible: paired);
-        list.Field(
-            () => Strings.MenuPartner,
-            () => Strings.None,
-            about: () => Strings.Sentences(Strings.MenuNoPartner, Strings.AboutNoPartner),
-            visible: () => room.Formed && !paired());
         list.Field(
             () => Strings.MenuNextShuffle,
             () => NextShuffle(room),
