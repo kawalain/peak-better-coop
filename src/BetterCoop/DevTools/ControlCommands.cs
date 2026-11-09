@@ -620,7 +620,17 @@ internal static partial class ControlCommands
             to = new Vector3((float?)args["x"] ?? throw new ArgumentException("needs x, y, z or to"), (float)args["y"]!, (float)args["z"]!);
         }
 
-        me.photonView.RPC(nameof(Character.WarpPlayerRPC), RpcTarget.All, to, true);
+        // The game takes a warp RPC only from the Troop Leader; anyone else
+        // moves their own body here and the others see it through the sync.
+        if (PhotonNetwork.IsMasterClient)
+        {
+            me.photonView.RPC(nameof(Character.WarpPlayerRPC), RpcTarget.All, to, true);
+        }
+        else
+        {
+            me.WarpPlayer(to, poof: true);
+        }
+
         return new JArray(Math.Round(to.x, 2), Math.Round(to.y, 2), Math.Round(to.z, 2));
     }
 }

@@ -88,7 +88,10 @@ what must happen.
 Then, in four Twins (`--guests 3`):
 
 15. **Four scouts.** Plan two Pairs, `depart`, then `order {what: shuffle}`.
-    Every copy shows the same Pairs, and every scout has a new partner.
+    Every copy shows the same Pairs, and every scout has a new partner. With
+    the Pairs far apart and the Body Handover moving places, each new Carrier,
+    a guest's too, stands where its former Shared Body stood (the game takes
+    warps only from the Troop Leader).
 16. **Troop Leader leaves with Pairs under way.** With the host in one Pair,
     close the host. The other Pair stays carried; the host's partner is not
     left marked carried (`carried: false`, log `no longer carried`); the next

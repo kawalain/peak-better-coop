@@ -19,7 +19,8 @@ namespace BetterCoop.Features;
 /// operation at a time: announces it with a server time, refuses pickups
 /// from just before it, then writes the new Pairs and their Body Handover in
 /// one room property write. Every client counts down, empties the hands it
-/// owns, and applies its own part of the handover once per operation.
+/// owns, and applies its own part of the handover once per operation; the
+/// Troop Leader moves the bodies.
 /// </summary>
 [HarmonyPatch]
 [HarmonyWrapSafe]
@@ -758,7 +759,11 @@ internal static class PairShuffle
         RoomWrites.Set(new PhotonHashtable { [RoomKeys.ShuffleClock] = hostClock });
     }
 
-    /// <summary>The local share of the latest handover, once per operation, after the Pairs reload.</summary>
+    /// <summary>
+    /// The local share of the latest handover, once per operation, after the
+    /// Pairs reload: the statuses this client's scout takes over, and, on the
+    /// Troop Leader's client, every move (the game takes warps only from it).
+    /// </summary>
     private static void ApplyHandover()
     {
         HandoverPlan? plan = ReadHandover();
@@ -769,34 +774,54 @@ internal static class PairShuffle
         }
 
         appliedHandoverId = plan.Id;
-        int actor = PairRoster.ActorOf(local);
-        if (plan.For(actor) is HandoverEntry entry)
+        if (plan.For(PairRoster.ActorOf(local)) is HandoverEntry entry)
         {
             Plugin.Verbose($"Taking over the Shared Body of {entry.Source}.");
             if (entry.TakesStatuses)
             {
                 TakeOverStatuses(local, entry);
             }
-
-            if (plan.MovesPlaces)
-            {
-                MoveTo(local, ToVector(entry.Place));
-            }
-
-            return;
         }
 
-        // A dead Rider comes back at the Carrier instead (Shared Life).
-        if (PairRoster.RoleOf(local) == PairRole.Rider
-            && !local.data.dead
-            && PairRoster.TryGetPartner(local, out Character carrier))
+        if (PhotonNetwork.IsMasterClient)
         {
-            Vector3 target = plan.MovesPlaces && plan.For(PairRoster.ActorOf(carrier)) is HandoverEntry carried
+            MoveBodies(plan);
+        }
+    }
+
+    /// <summary>
+    /// Moves each new Carrier to the place the plan gives it, and brings a
+    /// living Rider left out of reach (one who died comes back on the Carrier
+    /// by Shared Life) to its Carrier.
+    /// </summary>
+    private static void MoveBodies(HandoverPlan plan)
+    {
+        if (plan.MovesPlaces)
+        {
+            foreach (HandoverEntry entry in plan.Entries)
+            {
+                if (CharacterOf(entry.Carrier) is Character body)
+                {
+                    MoveTo(body, ToVector(entry.Place));
+                }
+            }
+        }
+
+        foreach (Pair pair in PairRoster.Read()?.Pairs ?? [])
+        {
+            if (CharacterOf(pair.Rider) is not Character rider
+                || rider.data.dead
+                || CharacterOf(pair.Carrier) is not Character carrier)
+            {
+                continue;
+            }
+
+            Vector3 target = plan.MovesPlaces && plan.For(pair.Carrier) is HandoverEntry carried
                 ? ToVector(carried.Place)
                 : carrier.Center;
-            if (Vector3.Distance(local.Center, target) > RiderReach)
+            if (Vector3.Distance(rider.Center, target) > RiderReach)
             {
-                MoveTo(local, target + Vector3.up);
+                MoveTo(rider, target + Vector3.up);
             }
         }
     }
@@ -829,6 +854,7 @@ internal static class PairShuffle
         body.SetExtraStamina(entry.ExtraStamina);
     }
 
+    /// <summary>Warps a scout; only the Troop Leader's warp is taken.</summary>
     private static void MoveTo(Character body, Vector3 place)
     {
         if (Vector3.Distance(body.Center, place) < 0.5f)
