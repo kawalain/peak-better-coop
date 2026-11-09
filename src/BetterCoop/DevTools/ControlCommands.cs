@@ -63,6 +63,8 @@ internal static partial class ControlCommands
         ["order"] = new("{what, ...}: a Roster order, under the Roster's rules; without what, lists them.", Order),
         ["perf"] = new("{seconds?}: for that long (default 5), times every Update of the mod's own components and every patch it adds to the game; answers with the mod's milliseconds and bytes per frame and the costliest methods.", ControlPerf.Measure),
         ["photo"] = new("{actor}: takes that player's passport photo again, here and now, and saves it as a PNG; answers with its path.", Photo),
+        ["language"] = new("{name?}: shows the game in that language (English, Korean, ...) until it closes, as the settings would but saving nothing; without a name, answers with the current one.", Language),
+        ["window"] = new("{width, height}: sizes this copy's window, for seeing the paper at another shape.", Window),
         ["sounds"] = new("{contains?, play?}: the game's loaded audio clips whose name contains 'contains', with their length and the sound effects that use them; play {clip name} plays one flat, as a menu sound.", Sounds),
         ["drill"] = new("{what, ...}: forge {key, actor?, value?} writes a made-up value to a mod key of the room, or of player 'actor', as a player who may not write it would (Pairs, without a value, swaps every Pair's roles), and the other copies should drop it; letter {case} plays the Zoo's Pair letter case (0 to 5); end {ending: summit|lost}, in a Twin only, ends the real Run for the whole room.", Drill),
     };
@@ -419,6 +421,26 @@ internal static partial class ControlCommands
             RenderTexture.active = active;
             UnityEngine.Object.Destroy(picture);
         }
+    }
+
+    private static JToken Language(JObject args)
+    {
+        string? name = (string?)args["name"];
+        if (name != null)
+        {
+            var language = (LocalizedText.Language)Enum.Parse(typeof(LocalizedText.Language), name, ignoreCase: true);
+            LocalizedText.SetLanguage((int)language);
+        }
+
+        return LocalizedText.CURRENT_LANGUAGE.ToString();
+    }
+
+    private static JToken Window(JObject args)
+    {
+        int width = (int?)args["width"] ?? throw new ArgumentException("width");
+        int height = (int?)args["height"] ?? throw new ArgumentException("height");
+        Screen.SetResolution(Math.Max(320, width), Math.Max(240, height), FullScreenMode.Windowed);
+        return $"asked for {width}x{height}";
     }
 
     private static JToken Sounds(JObject args)
