@@ -33,6 +33,19 @@ internal static class RoleSwap
 
     internal static bool Pending => pending != null;
 
+    /// <summary>Whether the local player's partner has asked them, in time, to swap places.</summary>
+    internal static bool PartnerAsks
+    {
+        get
+        {
+            Character local = Character.localCharacter;
+            return local != null
+                && PairRoster.TryGetPartner(local, out Character partner)
+                && partner.photonView?.Owner is PhotonPlayer player
+                && Asks(player, PairRoster.ActorOf(local), PhotonNetwork.Time);
+        }
+    }
+
     /// <summary>Whether the local player may ask now: the Run Rules allow it, alive, paired, on the island, and no operation under way.</summary>
     internal static bool CanRequest(out Character partner)
     {

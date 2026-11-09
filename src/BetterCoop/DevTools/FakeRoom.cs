@@ -142,7 +142,12 @@ internal sealed class FakeRoom : ICoopRoom
         set => preferences[Me] = value;
     }
 
-    public bool SwapPending => false;
+    public bool SwapPending => swapAsked;
+
+    /// <summary>Whether the made-up partner has asked for a Role Swap; they have, unless set otherwise.</summary>
+    public bool PartnerAsksSwap { get; set; } = true;
+
+    private bool swapAsked;
 
     public bool CanAskSwap => rules[RunRule.AllowSwapRequests] && this.PairOf(Me) != null;
 
@@ -191,12 +196,26 @@ internal sealed class FakeRoom : ICoopRoom
 
     public IReadOnlyList<Pair> DrawPlan() => PairingRules.Form(Candidates(), random).Pairs;
 
-    /// <summary>The partner agrees at once, so the two trade roles straight away.</summary>
+    /// <summary>
+    /// When the partner has asked, the two trade roles straight away;
+    /// otherwise the request waits for them, and a second press withdraws it.
+    /// </summary>
     public void ToggleSwap()
     {
-        if (CanAskSwap && this.PairOf(Me) is Pair pair)
+        if (swapAsked)
         {
-            SwapRoles(pair);
+            swapAsked = false;
+        }
+        else if (CanAskSwap && this.PairOf(Me) is Pair pair)
+        {
+            if (PartnerAsksSwap)
+            {
+                SwapRoles(pair);
+            }
+            else
+            {
+                swapAsked = true;
+            }
         }
     }
 

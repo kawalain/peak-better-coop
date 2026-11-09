@@ -68,6 +68,9 @@ internal interface ICoopRoom
     /// <summary>Whether the local player has asked for a Role Swap.</summary>
     bool SwapPending { get; }
 
+    /// <summary>Whether the local player's partner has asked them for a Role Swap.</summary>
+    bool PartnerAsksSwap { get; }
+
     bool CanAskSwap { get; }
 
     /// <summary>Whether a Pair change is under way, so another must wait.</summary>

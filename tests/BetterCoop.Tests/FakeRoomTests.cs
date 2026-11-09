@@ -128,6 +128,21 @@ public class FakeRoomTests
     }
 
     [Fact]
+    public void A_role_swap_asked_alone_waits_for_the_partner_and_can_be_withdrawn()
+    {
+        var room = new FakeRoom(4, troopLeader: false, formed: true) { PartnerAsksSwap = false };
+        Pair mine = room.PairOf(room.Me)!;
+
+        room.ToggleSwap();
+        Assert.True(room.SwapPending);
+        Assert.Equal(mine.Carrier, room.PairOf(room.Me)!.Carrier);
+
+        room.ToggleSwap();
+        Assert.False(room.SwapPending);
+        Assert.Equal(mine.Carrier, room.PairOf(room.Me)!.Carrier);
+    }
+
+    [Fact]
     public void A_role_swap_trades_the_two_roles()
     {
         var room = new FakeRoom(4, troopLeader: false, formed: true);

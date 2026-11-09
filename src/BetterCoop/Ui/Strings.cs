@@ -339,6 +339,30 @@ internal static class Strings
 
     public static string StampAsk => Korean ? "요청" : "Request";
 
+    public static string StampAsked => Korean ? "요청함" : "Asked";
+
+    public static string StampAgree => Korean ? "동의" : "Agree";
+
+    /// <summary>Round the top of the Role Swap's notary seal.</summary>
+    public static string SealNotary => Korean ? "분대 공증" : "TROOP NOTARY";
+
+    /// <summary>Round the foot of the troop's seals.</summary>
+    public static string SealTroop => "BETTERCOOP";
+
+    /// <summary>Round the top of the Pair Shuffle's stamp.</summary>
+    public static string SealOrders => Korean ? "분대 명령" : "TROOP ORDERS";
+
+    /// <summary>Round the Recover stamp, as an inspector's mark.</summary>
+    public static string SealInspected => Korean ? "점검 필" : "INSPECTED";
+
+    public static string AboutSwapWaiting => Korean
+        ? "짝의 동의를 기다립니다. 30초 안에 짝도 찍으면 바뀝니다. 다시 찍으면 요청을 거둡니다."
+        : "Waiting for your partner; if they agree within 30 seconds, you trade. Press again to withdraw.";
+
+    public static string AboutSwapOffered(string partner) => Korean
+        ? $"{partner} 님이 자리를 바꾸자고 합니다. 찍으면 동의하고 바로 바뀝니다."
+        : $"{partner} asks to swap places. Stamp to agree, and you trade at once.";
+
     public static string StampCancel => Korean ? "취소" : "Cancel";
 
     public static string MenuBusy => Korean

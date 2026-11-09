@@ -392,6 +392,32 @@ internal static class PlayerRows
     public static void Add(PaperList list, ICoopRoom room)
     {
         list.Header(() => Strings.MenuYou);
+        Func<bool> paired = () => room.PairOf(room.Me) != null;
+
+        // Role Swap first: the one thing here a partner may be waiting on.
+        // Asking and agreeing are different stamps, so a request is never
+        // mistaken for an answer; a request made stays struck until it lapses.
+        Func<bool> answering = () => room.PartnerAsksSwap && !room.SwapPending;
+        list.Stamp(
+            () => Strings.SwapPlaces,
+            () => room.SwapPending ? Strings.StampAsked : Strings.StampAsk,
+            room.ToggleSwap,
+            available: () => room.SwapPending || room.CanAskSwap,
+            about: () => room.SwapPending
+                ? Strings.AboutSwapWaiting
+                : room.Rule(RunRule.AllowSwapRequests) ? Strings.AboutSwapPlaces : Strings.AboutSwapNotAllowed,
+            visible: () => paired() && !answering(),
+            face: new SealFace(StampShape.Notary, FormDrawing.StampBlue, () => Strings.SealNotary, () => Strings.SealTroop, seed: 14),
+            stamped: () => room.SwapPending);
+        list.Stamp(
+            () => Strings.SwapPlaces,
+            () => Strings.StampAgree,
+            room.ToggleSwap,
+            available: () => room.CanAskSwap,
+            about: () => Strings.AboutSwapOffered(PartnerName(room)),
+            visible: () => paired() && answering(),
+            face: new SealFace(StampShape.Star, FormDrawing.StampBlue, seed: 11));
+
         Func<bool> wishesHeard = () => room.Rule(RunRule.FollowRolePreferences);
         list.Choice(
             () => Strings.MenuRolePreference,
@@ -401,16 +427,8 @@ internal static class PlayerRows
             Strings.RoleName,
             about: () => wishesHeard() ? Strings.AboutRolePreference : Strings.AboutRolePreferenceIgnored,
             locked: () => wishesHeard() ? null : Strings.AboutRolePreferenceIgnored);
-        Func<bool> paired = () => room.PairOf(room.Me) != null;
         list.Field(() => Strings.MenuPartner, () => PartnerName(room), visible: paired);
         list.Field(() => Strings.MenuYourRole, () => Strings.RoleOf(room.PairOf(room.Me)?.Carrier == room.Me), visible: paired);
-        list.Stamp(
-            () => Strings.SwapPlaces,
-            () => room.SwapPending ? Strings.StampCancel : Strings.StampAsk,
-            room.ToggleSwap,
-            available: () => room.SwapPending || room.CanAskSwap,
-            about: () => room.Rule(RunRule.AllowSwapRequests) ? Strings.AboutSwapPlaces : Strings.AboutSwapNotAllowed,
-            visible: paired);
         list.Field(
             () => Strings.MenuPartner,
             () => "—",
@@ -420,7 +438,7 @@ internal static class PlayerRows
             () => Strings.MenuNextShuffle,
             () => NextShuffle(room),
             about: () => Strings.AboutNextShuffle,
-            visible: () => room.Formed);
+            visible: () => room.Formed && (room.Busy || room.Rule(RunRule.TimedShuffle)));
         list.Note(() => Strings.MenuPairsForm, visible: () => !room.Formed);
     }
 
@@ -459,7 +477,8 @@ internal static class ReportRows
             about: () => Strings.AboutRunReport,
             value: () => room.Report is RunReport report
                 ? $"{Strings.EndingName(report.Ending)} · {Strings.Duration(report.Seconds)}"
-                : $"{Strings.EndingName(RunEnding.Underway)} · {Strings.Duration(room.RunSeconds)}");
+                : $"{Strings.EndingName(RunEnding.Underway)} · {Strings.Duration(room.RunSeconds)}",
+            face: new SealFace(StampShape.MuteOval, FormDrawing.StampViolet, seed: 9));
     }
 }
 
@@ -536,6 +555,7 @@ internal static class TroopLeaderRows
             available: () => !room.Busy,
             about: () => room.Formed ? Strings.AboutShuffleNow : Strings.AboutShufflePlan,
             visible: () => room.Formed || room.Planning,
+            face: new SealFace(StampShape.DoubleRing, FormDrawing.PostmarkInk, () => Strings.SealOrders, () => Strings.SealTroop, seed: 7),
             confirm: true);
         list.Stamp(
             () => Strings.MenuCallOffLabel,
@@ -551,6 +571,7 @@ internal static class TroopLeaderRows
             about: () => Strings.AboutCallOff,
             visible: () => room.Formed && (room.SecondsToTimedShuffle != null || room.Busy),
             value: () => room.Busy ? Strings.MenuShuffleNow : room.SecondsToTimedShuffle is double s ? Strings.Clock(s) : string.Empty,
+            face: new SealFace(StampShape.Duplex, FormDrawing.PostmarkInk, () => Strings.PostmarkOffice, () => Strings.PostmarkDate(DateTime.Now), seed: 8),
             confirm: true);
         list.Stamp(
             () => Strings.MenuRecover,
@@ -558,6 +579,7 @@ internal static class TroopLeaderRows
             room.Recover,
             about: () => Strings.AboutRecover,
             visible: () => room.Formed,
+            face: new SealFace(StampShape.Inspection, FormDrawing.StampViolet, () => Strings.SealInspected, () => Strings.SealTroop, seed: 12),
             confirm: true);
     }
 
@@ -662,6 +684,8 @@ internal sealed class LiveRoom : ICoopRoom
     public bool SwapPending => RoleSwap.Pending;
 
     public bool CanAskSwap => RoleSwap.CanRequest(out _);
+
+    public bool PartnerAsksSwap => RoleSwap.PartnerAsks;
 
     public bool Busy => PairShuffle.Busy;
 
