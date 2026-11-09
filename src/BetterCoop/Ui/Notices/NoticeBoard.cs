@@ -264,15 +264,22 @@ internal sealed class NoticeSlip : MonoBehaviour
         slip.Height = Band + 14f + height + 22f;
         rect.sizeDelta = new Vector2(Width, slip.Height);
 
-        RectTransform sheet = PaperList.NewRect("Sheet", rect);
-        sheet.SetAsFirstSibling();
-        sheet.anchorMin = Vector2.zero;
-        sheet.anchorMax = Vector2.one;
-        sheet.offsetMin = new Vector2(-PaperDrawing.Margin, -PaperDrawing.Margin);
-        sheet.offsetMax = new Vector2(PaperDrawing.Margin, PaperDrawing.Margin);
         Ink paper = style.Paper;
         int seed = UnityEngine.Random.Range(1, 1000);
-        VectorView.Add(sheet, size => PaperDrawing.Slip(size.x - 2f * PaperDrawing.Margin, size.y - 2f * PaperDrawing.Margin, Band, seed, paper), Color.clear);
+        PaperSheet.Add(
+            rect,
+            "Sheet",
+            (size, rough) =>
+            {
+                Vector2 inside = PaperSheet.Inside(size);
+                return PaperDrawing.Slip(inside.x, inside.y, Band, seed, paper, rough);
+            },
+            size =>
+            {
+                Vector2 inside = PaperSheet.Inside(size);
+                return PaperDrawing.Shadow(inside.x, inside.y, Band);
+            },
+            Color.clear);
         style.Decorate?.Invoke(rect, template, slip.Height);
         VectorView.DrawAll(rect);
         return slip;

@@ -23,18 +23,53 @@ public class PaperDrawingTests
     }
 
     [Fact]
-    public void Draws_shadow_then_outline_then_paper_before_anything_on_it()
+    public void Draws_outline_then_paper_before_anything_on_it()
     {
-        var fills = Draw().Descendants(Svg + "path").Take(3).Select(p => p.Attribute("fill")!.Value).ToList();
+        var fills = Draw().Descendants(Svg + "path").Take(2).Select(p => p.Attribute("fill")!.Value).ToList();
 
-        Assert.Equal(["#000000", PaperDrawing.InkBlack.Hex, PaperDrawing.Paper.Hex], fills);
+        Assert.Equal([PaperDrawing.InkBlack.Hex, PaperDrawing.Paper.Hex], fills);
+    }
+
+    [Fact]
+    public void The_shadow_is_drawn_apart_dropped_under_the_paper()
+    {
+        XElement shadow = XElement.Parse(PaperDrawing.Shadow(1000f, 900f, 96f, 104f));
+        XElement path = Assert.Single(shadow.Descendants(Svg + "path"));
+
+        Assert.Equal("0 0 1032 932", shadow.Attribute("viewBox")!.Value);
+        Assert.Equal(PaperDrawing.ShadowOpacity, float.Parse(path.Attribute("fill-opacity")!.Value, CultureInfo.InvariantCulture));
+        Assert.Equal($"translate(0 {PaperDrawing.ShadowDrop.ToString(CultureInfo.InvariantCulture)})", path.Attribute("transform")!.Value);
+        Assert.Equal(Draw().Descendants(Svg + "path").First().Attribute("d")!.Value, path.Attribute("d")!.Value);
+    }
+
+    [Fact]
+    public void A_rough_outline_fades_in_evenly_from_outside_the_edge()
+    {
+        XElement svg = XElement.Parse(PaperDrawing.Svg(1000f, 900f, 96f, 104f, rough: true));
+        var layers = svg.Descendants(Svg + "path").TakeWhile(p => p.Attribute("fill")!.Value == PaperDrawing.InkBlack.Hex).ToList();
+
+        Assert.Equal(PaperDrawing.RoughLayers, layers.Count);
+        float shown = 0f;
+        for (int i = 0; i < layers.Count; i++)
+        {
+            float opacity = float.Parse(layers[i].Attribute("fill-opacity")!.Value, CultureInfo.InvariantCulture);
+            shown += (1f - shown) * opacity;
+            Assert.Equal((i + 1f) / layers.Count, shown, 4);
+        }
+
+        // The outermost layer starts outside the paper's top edge.
+        string outer = layers[0].Attribute("d")!.Value;
+        float top = float.Parse(outer.Substring(1).Split('H')[0].Split(' ')[1], CultureInfo.InvariantCulture);
+        Assert.Equal(-PaperDrawing.RoughOutside, top, 3);
+        Assert.Equal(PaperDrawing.Paper.Hex, svg.Descendants(Svg + "path").ElementAt(layers.Count).Attribute("fill")!.Value);
+        Assert.DoesNotContain("NaN", svg.ToString());
     }
 
     [Fact]
     public void A_slip_cuts_only_the_notches_under_its_heading()
     {
         XElement slip = XElement.Parse(PaperDrawing.Slip(620f, 300f, 64f));
-        string edge = slip.Descendants(Svg + "path").Skip(1).First().Attribute("d")!.Value;
+        string edge = slip.Descendants(Svg + "path").First().Attribute("d")!.Value;
 
         Assert.Equal("0 0 652 332", slip.Attribute("viewBox")!.Value);
         Assert.Equal(6, edge.Count(c => c == 'A'));
@@ -62,7 +97,7 @@ public class PaperDrawingTests
     [Fact]
     public void Each_edge_cuts_four_notches_with_arcs()
     {
-        string edge = Draw().Descendants(Svg + "path").Skip(1).First().Attribute("d")!.Value;
+        string edge = Draw().Descendants(Svg + "path").First().Attribute("d")!.Value;
 
         // Four corners and four notches.
         Assert.Equal(8, edge.Count(c => c == 'A'));
@@ -99,14 +134,12 @@ public class PaperDrawingTests
         Assert.Empty(XElement.Parse(PaperDrawing.DashedRule(5f, 4f)).Descendants(Svg + "rect"));
 
     [Fact]
-    public void Only_the_shadow_lets_anything_show_through()
+    public void Plain_paper_lets_nothing_show_through()
     {
         var translucent = Draw().Descendants()
-            .Where(e => e.Attribute("fill-opacity") != null || e.Attribute("opacity") != null || e.Attribute("stroke-opacity") != null)
-            .ToList();
+            .Where(e => e.Attribute("fill-opacity") != null || e.Attribute("opacity") != null || e.Attribute("stroke-opacity") != null);
 
-        XElement shadow = Assert.Single(translucent);
-        Assert.Equal(PaperDrawing.ShadowOpacity, float.Parse(shadow.Attribute("fill-opacity")!.Value, CultureInfo.InvariantCulture));
+        Assert.Empty(translucent);
     }
 
     [Fact]

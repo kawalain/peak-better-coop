@@ -77,6 +77,17 @@ internal static class PaperDrawing
     /// <summary>The shadow's opacity, as the game's button shadows have.</summary>
     public const float ShadowOpacity = 0.27f;
 
+    /// <summary>
+    /// How far outside the paper's edge a rough outline begins to fade in.
+    /// It fades in from there to inside the outline, so the game's grain,
+    /// which cuts a faded edge with noise as it does round the game's own
+    /// windows, makes the edge crawl about where the plain edge lies.
+    /// </summary>
+    public const float RoughOutside = 4f;
+
+    /// <summary>How many outlines, each a step further in, make a rough outline's fade.</summary>
+    public const int RoughLayers = 8;
+
     private const float Dash = 11f;
 
     private const float Gap = 9f;
@@ -91,17 +102,15 @@ internal static class PaperDrawing
     /// The drawing for paper of the given size, with perforations
     /// <paramref name="topTear"/> below its top and <paramref name="bottomTear"/>
     /// above its bottom. The view box starts at the margin's outer corner.
+    /// Its shadow is drawn apart, by <see cref="Shadow"/>; a
+    /// <paramref name="rough"/> outline fades in across the edge.
     /// </summary>
-    public static string Svg(float width, float height, float topTear, float bottomTear, int seed = 7)
+    public static string Svg(float width, float height, float topTear, float bottomTear, int seed = 7, bool rough = false)
     {
         var sheet = new Sheet(width, height, topTear, height - bottomTear);
-        (float canvasWidth, float canvasHeight) = Canvas(width, height);
         var svg = new StringBuilder();
-        svg.Append(F($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{canvasWidth}\" height=\"{canvasHeight}\" viewBox=\"0 0 {canvasWidth} {canvasHeight}\">"));
-        svg.Append(F($"<g transform=\"translate({Margin} {Margin})\">"));
-
-        svg.Append(F($"<path d=\"{sheet.Edge(0f)}\" transform=\"translate(0 {ShadowDrop})\" fill=\"#000000\" fill-opacity=\"{ShadowOpacity}\"/>"));
-        svg.Append(F($"<path d=\"{sheet.Edge(0f)}\" fill=\"{InkBlack.Hex}\"/>"));
+        AppendStart(svg, width, height);
+        AppendOutline(svg, sheet, rough);
         svg.Append(F($"<path d=\"{sheet.Edge(Outline)}\" fill=\"{Paper.Hex}\"/>"));
 
         var random = new Random(seed);
@@ -118,26 +127,40 @@ internal static class PaperDrawing
 
     /// <summary>
     /// A slip of the same paper laid over a page to ask something or carry a
-    /// message: outline, shadow, blotches and printed rule as the page has,
-    /// but one perforation, <paramref name="tear"/> below its top, under its
-    /// heading. The view box starts at the margin's outer corner.
+    /// message: outline, blotches and printed rule as the page has, but one
+    /// perforation, <paramref name="tear"/> below its top, under its heading.
+    /// The view box starts at the margin's outer corner.
     /// </summary>
-    public static string Slip(float width, float height, float tear, int seed = 5, Ink? paper = null)
+    public static string Slip(float width, float height, float tear, int seed = 5, Ink? paper = null, bool rough = false)
     {
         var sheet = new Sheet(width, height, tear, float.NaN);
         Ink face = paper ?? Paper;
-        (float canvasWidth, float canvasHeight) = Canvas(width, height);
         var svg = new StringBuilder();
-        svg.Append(F($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{canvasWidth}\" height=\"{canvasHeight}\" viewBox=\"0 0 {canvasWidth} {canvasHeight}\">"));
-        svg.Append(F($"<g transform=\"translate({Margin} {Margin})\">"));
-        svg.Append(F($"<path d=\"{sheet.Edge(0f)}\" transform=\"translate(0 {ShadowDrop})\" fill=\"#000000\" fill-opacity=\"{ShadowOpacity}\"/>"));
-        svg.Append(F($"<path d=\"{sheet.Edge(0f)}\" fill=\"{InkBlack.Hex}\"/>"));
+        AppendStart(svg, width, height);
+        AppendOutline(svg, sheet, rough);
         svg.Append(F($"<path d=\"{sheet.Edge(Outline)}\" fill=\"{face.Hex}\"/>"));
         var random = new Random(seed);
         AppendBlotches(svg, random, width, height, face);
         AppendFibres(svg, random, width, height, face);
         svg.Append(F($"<path d=\"{sheet.Edge(RuleInset)}\" fill=\"none\" stroke=\"{face.Mix(PassportBlue, 0.5f).Hex}\" stroke-width=\"1.6\"/>"));
         AppendPerforation(svg, width, tear);
+        svg.Append("</g></svg>");
+        return svg.ToString();
+    }
+
+    /// <summary>
+    /// The hard drop shadow under paper of the given size, in a view box the
+    /// size of that paper's drawing, as the game's buttons cast theirs. It is
+    /// drawn apart from the paper so the game's grain never cuts it. A
+    /// <paramref name="bottomTear"/> of NaN leaves the bottom notches out, as
+    /// on a slip.
+    /// </summary>
+    public static string Shadow(float width, float height, float topTear, float bottomTear = float.NaN)
+    {
+        var sheet = new Sheet(width, height, topTear, height - bottomTear);
+        var svg = new StringBuilder();
+        AppendStart(svg, width, height);
+        svg.Append(F($"<path d=\"{sheet.Edge(0f)}\" transform=\"translate(0 {ShadowDrop})\" fill=\"#000000\" fill-opacity=\"{ShadowOpacity}\"/>"));
         svg.Append("</g></svg>");
         return svg.ToString();
     }
@@ -161,6 +184,36 @@ internal static class PaperDrawing
     /// <summary>How many dashes fit along a line this long.</summary>
     public static int DashCount(float length) =>
         Math.Max(0, (int)Math.Floor((length + Gap) / (Dash + Gap)));
+
+    /// <summary>Opens a drawing of paper this size, its margin round it, and the group the paper is drawn in.</summary>
+    private static void AppendStart(StringBuilder svg, float width, float height)
+    {
+        (float canvasWidth, float canvasHeight) = Canvas(width, height);
+        svg.Append(F($"<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"{canvasWidth}\" height=\"{canvasHeight}\" viewBox=\"0 0 {canvasWidth} {canvasHeight}\">"));
+        svg.Append(F($"<g transform=\"translate({Margin} {Margin})\">"));
+    }
+
+    /// <summary>
+    /// The near-black outline under the paper. A rough one is a stack of
+    /// outlines from just outside the edge to inside the outline, each a step
+    /// further in and less see-through, so that together they fade in evenly.
+    /// </summary>
+    private static void AppendOutline(StringBuilder svg, Sheet sheet, bool rough)
+    {
+        if (!rough)
+        {
+            svg.Append(F($"<path d=\"{sheet.Edge(0f)}\" fill=\"{InkBlack.Hex}\"/>"));
+            return;
+        }
+
+        for (int layer = 1; layer <= RoughLayers; layer++)
+        {
+            float inset = -RoughOutside + ((Outline + RoughOutside) * (layer - 1) / RoughLayers);
+            // Over the layers outside it, this one brings the stack to layer / RoughLayers.
+            float opacity = 1f / (RoughLayers - layer + 1);
+            svg.Append(F($"<path d=\"{sheet.Edge(inset)}\" fill=\"{InkBlack.Hex}\" fill-opacity=\"{opacity}\"/>"));
+        }
+    }
 
     private static void AppendPerforation(StringBuilder svg, float width, float y) =>
         AppendDashes(svg, Notch + 14f, width - Notch - 14f, y);

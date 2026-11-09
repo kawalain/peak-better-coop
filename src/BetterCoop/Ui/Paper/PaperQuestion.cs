@@ -230,14 +230,21 @@ internal sealed class PaperQuestion : MonoBehaviour
         slip.sizeDelta = new Vector2(Width, y);
 
         // The paper, drawn under everything, with room round it for its shadow.
-        RectTransform sheet = PaperList.NewRect("Sheet", slip);
-        sheet.SetAsFirstSibling();
-        sheet.anchorMin = Vector2.zero;
-        sheet.anchorMax = Vector2.one;
-        sheet.offsetMin = new Vector2(-PaperDrawing.Margin, -PaperDrawing.Margin);
-        sheet.offsetMax = new Vector2(PaperDrawing.Margin, PaperDrawing.Margin);
-        VectorView.Add(sheet, size => PaperDrawing.Slip(size.x - 2f * PaperDrawing.Margin, size.y - 2f * PaperDrawing.Margin, Band), PaperText.Paper);
-        sheet.gameObject.GetComponent<RawImage>().raycastTarget = true;
+        VectorView sheet = PaperSheet.Add(
+            slip,
+            "Sheet",
+            (size, rough) =>
+            {
+                Vector2 inside = PaperSheet.Inside(size);
+                return PaperDrawing.Slip(inside.x, inside.y, Band, rough: rough);
+            },
+            size =>
+            {
+                Vector2 inside = PaperSheet.Inside(size);
+                return PaperDrawing.Shadow(inside.x, inside.y, Band);
+            },
+            PaperText.Paper);
+        sheet.GetComponent<RawImage>().raycastTarget = true;
 
         LayoutRebuilder.ForceRebuildLayoutImmediate(answers);
         VectorView.DrawAll(cover);

@@ -508,14 +508,19 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         group = panel.gameObject.AddComponent<CanvasGroup>();
 
         // The paper reaches past the panel by its shadow's margin, so its edge is the panel's.
-        RectTransform sheet = NewRect("Paper", panel);
-        sheet.anchorMin = Vector2.zero;
-        sheet.anchorMax = Vector2.one;
-        sheet.offsetMin = new Vector2(-PaperDrawing.Margin, -PaperDrawing.Margin);
-        sheet.offsetMax = new Vector2(PaperDrawing.Margin, PaperDrawing.Margin);
-        VectorView paper = VectorView.Add(
-            sheet,
-            size => PaperDrawing.Svg(size.x - 2f * PaperDrawing.Margin, size.y - 2f * PaperDrawing.Margin, TitleHeight, FooterHeight),
+        VectorView paper = PaperSheet.Add(
+            panel,
+            "Paper",
+            (size, rough) =>
+            {
+                Vector2 inside = PaperSheet.Inside(size);
+                return PaperDrawing.Svg(inside.x, inside.y, TitleHeight, FooterHeight, rough: rough);
+            },
+            size =>
+            {
+                Vector2 inside = PaperSheet.Inside(size);
+                return PaperDrawing.Shadow(inside.x, inside.y, TitleHeight, FooterHeight);
+            },
             PaperText.Paper);
         // The paper takes the clicks that miss the rows, so nothing behind it answers.
         paper.GetComponent<RawImage>().raycastTarget = true;

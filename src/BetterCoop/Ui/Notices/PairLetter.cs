@@ -132,13 +132,21 @@ internal sealed class PairLetter : MonoBehaviour
         float height = stripTop + 12f + 22f;
         rect.sizeDelta = new Vector2(Width, height);
 
-        RectTransform sheet = PaperList.NewRect("Sheet", rect);
-        sheet.anchorMin = Vector2.zero;
-        sheet.anchorMax = Vector2.one;
-        sheet.offsetMin = new Vector2(-PaperDrawing.Margin, -PaperDrawing.Margin);
-        sheet.offsetMax = new Vector2(PaperDrawing.Margin, PaperDrawing.Margin);
         var paper = new Ink(0.925f, 0.940f, 0.965f);
-        VectorView.Add(sheet, size => PaperDrawing.Slip(size.x - 2f * PaperDrawing.Margin, size.y - 2f * PaperDrawing.Margin, Band, 9, paper), Color.clear);
+        PaperSheet.Add(
+            rect,
+            "Sheet",
+            (size, rough) =>
+            {
+                Vector2 inside = PaperSheet.Inside(size);
+                return PaperDrawing.Slip(inside.x, inside.y, Band, 9, paper, rough);
+            },
+            size =>
+            {
+                Vector2 inside = PaperSheet.Inside(size);
+                return PaperDrawing.Shadow(inside.x, inside.y, Band);
+            },
+            Color.clear);
 
         float words = Width - 2f * Side - 150f;
         heading = NoticeSlip.Line(rect, template, "Heading", PaperText.Value, TextAlignmentOptions.Left);
