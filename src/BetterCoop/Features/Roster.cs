@@ -152,7 +152,7 @@ internal sealed class RosterPage : PaperPage
                 shown = new PairDraft(room.Pairs, room.Players);
             }
 
-            board = PairRows.Add(list, room, shown, portraits, leads, Moved, StartOver, send => HandIn(portraits, room.TroopLeader, send));
+            board = PairRows.Add(list, room, shown, portraits, leads, Moved, StartOver, HandIn);
         }
 
         if (leads)

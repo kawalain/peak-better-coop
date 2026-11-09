@@ -17,9 +17,6 @@ internal interface IPortraits
 
     /// <summary>The scout's skin colour, for the silhouette shown without a photo.</summary>
     Color Skin(int actor);
-
-    /// <summary>The scout's right forearm and hand, hand down, on a clear ground; null when none can be taken.</summary>
-    Texture? Hand(int actor);
 }
 
 /// <summary>
@@ -138,20 +135,28 @@ internal static class PhotoStudio
     /// <summary>The colour behind a hand while it is taken, keyed out after.</summary>
     private static readonly Color HandKey = new(1f, 0f, 1f, 1f);
 
-    private static readonly Dictionary<string, Texture2D?> Hands = new();
+    /// <summary>The Scoutmaster's prefab, as the game spawns him by name.</summary>
+    private const string ScoutmasterPrefab = "Character_Scoutmaster";
+
+    /// <summary>His model inside the prefab: armature, skinned body, and animator.</summary>
+    private const string ScoutmasterModel = "ScoutMaster";
+
+    private static Texture2D? scoutmasterHand;
+
+    private static bool handTaken;
 
     /// <summary>
-    /// A picture of the right forearm and hand of the scout the model is
-    /// dressed as, hanging down, on a clear ground: the camera looks at the
-    /// arm from outside the body, square to the forearm, and sees only as
-    /// deep as the arm so the body behind it is left out. Null when the
-    /// model's bones cannot be found or the arm is not in the picture.
+    /// A picture of the Scoutmaster's right forearm and hand, held out and
+    /// seen from the front with the hand at the foot, on a clear ground,
+    /// trimmed to the arm. Taken once, from a still copy of his model; null
+    /// when his model or its bones cannot be found or the arm is not in the
+    /// picture.
     /// </summary>
-    public static Texture? TakeHand(string look, Action<PlayerCustomizationDummy> dress)
+    public static Texture? ScoutmasterHand()
     {
-        if (Hands.TryGetValue(look, out Texture2D? kept))
+        if (handTaken)
         {
-            return kept;
+            return scoutmasterHand;
         }
 
         if (!Ready() || model == null || camera == null)
@@ -159,81 +164,79 @@ internal static class PhotoStudio
             return null;
         }
 
+        handTaken = true;
+        GameObject? body = null;
         Transform lens = camera.transform;
         Vector3 lensPlace = lens.position;
         Quaternion lensTurn = lens.rotation;
         float size = camera.orthographicSize;
         float near = camera.nearClipPlane;
         float far = camera.farClipPlane;
+        int seen = camera.cullingMask;
         Vector3 lampPlace = lamp != null ? lamp.transform.position : Vector3.zero;
         RenderTexture? shot = null;
         RenderTexture? active = RenderTexture.active;
-        Texture2D? hand = null;
-        Transform? raised = null;
-        Quaternion raisedTurn = Quaternion.identity;
-        Transform? bent = null;
-        Quaternion bentTurn = Quaternion.identity;
         try
         {
-            model.gameObject.SetActive(true);
-            dress(model);
-            if (model.anim != null)
+            body = StillScoutmaster();
+            if (body == null)
             {
-                model.anim.updateMode = AnimatorUpdateMode.UnscaledTime;
-                model.anim.Update(0f);
+                Plugin.Verbose("The Scoutmaster's model could not be found to photograph.");
+                return null;
             }
 
-            // The game names a scout's bones after their body parts.
-            Transform? palm = HelperFunctions.FindChildRecursive(nameof(BodypartType.Hand_R), model.transform);
-            Transform? elbow = HelperFunctions.FindChildRecursive(nameof(BodypartType.Elbow_R), model.transform);
-            Transform? upper = HelperFunctions.FindChildRecursive(nameof(BodypartType.Arm_R), model.transform)
-                ?? HelperFunctions.FindChildRecursive(nameof(BodypartType.Shoulder_R), model.transform);
+            body.SetActive(true);
+            if (body.GetComponent<Animator>() is Animator animator)
+            {
+                // He stands as his animator first poses him.
+                animator.updateMode = AnimatorUpdateMode.UnscaledTime;
+                animator.Update(0f);
+            }
+
+            // The game names the bones after the body parts.
+            Transform? palm = HelperFunctions.FindChildRecursive(nameof(BodypartType.Hand_R), body.transform);
+            Transform? elbow = HelperFunctions.FindChildRecursive(nameof(BodypartType.Elbow_R), body.transform);
+            Transform? upper = HelperFunctions.FindChildRecursive(nameof(BodypartType.Arm_R), body.transform);
             if (palm == null || elbow == null || upper == null)
             {
-                Plugin.Verbose("The model has no right hand, elbow, and arm bones to photograph.");
-                Hands[look] = null;
+                Plugin.Verbose("The Scoutmaster's model has no right hand, elbow, and arm bones to photograph.");
                 return null;
             }
 
             float forearm = Vector3.Distance(palm.position, elbow.position);
             if (forearm < 1e-3f)
             {
-                Hands[look] = null;
                 return null;
             }
 
-            // Facing the passport's camera, as the model stands.
-            Vector3 front = Vector3.ProjectOnPlane(lensPlace - model.transform.position, model.transform.up);
-            front = front.sqrMagnitude > 1e-6f ? front.normalized : model.transform.forward;
+            // Facing the passport's camera, as the passport's scout stands in the same place.
+            Vector3 front = Vector3.ProjectOnPlane(lensPlace - body.transform.position, body.transform.up);
+            front = front.sqrMagnitude > 1e-6f ? front.normalized : body.transform.forward;
 
-            // The arm held straight out to its side and a little down, whatever pose the model stood in,
+            // The arm held straight out to its side and a little down, whatever pose he stood in,
             // so nothing but the arm is in the picture.
-            Vector3 across = Vector3.Cross(model.transform.up, front).normalized;
-            float shoulderSide = Vector3.Dot(upper.position - model.transform.position, across);
+            Vector3 across = Vector3.Cross(body.transform.up, front).normalized;
+            float shoulderSide = Vector3.Dot(upper.position - body.transform.position, across);
             Vector3 side = across * (shoulderSide < 0f ? -1f : 1f);
-            Vector3 reach = ((side * Mathf.Cos(25f * Mathf.Deg2Rad)) - (model.transform.up * Mathf.Sin(25f * Mathf.Deg2Rad))).normalized;
-            raised = upper;
-            raisedTurn = upper.localRotation;
-            bent = elbow;
-            bentTurn = elbow.localRotation;
+            Vector3 reach = ((side * Mathf.Cos(25f * Mathf.Deg2Rad)) - (body.transform.up * Mathf.Sin(25f * Mathf.Deg2Rad))).normalized;
             upper.rotation = Quaternion.FromToRotation(elbow.position - upper.position, reach) * upper.rotation;
             elbow.rotation = Quaternion.FromToRotation(palm.position - elbow.position, reach) * elbow.rotation;
 
             // Seen from the front, turned so the arm stands upright with the hand at the foot.
             Vector3 up = -reach;
-            Texture2D? taken = null;
-            for (float room = 1f; room <= 2.3f && taken == null; room *= 1.5f)
+            camera.cullingMask = 1 << body.layer;
+            for (float room = 1f; room <= 2.3f && scoutmasterHand == null; room *= 1.5f)
             {
                 float below = forearm * 1.5f * room;
                 float above = forearm * 0.4f;
                 float tall = below + forearm + above;
                 float wide = forearm * 2.2f * room;
                 Vector3 middle = palm.position - (up * below) + (up * (tall / 2f));
-                lens.position = middle + (front * 3f);
+                lens.position = middle + (front * 3f * forearm);
                 lens.rotation = Quaternion.LookRotation(-front, up);
                 camera.orthographicSize = tall / 2f;
                 camera.nearClipPlane = 0.05f;
-                camera.farClipPlane = 6f;
+                camera.farClipPlane = 6f * forearm;
                 camera.backgroundColor = HandKey;
                 int width = HandWidth;
                 int height = Mathf.RoundToInt(HandWidth * tall / wide);
@@ -241,6 +244,7 @@ internal static class PhotoStudio
                 if (lamp != null)
                 {
                     lamp.transform.position = lens.position + (up * forearm);
+                    lamp.range = 10f * forearm;
                     lamp.enabled = true;
                 }
 
@@ -255,7 +259,7 @@ internal static class PhotoStudio
                 RenderTexture.active = shot;
                 var whole = new Texture2D(width, height, TextureFormat.RGBA32, false);
                 whole.ReadPixels(new Rect(0, 0, width, height), 0, 0);
-                taken = Crop(whole, out bool cut);
+                Texture2D? taken = Crop(whole, out bool cut);
                 Object.Destroy(whole);
                 if (cut && taken != null && room * 1.5f <= 2.3f)
                 {
@@ -263,34 +267,28 @@ internal static class PhotoStudio
                     Object.Destroy(taken);
                     taken = null;
                 }
+
+                scoutmasterHand = taken;
             }
 
-            hand = taken;
-            if (hand == null)
+            if (scoutmasterHand == null)
             {
-                Plugin.Verbose("The hand was not in its picture.");
+                Plugin.Verbose("The Scoutmaster's hand was not in its picture.");
             }
 #if DEBUG
             else
             {
                 string file = System.IO.Path.Combine(BepInEx.Paths.CachePath, "BetterCoop-hand.png");
-                System.IO.File.WriteAllBytes(file, hand.EncodeToPNG());
+                System.IO.File.WriteAllBytes(file, scoutmasterHand.EncodeToPNG());
                 Plugin.Verbose($"Saved the hand's picture to {file}.");
             }
 #endif
 
-            Hands[look] = hand;
-            return hand;
+            return scoutmasterHand;
         }
         catch (Exception exception)
         {
-            if (hand != null)
-            {
-                Object.Destroy(hand);
-            }
-
-            Hands[look] = null;
-            Guard.Report("PhotoStudio.TakeHand", exception);
+            Guard.Report("PhotoStudio.ScoutmasterHand", exception);
             return null;
         }
         finally
@@ -302,14 +300,10 @@ internal static class PhotoStudio
                 RenderTexture.ReleaseTemporary(shot);
             }
 
-            if (bent != null)
+            // The copy has done its work; nothing else needs it.
+            if (body != null)
             {
-                bent.localRotation = bentTurn;
-            }
-
-            if (raised != null)
-            {
-                raised.localRotation = raisedTurn;
+                Object.Destroy(body);
             }
 
             lens.position = lensPlace;
@@ -317,15 +311,82 @@ internal static class PhotoStudio
             camera.orthographicSize = size;
             camera.nearClipPlane = near;
             camera.farClipPlane = far;
+            camera.cullingMask = seen;
             camera.backgroundColor = Backdrop;
             if (lamp != null)
             {
                 lamp.transform.position = lampPlace;
+                lamp.range = 6f;
                 lamp.enabled = false;
             }
-
-            model.gameObject.SetActive(false);
         }
+    }
+
+    /// <summary>
+    /// A still copy of the Scoutmaster's model, standing where the passport's
+    /// scout stands in the studio: only his armature, skinned body, and
+    /// animator. It is copied under a sleeping holder and stripped of every
+    /// script, joint, body, collider, and sound before it can wake, so none of
+    /// the game's own Scoutmaster ever runs on it. Inactive until shown.
+    /// </summary>
+    private static GameObject? StillScoutmaster()
+    {
+        if (studio == null || model == null)
+        {
+            return null;
+        }
+
+        GameObject? prefab = Resources.Load<GameObject>(ScoutmasterPrefab);
+        Transform? visual = prefab != null ? prefab.transform.Find(ScoutmasterModel) : null;
+        if (visual == null)
+        {
+            return null;
+        }
+
+        var holder = new GameObject("Asleep");
+        holder.SetActive(false);
+        holder.transform.SetParent(studio.transform, false);
+        GameObject copy = Object.Instantiate(visual.gameObject, holder.transform);
+        foreach (Joint joint in copy.GetComponentsInChildren<Joint>(true))
+        {
+            Object.DestroyImmediate(joint);
+        }
+
+        MonoBehaviour[] scripts = copy.GetComponentsInChildren<MonoBehaviour>(true);
+        for (int i = scripts.Length - 1; i >= 0; i--)
+        {
+            Object.DestroyImmediate(scripts[i]);
+        }
+
+        foreach (Collider collider in copy.GetComponentsInChildren<Collider>(true))
+        {
+            Object.DestroyImmediate(collider);
+        }
+
+        foreach (Rigidbody rigidbody in copy.GetComponentsInChildren<Rigidbody>(true))
+        {
+            Object.DestroyImmediate(rigidbody);
+        }
+
+        foreach (AudioSource sound in copy.GetComponentsInChildren<AudioSource>(true))
+        {
+            Object.DestroyImmediate(sound);
+        }
+
+        // Seen by the studio's camera as the passport's scout is.
+        int layer = model.gameObject.layer;
+        foreach (Transform part in copy.GetComponentsInChildren<Transform>(true))
+        {
+            part.gameObject.layer = layer;
+        }
+
+        copy.SetActive(false);
+        copy.transform.SetParent(studio.transform, false);
+        copy.transform.localPosition = model.transform.localPosition;
+        copy.transform.localRotation = model.transform.localRotation;
+        copy.transform.localScale = Vector3.one;
+        Object.Destroy(holder);
+        return copy;
     }
 
     /// <summary>
@@ -431,14 +492,6 @@ internal static class PhotoStudio
     /// <summary>Lets a photo go, as when its scout has changed how they look.</summary>
     public static void Forget(string look)
     {
-        if (Hands.TryGetValue(look, out Texture2D? hand))
-        {
-            Hands.Remove(look);
-            if (hand != null)
-            {
-                Object.Destroy(hand);
-            }
-        }
 
         if (Photos.TryGetValue(look, out RenderTexture? photo))
         {
@@ -589,15 +642,6 @@ internal sealed class LivePortraits : IPortraits
     public Texture? Photo(int actor) => Take(actor);
 
     public Color Skin(int actor) => PhotoStudio.SkinColour(Data(actor)?.currentSkin ?? 0);
-
-    public Texture? Hand(int actor)
-    {
-        // The photo first, so a changed look has already let the old hand go.
-        Take(actor);
-        return PhotonNetwork.CurrentRoom?.GetPlayer(actor) is Photon.Realtime.Player player && Look(actor) is string look
-            ? PhotoStudio.TakeHand(look, model => model.UpdateDummy(player))
-            : null;
-    }
 
     /// <summary>Takes one photo a player in the room still lacks; false when every player has theirs.</summary>
     public static bool WarmOne()

@@ -325,23 +325,24 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     }
 
     /// <summary>
-    /// Has the hand of <paramref name="actor"/> take the paper away upwards,
-    /// running <paramref name="send"/> as it is taken; a fresh sheet rises
-    /// once it is gone.
+    /// Has the Scoutmaster's hand take the paper away upwards, running
+    /// <paramref name="send"/> as it is taken; a fresh sheet rises once it is
+    /// gone.
     /// </summary>
-    protected void HandIn(IPortraits portraits, int actor, Action send)
+    protected void HandIn(Action send)
     {
         Texture? hand = null;
-        Color skin = new(0.93f, 0.74f, 0.55f);
         try
         {
-            hand = portraits.Hand(actor);
-            skin = portraits.Skin(actor);
+            hand = PhotoStudio.ScoutmasterHand();
         }
         catch (Exception exception)
         {
             Guard.Report(name + ".HandIn", exception);
         }
+
+        // A drawn hand, where no picture of his could be taken, is weathered and tanned.
+        Color skin = new(0.80f, 0.60f, 0.45f);
 
         PaperToss.HandIn(
             panel,

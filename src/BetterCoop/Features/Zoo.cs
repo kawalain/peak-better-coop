@@ -126,8 +126,8 @@ internal sealed class ZooPage : PaperPage
         list.Stamp(
             () => T("손으로 가져가기", "Handed in"),
             () => T("재생", "Play"),
-            () => HandIn(new ZooPortraits(seed), 1, () => presses++),
-            about: () => T("짝 명단을 통보할 때처럼 분대장의 손이 종이를 가져갑니다.", "The Troop Leader's hand takes the paper, as when the Pairs are announced."));
+            () => HandIn(() => presses++),
+            about: () => T("짝 명단을 통보할 때처럼 스카우트 지도자의 손이 종이를 가져갑니다.", "The Scoutmaster's hand takes the paper, as when the Pairs are announced."));
         list.Signature(() => T("서명", "Signed"), () => "Alder");
 
         list.Header(() => T("알림", "Notices"));
@@ -276,9 +276,6 @@ internal sealed class ZooPortraits : IPortraits
         Look(actor) is int[] look ? PhotoStudio.Take(Key(look), model => Dress(model, look)) : null;
 
     public Color Skin(int actor) => PhotoStudio.SkinColour(Look(actor)?[0] ?? actor % 4);
-
-    public Texture? Hand(int actor) =>
-        Look(actor) is int[] look ? PhotoStudio.TakeHand(Key(look), model => Dress(model, look)) : null;
 
     /// <summary>Takes one photo of the Zoo's looks not yet taken; false when all are.</summary>
     public static bool WarmOne()
