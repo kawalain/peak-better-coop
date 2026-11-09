@@ -58,6 +58,7 @@ internal static partial class ControlCommands
         ["scroll"] = new("{to}: scrolls the open paper form to the first text containing 'to'.", Scroll),
         ["depart"] = new("At the Airport: boards for the Run as the boarding pass does, through the mod's own checks.", _ => Depart()),
         ["order"] = new("{what, ...}: a Roster order, under the Roster's rules; without what, lists them.", Order),
+        ["photo"] = new("{actor}: takes that player's passport photo again, here and now, and saves it as a PNG; answers with its path.", Photo),
         ["drill"] = new("{what: forge, key, actor?, value?}: from this copy, writes a made-up value to a mod key of the room, or of player 'actor', as a player who may not write it would; Pairs, without a value, swaps every Pair's roles. The other copies should drop it.", Drill),
     };
 
@@ -357,6 +358,33 @@ internal static partial class ControlCommands
         }
 
         throw new ArgumentException($"no open paper shows '{to}'");
+    }
+
+    private static JToken Photo(JObject args)
+    {
+        int actor = (int?)args["actor"] ?? throw new ArgumentException("actor: whose photo");
+        BetterCoop.Ui.Paper.LivePortraits.ForgetAll();
+        if (new BetterCoop.Ui.Paper.LivePortraits().Photo(actor) is not RenderTexture photo)
+        {
+            throw new InvalidOperationException($"no photo of {actor} can be taken now");
+        }
+
+        RenderTexture? active = RenderTexture.active;
+        var picture = new Texture2D(photo.width, photo.height, TextureFormat.RGBA32, false);
+        try
+        {
+            RenderTexture.active = photo;
+            picture.ReadPixels(new Rect(0, 0, photo.width, photo.height), 0, 0);
+            picture.Apply(false);
+            string path = Path.Combine(Paths.CachePath, $"BetterCoop.photo-{actor}.png");
+            File.WriteAllBytes(path, picture.EncodeToPNG());
+            return path;
+        }
+        finally
+        {
+            RenderTexture.active = active;
+            UnityEngine.Object.Destroy(picture);
+        }
     }
 
     private static JToken Drill(JObject args)

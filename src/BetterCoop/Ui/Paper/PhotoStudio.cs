@@ -262,6 +262,17 @@ internal sealed class LivePortraits : IPortraits
 
     public Color Skin(int actor) => PhotoStudio.SkinColour(Data(actor)?.currentSkin ?? 0);
 
+    /// <summary>Lets every player's photo go, so each is taken again when next asked for.</summary>
+    internal static void ForgetAll()
+    {
+        foreach ((string look, float _) in Taken.Values)
+        {
+            PhotoStudio.Forget(look);
+        }
+
+        Taken.Clear();
+    }
+
     /// <summary>Takes one photo a player in the room still lacks; false when every player has theirs.</summary>
     public static bool WarmOne()
     {
