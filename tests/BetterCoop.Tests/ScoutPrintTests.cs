@@ -56,15 +56,15 @@ public class ScoutPrintTests
     [Fact]
     public void The_rope_knot_pulls_tight_and_stays_within_its_strip()
     {
-        string loose = FormDrawing.Rope(380f, 30f, 0f);
-        string tight = FormDrawing.Rope(380f, 30f, 1f);
+        string loose = FormDrawing.Rope(220f, 18f, 0f);
+        string tight = FormDrawing.Rope(220f, 18f, 1f);
 
         Assert.NotEqual(loose, tight);
-        Assert.Equal(tight, FormDrawing.Rope(380f, 30f, 2f));
+        Assert.Equal(tight, FormDrawing.Rope(220f, 18f, 2f));
         foreach (string rope in new[] { loose, tight })
         {
             XElement drawing = XElement.Parse(rope);
-            Assert.Equal("0 0 380 30", drawing.Attribute("viewBox")!.Value);
+            Assert.Equal("0 0 220 18", drawing.Attribute("viewBox")!.Value);
         }
     }
 }

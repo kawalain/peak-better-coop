@@ -159,26 +159,29 @@ internal static partial class FormDrawing
     }
 
     /// <summary>
-    /// A length of rope across <paramref name="width"/>, tied in its middle
-    /// with a square knot, the first knot a scout learns: two bights linked
-    /// through each other, each rope's end lying beside its own standing part.
+    /// A fine printed cord across <paramref name="width"/>, tied in its middle
+    /// with a small square knot, the first knot a scout learns: two bights
+    /// linked through each other, each end lying beside its own standing part.
+    /// It is drawn as a single thin line in the form's second colour, an
+    /// ornament under the title rather than a rope in its own right.
     /// <paramref name="tight"/>, 0 to 1, is how far the knot has been pulled
-    /// up: loose, its bights hang wide apart; tight, they close round each other.
+    /// up: loose, its bights hang apart; tight, they close round each other.
     /// </summary>
     public static string Rope(float width, float height, float tight)
     {
         tight = Math.Max(0f, Math.Min(1f, tight));
         var svg = Open(width, height);
-        float thick = Math.Min(height * 0.26f, 8f);
+        float h = height;
+        float thick = Math.Max(1.2f, h * 0.12f);
         float c = width / 2f;
-        float y = height / 2f;
-        float spread = Lerp(24f, 11f, tight);
-        float rx = Lerp(24f, 19f, tight);
-        float ry = Math.Min(height / 2f - thick / 2f - 1f, Lerp(11f, 9f, tight));
-        float slack = Lerp(2.5f, 0f, tight);
-        float end = thick;
+        float y = h / 2f;
+        float spread = Lerp(0.95f, 0.45f, tight) * h;
+        float rx = Lerp(0.85f, 0.7f, tight) * h;
+        float ry = Math.Min(h / 2f - thick, Lerp(0.36f, 0.3f, tight) * h);
+        float slack = Lerp(0.1f, 0f, tight) * h;
+        float tail = 0.6f * h;
 
-        // The loops: each rope's bight, left and right of the middle.
+        // The loops: each cord's bight, left and right of the middle.
         List<(float X, float Y)> Bight(float cx, int from, int to)
         {
             var points = new List<(float X, float Y)>();
@@ -207,18 +210,18 @@ internal static partial class FormDrawing
         float left = c - spread;
         float right = c + spread;
         // Seen from the front, angles run clockwise from the right, y down: the lower half is 0 to 24.
-        Strand(svg, Standing(end, left - rx), thick);
+        Strand(svg, Standing(thick, left - rx), thick);
         Strand(svg, Bight(left, 0, 24), thick);
         Strand(svg, Bight(right, -24, 24), thick);
-        Strand(svg, Standing(right + rx, width - end), thick);
+        Strand(svg, Standing(right + rx, width - thick), thick);
         // Each end lies along its own side, as a square knot's ends do.
-        Strand(svg, [(right + rx * 0.3f, y + ry * 0.95f), (right + rx + 12f, y + ry + 1f)], thick);
+        Strand(svg, [(right + rx * 0.3f, y + ry * 0.95f), (right + rx + tail, y + ry + 0.5f)], thick);
         Strand(svg, Bight(left, -24, 0), thick);
-        Strand(svg, [(left - rx * 0.3f, y - ry * 0.95f), (left - rx - 12f, y - ry - 1f)], thick);
+        Strand(svg, [(left - rx * 0.3f, y - ry * 0.95f), (left - rx - tail, y - ry - 0.5f)], thick);
         return Close(svg);
     }
 
-    /// <summary>One stretch of rope along <paramref name="points"/>: outlined, filled, and laid with the twist of its strands.</summary>
+    /// <summary>One stretch of cord along <paramref name="points"/>.</summary>
     private static void Strand(StringBuilder svg, IReadOnlyList<(float X, float Y)> points, float thick)
     {
         var path = new StringBuilder();
@@ -227,42 +230,7 @@ internal static partial class FormDrawing
             path.Append(F($"{(i == 0 ? "M" : "L")}{points[i].X} {points[i].Y}"));
         }
 
-        string d = path.ToString();
-        float inner = thick - 2.4f;
-        svg.Append(F($"<path d=\"{d}\" fill=\"none\" stroke=\"{PaperDrawing.InkBlack.Hex}\" stroke-width=\"{thick}\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"));
-        svg.Append(F($"<path d=\"{d}\" fill=\"none\" stroke=\"{PrintTint.Hex}\" stroke-width=\"{inner}\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"));
-
-        // The strands' twist: short slanted marks across the rope at even steps along it.
-        string twist = Paper.Mix(PaperDrawing.PassportBlue, 0.7f).Hex;
-        float half = inner / 2f;
-        float step = thick * 0.62f;
-        float carried = step / 2f;
-        for (int i = 1; i < points.Count; i++)
-        {
-            float dx = points[i].X - points[i - 1].X;
-            float dy = points[i].Y - points[i - 1].Y;
-            float length = (float)Math.Sqrt(dx * dx + dy * dy);
-            if (length <= 0f)
-            {
-                continue;
-            }
-
-            float ux = dx / length;
-            float uy = dy / length;
-            for (; carried <= length; carried += step)
-            {
-                float px = points[i - 1].X + ux * carried;
-                float py = points[i - 1].Y + uy * carried;
-                // Across the rope (the normal), leaning along it, as a twisted strand lies.
-                float ax = px - uy * half - ux * half * 0.7f;
-                float ay = py + ux * half - uy * half * 0.7f;
-                float bx = px + uy * half + ux * half * 0.7f;
-                float by = py - ux * half + uy * half * 0.7f;
-                svg.Append(F($"<path d=\"M{ax} {ay}L{bx} {by}\" stroke=\"{twist}\" stroke-width=\"1.1\" stroke-linecap=\"round\"/>"));
-            }
-
-            carried -= length;
-        }
+        svg.Append(F($"<path d=\"{path}\" fill=\"none\" stroke=\"{PrintBlue.Hex}\" stroke-width=\"{thick}\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"));
     }
 
     private static float Lerp(float from, float to, float t) => from + (to - from) * t;

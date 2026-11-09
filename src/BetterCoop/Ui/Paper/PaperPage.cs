@@ -41,8 +41,8 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
 
     private const float WheelStep = 70f;
 
-    /// <summary>The rope under the title, tied with a square knot.</summary>
-    private static readonly Vector2 RopeSize = new(380f, 30f);
+    /// <summary>The cord under the title, tied with a square knot.</summary>
+    private static readonly Vector2 RopeSize = new(220f, 18f);
 
     /// <summary>How far apart the serial's figure wheels stand, in em.</summary>
     private const float SerialAdvance = 0.62f;
@@ -616,13 +616,13 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         titleText = PaperText.Make(titleRect.gameObject, template, PaperText.Title, TextAlignmentOptions.Midline);
         titleText.fontStyle = FontStyles.Bold;
         titleText.color = PaperText.Blue;
-        // The title stands over a rope tied with a square knot, as a troop's papers were ornamented.
+        // The title stands over a fine cord tied with a square knot, as a troop's papers were ornamented.
         titleText.margin = new Vector4(0f, 0f, 0f, RopeSize.y - 6f);
         RectTransform rope = NewRect("Rope", titleRect);
         rope.anchorMin = rope.anchorMax = new Vector2(0.5f, 0f);
         rope.pivot = new Vector2(0.5f, 0f);
         rope.sizeDelta = RopeSize;
-        rope.anchoredPosition = new Vector2(0f, 4f);
+        rope.anchoredPosition = new Vector2(0f, 8f);
         knot = VectorView.Add(rope, size => FormDrawing.Rope(size.x, size.y, knotTight), Color.clear);
 
         // The form's number and note stay printed in the head of the paper, above everything that scrolls.
