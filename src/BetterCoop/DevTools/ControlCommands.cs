@@ -17,6 +17,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using Zorro.Core.CLI;
+using Zorro.UI;
 
 namespace BetterCoop.DevTools;
 
@@ -337,12 +338,40 @@ internal static partial class ControlCommands
                 GUIManager.instance.pauseMenu.SetActive(true);
                 return "paused";
             case "back":
-                Character me = Character.localCharacter ?? throw new InvalidOperationException("no scout to press pause for");
-                me.input.pauseWasPressed = true;
-                return "back";
+                return Back();
             default:
                 throw new ArgumentException("action: pause or back");
         }
+    }
+
+    /// <summary>
+    /// Goes back as the pause key does in the pause menu: a paper form takes
+    /// it first, a page goes to its parent, the menu closes. The key itself
+    /// cannot be pressed from here, as the game reads it afresh every frame.
+    /// </summary>
+    private static JToken Back()
+    {
+        GameObject menu = GUIManager.instance.pauseMenu;
+        PauseMenuHandler? handler = menu != null && menu.activeInHierarchy ? menu.GetComponent<PauseMenuHandler>() : null;
+        if (handler == null)
+        {
+            throw new InvalidOperationException("the pause menu is not open");
+        }
+
+        if (handler.currentPage is BetterCoop.Ui.Paper.PaperPage paper && paper.TakeBack())
+        {
+            return "the form took it";
+        }
+
+        if (handler.currentPage is IHaveParentPage child)
+        {
+            (UIPage page, PageTransistion transition) = child.GetParentPage();
+            handler.TransistionToPage(page, transition);
+            return $"back to {page.name}";
+        }
+
+        menu!.SetActive(false);
+        return "closed the pause menu";
     }
 
     private static JToken Scroll(JObject args)
