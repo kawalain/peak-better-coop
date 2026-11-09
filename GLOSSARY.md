@@ -173,9 +173,11 @@ network.
 _Avoid_: solo mode, loopback
 
 **Twin** (분신):
-A second copy of the game on the same computer, in a development build, that
-joins the first copy's room as a real second player, so features that need two
-players can be tried alone.
+A copy of the game started for testing on the same computer, in a development
+build, apart from the player's own game: its own profile, its own scout, and
+nothing kept on the player's account. Twins test together as real players: one
+Twin opens a room and the others join it. A Twin never joins the player's own
+game.
 _Avoid_: second client, clone, bot
 
 **Control Line** (조종선):

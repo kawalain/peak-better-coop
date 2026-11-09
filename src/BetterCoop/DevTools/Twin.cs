@@ -10,24 +10,31 @@ using Photon.Pun;
 using Photon.Realtime;
 using Steamworks;
 using UnityEngine;
+using Zorro.Core;
 
 namespace BetterCoop.DevTools;
 
 /// <summary>
-/// The Twin: a second copy of the game on the same computer that joins the
-/// first copy's room as a real second player. Photon signs both in with the
-/// same Steam account, as it takes no other sign-in, so a development build's
-/// rooms let one account join twice, and the Twin shows the game and the mod
-/// a scout id and name of its own. It joins by the room name the first copy
-/// writes to its room card, and leaves the account and the first copy's files
-/// alone: no achievements, stats, rich presence, Steam lobby, quicksave, or
-/// saved settings. <c>tools/dev_profile.py twin</c> starts it with
-/// <see cref="Argument"/>.
+/// A Twin: a copy of the game started for testing, apart from the player's own
+/// game. Twins test together: the one started with <see cref="HostArgument"/>
+/// opens a room of its own, without a Steam lobby, and writes its name to the
+/// room card; the others join it by that name. Photon signs every copy in with
+/// the same Steam account, as it takes no other sign-in, so the opening Twin's
+/// room lets one account join more than once, and each Twin shows the game and
+/// the mod a scout id and name of its own. A Twin leaves the account and the
+/// player's files alone: no achievements, stats, rich presence, Steam lobby,
+/// quicksave, or saved settings. <c>tools/dev_profile.py twins</c> starts them.
 /// </summary>
 internal static class Twin
 {
-    /// <summary>The launch argument that makes this copy the Twin: the path of the first copy's room card.</summary>
+    /// <summary>The launch argument that makes this copy a Twin: the path of the room card the Twins share.</summary>
     public const string Argument = "--bettercoop-twin=";
+
+    /// <summary>The launch argument that makes this Twin the one that opens the room.</summary>
+    public const string HostArgument = "--bettercoop-twin-host";
+
+    /// <summary>The launch argument that names this Twin, after the player's own name.</summary>
+    public const string NameArgument = "--bettercoop-twin-name=";
 
     /// <summary>
     /// Twin scout ids start here: far above any Steam id, so no real player
@@ -38,37 +45,50 @@ internal static class Twin
     /// <summary>The player property the game keeps its scout id in.</summary>
     private const string GameIdKey = "UserID";
 
-    /// <summary>Where a copy that is not the Twin writes the name of the room it is in.</summary>
-    public static string OwnRoomCard => Path.Combine(Paths.CachePath, "BetterCoop-room.txt");
-
-    /// <summary>The first copy's room card, when this copy is the Twin.</summary>
+    /// <summary>The room card the Twins share, when this copy is one.</summary>
     public static string? RoomCard { get; private set; }
 
     public static bool Active => RoomCard != null;
+
+    /// <summary>Whether this Twin opens the room the others join.</summary>
+    public static bool Hosts { get; private set; }
+
+    private static string label = "Twin";
 
     /// <summary>The Twin's own scout id, kept in its profile so it stays the same scout.</summary>
     public static ulong Id { get; private set; }
 
     public static void Start(GameObject runtime)
     {
-        var harmony = new Harmony(MyPluginInfo.PLUGIN_GUID + ".twin");
-        string? argument = Environment.GetCommandLineArgs().FirstOrDefault(a => a.StartsWith(Argument, StringComparison.Ordinal));
+        string[] arguments = Environment.GetCommandLineArgs();
+        string? argument = arguments.FirstOrDefault(a => a.StartsWith(Argument, StringComparison.Ordinal));
         if (argument == null)
         {
-            LetOneAccountJoinTwice(harmony);
-            runtime.AddComponent<RoomCardWriter>();
             return;
         }
 
         RoomCard = argument.Substring(Argument.Length).Trim('"');
+        Hosts = arguments.Contains(HostArgument);
+        string? named = arguments.FirstOrDefault(a => a.StartsWith(NameArgument, StringComparison.Ordinal))?.Substring(NameArgument.Length).Trim('"');
+        label = string.IsNullOrWhiteSpace(named) ? "Twin" : named!;
         Id = OwnId();
+        var harmony = new Harmony(MyPluginInfo.PLUGIN_GUID + ".twin");
         LeaveAccountAlone(harmony);
         harmony.Patch(AccessTools.PropertyGetter(typeof(SteamRuntimeManager), nameof(SteamRuntimeManager.UserID)),
             postfix: new HarmonyMethod(typeof(Twin), nameof(OwnUserId)));
         harmony.Patch(AccessTools.Method(typeof(SteamFriends), nameof(SteamFriends.GetPersonaName)),
             postfix: new HarmonyMethod(typeof(Twin), nameof(OwnName)));
-        runtime.AddComponent<TwinJoiner>();
-        Plugin.Log.LogWarning($"Twin: this copy is the Twin, scout id {Id}, joining the room on {RoomCard}.");
+        if (Hosts)
+        {
+            LetOneAccountJoinTwice(harmony);
+            runtime.AddComponent<TwinHost>();
+        }
+        else
+        {
+            runtime.AddComponent<TwinJoiner>();
+        }
+
+        Plugin.Log.LogWarning($"Twin: this copy is {label}, scout id {Id}; it {(Hosts ? "opens" : "joins")} the room on {RoomCard}.");
     }
 
     /// <summary>The id the mod knows a player by: a Twin's own scout id, or the one Photon gave.</summary>
@@ -105,18 +125,15 @@ internal static class Twin
 
     private static void OwnUserId(ref ulong __result) => __result = Id;
 
-    private static void OwnName(ref string __result) => __result = (__result + " Twin").Trim();
+    private static void OwnName(ref string __result) => __result = (__result + " " + label).Trim();
 
     /// <summary>
     /// Photon's client asks every room it makes to refuse a second player with
-    /// the same account; this copy's rooms do not, so the Twin can join them.
+    /// the same account; the opening Twin's room does not, so the others can join.
     /// </summary>
-    private static void LetOneAccountJoinTwice(Harmony harmony)
-    {
+    private static void LetOneAccountJoinTwice(Harmony harmony) =>
         harmony.Patch(AccessTools.Method(typeof(LoadBalancingPeer), "RoomOptionsToOpParameters"),
             postfix: new HarmonyMethod(typeof(Twin), nameof(NoUserCheck)));
-        Plugin.Log.LogWarning("Rooms this development build makes let one Steam account join twice, so a Twin can join.");
-    }
 
     private static void NoUserCheck(System.Collections.Generic.Dictionary<byte, object> op)
     {
@@ -155,7 +172,7 @@ internal static class Twin
 }
 
 /// <summary>
-/// In the main menu, joins the room on the first copy's room card through the
+/// In the main menu, joins the room on the Twins' room card through the
 /// game's own room-code join, and says how Photon answers.
 /// </summary>
 internal sealed class TwinJoiner : MonoBehaviourPunCallbacks
@@ -208,18 +225,55 @@ internal sealed class TwinJoiner : MonoBehaviourPunCallbacks
         Plugin.Log.LogWarning($"Twin: disconnected from Photon: {cause}");
 }
 
-/// <summary>Writes the name of the room this copy is in to its room card, for a Twin to join.</summary>
-internal sealed class RoomCardWriter : MonoBehaviourPunCallbacks
+/// <summary>
+/// In the main menu, opens a room as the game does once a Steam lobby is made,
+/// but without the lobby, and keeps its name on the room card while in it.
+/// </summary>
+internal sealed class TwinHost : MonoBehaviourPunCallbacks
 {
+    private const float Every = 3f;
+
+    private float next;
+
+    private void Update()
+    {
+        if (Time.unscaledTime < next || PhotonNetwork.InRoom || NetworkingUtilities.EnteringRoom)
+        {
+            return;
+        }
+
+        next = Time.unscaledTime + Every;
+        try
+        {
+            if (!PhotonNetwork.IsConnectedAndReady || FindAnyObjectByType<MainMenuMainPage>() == null)
+            {
+                return;
+            }
+
+            Plugin.Log.LogInfo("Twin: opening a room.");
+            Twin.ClaimOwnId();
+            NetworkingUtilities.EnteringRoom = true;
+            GameHandler.GetService<ConnectionService>().StateMachine.SwitchState<HostState>().RoomName = Guid.NewGuid().ToString();
+            LoadingScreenHandler loading = RetrievableResourceSingleton<LoadingScreenHandler>.Instance;
+            loading.Load(LoadingScreen.LoadingScreenType.Basic, null, loading.LoadSceneProcess("Airport", networked: false, yieldForCharacterSpawn: true));
+        }
+        catch (Exception exception)
+        {
+            NetworkingUtilities.EnteringRoom = false;
+            Guard.Report("Twin.Host", exception);
+        }
+    }
+
     public override void OnJoinedRoom()
     {
         try
         {
-            File.WriteAllText(Twin.OwnRoomCard, PhotonNetwork.CurrentRoom.Name);
+            File.WriteAllText(Twin.RoomCard, PhotonNetwork.CurrentRoom.Name);
+            Plugin.Log.LogWarning($"Twin: opened {PhotonNetwork.CurrentRoom.Name}.");
         }
         catch (Exception exception)
         {
-            Guard.Report("RoomCard.Write", exception);
+            Guard.Report("Twin.Card", exception);
         }
     }
 
@@ -227,11 +281,14 @@ internal sealed class RoomCardWriter : MonoBehaviourPunCallbacks
     {
         try
         {
-            File.Delete(Twin.OwnRoomCard);
+            File.Delete(Twin.RoomCard);
         }
         catch (Exception exception)
         {
-            Guard.Report("RoomCard.Delete", exception);
+            Guard.Report("Twin.Card", exception);
         }
     }
+
+    public override void OnCreateRoomFailed(short returnCode, string message) =>
+        Plugin.Log.LogWarning($"Twin: Photon refused the room ({returnCode}): {message}");
 }

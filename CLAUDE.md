@@ -76,28 +76,30 @@ project file).
   or not, which changes its Pairs by the real rules without touching the
   config, the room, or the network. Add a new paper component to the Zoo along
   with it.
-- The Twin: `python -I tools/dev_profile.py twin <profile_dir> <PeakGameDir>
-  [--plugin <BetterCoop.dll>]` copies the profile to `~/BetterCoopTwin` and
-  starts a second copy of the game in a small window, which joins the room of
-  the first copy (a Debug build at the Airport) as a second scout. Photon takes
-  only Steam sign-in, so both copies share one Steam account: a Debug build's
-  rooms let one account join twice, and the Twin shows a scout id and name of
-  its own. The mod knows players by `KnownPlayers.IdOf`, never by
-  `Player.UserId`, so the two stay apart. The Twin leaves the account and the
-  first copy's files alone (no achievements, stats, rich presence, Steam lobby,
-  quicksave, or saved settings), though Unity may still save its window size.
+- Twins: `python -I tools/dev_profile.py twins <profile_dir> <PeakGameDir>
+  [--plugin <BetterCoop.dll>] [--only host|guest] [--control]` copies the
+  profile to `~/BetterCoopTwins/host` and `guest` and starts two copies of the
+  game in small windows, apart from the player's own game: the host Twin opens
+  a room without a Steam lobby and the guest Twin joins it by the room card
+  `~/BetterCoopTwins/room.txt`. Test in Twins, never in the player's own game.
+  Photon takes only Steam sign-in, so every copy shares one Steam account: the
+  host Twin's room lets one account join more than once, and each Twin shows a
+  scout id and name of its own. The mod knows players by `KnownPlayers.IdOf`,
+  never by `Player.UserId`, so they stay apart. Twins leave the account and the
+  player's files alone (no achievements, stats, rich presence, Steam lobby,
+  quicksave, or saved settings), though Unity may still save a window size.
 - The Control Line lets a tool watch and steer a running copy: its state (room,
   scouts, Pairs, Run Rules, Carry Record, Run Report), log, and screen; Roster
   orders through the Roster's own `LiveRoom`; warps; pressing what is on
   screen; and the game's console commands, except those that change what the
   account keeps. It is off unless asked for: `--control` on `dev_profile.py
-  launch` or `twin`, `BETTERCOOP_CONTROL=1`, or `[Debug] Control Line`. A copy
+  launch` or `twins`, `BETTERCOOP_CONTROL=1`, or `[Debug] Control Line`. A copy
   with it on listens on 127.0.0.1 with a token made at every start, announced
   in `~/.bettercoop/control/<pid>.json`. `tools/peak_mcp.py`, registered in
-  `.mcp.json`, reads those files and exposes each copy (`host` or `twin`) as
-  MCP tools. A new command goes in `DevTools/ControlCommands.cs` (or
-  `ControlRoom.cs` for the mod's own state), never anything that runs code or
-  feeds raw input.
+  `.mcp.json`, reads those files and exposes each copy (`host` or `guest` for
+  a Twin, `player` otherwise) as MCP tools. A new command goes in
+  `DevTools/ControlCommands.cs` (or `ControlRoom.cs` for the mod's own state),
+  never anything that runs code or feeds raw input.
 
 ## Test builds and versions
 
