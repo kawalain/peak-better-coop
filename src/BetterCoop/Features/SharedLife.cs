@@ -95,9 +95,14 @@ internal static class SharedLife
     [HarmonyPatch(typeof(Character), nameof(Character.RPCA_ReviveAtPosition))]
     private static void PartnerRevivesToo(Character __instance, Vector3 position, bool applyStatus, int statueSegment)
     {
-        if (__instance.IsLocal && PairRoster.RoleOf(__instance) == PairRole.Rider)
+        if (PairRoster.RoleOf(__instance) == PairRole.Rider)
         {
-            riderRevivedAt = Time.time;
+            if (__instance.IsLocal)
+            {
+                riderRevivedAt = Time.time;
+            }
+
+            ClearRemains(__instance);
         }
 
         if (!PhotonNetwork.IsMasterClient
@@ -109,6 +114,24 @@ internal static class SharedLife
 
         Plugin.Verbose($"{__instance.characterName} was revived; their partner revives with them.");
         partner.photonView.RPC("RPCA_ReviveAtPosition", RpcTarget.All, position, applyStatus, statueSegment);
+    }
+
+    /// <summary>
+    /// A Rider who died is back on their Carrier's back, so the remains the
+    /// game left where they died would sit on that back, in front of the
+    /// Pair's view. The game clears remains only for a scout brought back
+    /// as a skeleton.
+    /// </summary>
+    private static void ClearRemains(Character rider)
+    {
+        foreach (Skelleton remains in UnityEngine.Object.FindObjectsByType<Skelleton>(FindObjectsSortMode.None))
+        {
+            if (remains.spawnedFromCharacter == rider)
+            {
+                UnityEngine.Object.Destroy(remains.gameObject);
+                Plugin.Verbose($"Cleared the remains of Rider {rider.characterName}, revived on their Carrier.");
+            }
+        }
     }
 
     private static bool IsRiderBesideLiveCarrier(Character character)
