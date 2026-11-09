@@ -12,7 +12,9 @@ namespace BetterCoop.Ui.Paper;
 /// pressing, the thump, and fading when unavailable; its face draws the
 /// impression and its words. A new kind of stamp is a new face. A face shows
 /// its outline and words in ink until struck: then its impression fills
-/// with ink and its words show in the paper's colour (see <see cref="Strike"/>).
+/// with ink and its words show in the paper's colour (see <see cref="Strike"/>),
+/// and it dries back in patches, each word's letters turning back to ink as
+/// the patch under them dries (see <see cref="InkDry"/>).
 /// </summary>
 internal abstract class StampFace
 {
@@ -22,7 +24,13 @@ internal abstract class StampFace
 
     private CanvasGroup? solidInk;
 
+    private InkDry? dry;
+
+    private RectTransform? inkArea;
+
     private float inked;
+
+    private int pattern = 1;
 
     protected StampFace(Ink ink) => Ink = ink;
 
@@ -47,13 +55,18 @@ internal abstract class StampFace
         Paint();
     }
 
-    /// <summary>How struck the face shows: 0 its outline, 1 filled with ink, the words in the paper's colour.</summary>
-    public void Strike(float amount)
+    /// <summary>
+    /// How struck the face shows: 0 its outline, 1 filled with ink, the words
+    /// in the paper's colour, and between, dried back that far in the patches
+    /// of <paramref name="seed"/>'s pattern.
+    /// </summary>
+    public void Strike(float amount, int seed = 1)
     {
         amount = Mathf.Clamp01(amount);
-        if (!Mathf.Approximately(amount, inked))
+        if (!Mathf.Approximately(amount, inked) || seed != pattern)
         {
             inked = amount;
+            pattern = seed;
             Paint();
         }
     }
@@ -74,6 +87,8 @@ internal abstract class StampFace
         solidInk.blocksRaycasts = false;
         solidInk.interactable = false;
         solid = VectorView.Add(over, s => draw(s, true), Color.clear);
+        dry = over.gameObject.AddComponent<InkDry>();
+        inkArea = over;
         Paint();
     }
 
@@ -82,17 +97,62 @@ internal abstract class StampFace
     {
         if (solidInk != null)
         {
-            solidInk.alpha = inked;
+            solidInk.alpha = inked > 0f ? 1f : 0f;
         }
 
-        Color color = Color.Lerp(ToColor(Ink), ToColor(PaperDrawing.Paper), inked);
+        if (dry != null)
+        {
+            dry.Seed = pattern;
+            dry.Dried = 1f - inked;
+        }
+
+        Color ink = ToColor(Ink);
+        Color paper = ToColor(PaperDrawing.Paper);
+        bool drying = inked > 0f && inked < 1f && inkArea != null;
         foreach (TMP_Text word in Words)
         {
-            if (word != null)
+            if (word == null)
             {
-                word.color = color;
+                continue;
+            }
+
+            if (!drying)
+            {
+                word.color = inked >= 1f ? paper : ink;
+                continue;
+            }
+
+            word.color = ink;
+            PaintLetters(word, ink, paper);
+        }
+    }
+
+    /// <summary>Colours each letter of <paramref name="word"/> by the ink left under it: the paper's colour while wet there, the ink's once dry.</summary>
+    private void PaintLetters(TMP_Text word, Color ink, Color paper)
+    {
+        word.ForceMeshUpdate();
+        TMP_TextInfo info = word.textInfo;
+        Rect area = inkArea!.rect;
+        float dried = 1f - inked;
+        for (int i = 0; i < info.characterCount; i++)
+        {
+            TMP_CharacterInfo letter = info.characterInfo[i];
+            if (!letter.isVisible)
+            {
+                continue;
+            }
+
+            Vector3 middle = (letter.bottomLeft + letter.topRight) * 0.5f;
+            Vector2 under = inkArea.InverseTransformPoint(word.transform.TransformPoint(middle));
+            Color32 colour = Color.Lerp(ink, paper, InkDry.LeftAt(area, under, dried, pattern));
+            Color32[] colours = info.meshInfo[letter.materialReferenceIndex].colors32;
+            for (int corner = 0; corner < 4; corner++)
+            {
+                colours[letter.vertexIndex + corner] = colour;
             }
         }
+
+        word.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
     }
 
     protected static Color ToColor(Ink ink) => new(ink.R, ink.G, ink.B, ink.A);

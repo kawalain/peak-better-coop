@@ -42,10 +42,10 @@ internal sealed class ZooPage : PaperPage
 
     private bool swapped;
 
-    /// <summary>Whether the specimen stamps show struck.</summary>
-    private bool struck;
+    /// <summary>How struck the specimen stamps show, or -1 to follow their presses.</summary>
+    private float struck = -1f;
 
-    private static readonly bool[] StruckChoices = [false, true];
+    private static readonly float[] StruckChoices = [-1f, 0f, 0.5f, 1f];
 
     private string choice = Choices[0];
 
@@ -82,7 +82,7 @@ internal sealed class ZooPage : PaperPage
     }
 
     private void Specimen(PaperList list, string label, string word, StampFace face) =>
-        list.Stamp(() => label, () => word, () => presses++, face: face, stamped: () => struck);
+        list.Stamp(() => label, () => word, () => presses++, face: face, pose: () => struck < 0f ? null : (float?)struck);
 
     protected override string Shape() => "zoo";
 
@@ -192,14 +192,14 @@ internal sealed class ZooPage : PaperPage
 
         list.Header(() => T("도장 견본", "Stamp specimens"));
         list.Note(() => T(
-            "20세기 중반 미국 사무실과 우체국의 손도장 모양입니다. 누르면 잉크로 채워졌다가 마르듯 돌아옵니다.",
-            "Hand stamps after mid-century American offices and post offices. Pressed, each strikes solid and dries back."));
+            "20세기 중반 미국 사무실과 우체국의 손도장 모양입니다. 누르면 잉크로 채워졌다가, 잉크가 얼룩덜룩 마르듯 조각조각 돌아옵니다.",
+            "Hand stamps after mid-century American offices and post offices. Pressed, each strikes solid and dries back in patches, as ink soaks in."));
         list.Choice(
             () => T("도장 상태", "Stamps show"),
             () => struck,
             on => struck = on,
             () => StruckChoices,
-            on => on ? T("찍은 뒤", "Struck") : T("찍기 전", "Before striking"));
+            on => on < 0f ? T("누르는 대로", "As pressed") : on <= 0f ? T("찍기 전", "Before striking") : on < 1f ? T("마르는 중", "Drying") : T("찍은 뒤", "Struck"));
         Specimen(list, T("1. 사무용 고무 도장", "1. Office rubber stamp"), T("취소", "Void"), new RubberFace());
         Specimen(list, T("2. 원형 일부인", "2. Circular date stamp"), T("통보", "Notify"),
             new SealFace(StampShape.DateRing, FormDrawing.StampBlue, () => "BETTERCOOP P.O.", () => Strings.PostmarkDate(DateTime.Now), seed: 6));

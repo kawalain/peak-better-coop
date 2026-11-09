@@ -273,7 +273,8 @@ internal sealed class PaperList
     /// and its face strikes solid, drying back to its outline; with
     /// <paramref name="stamped"/>, it stays struck while that holds, as a
     /// request made. With <paramref name="confirm"/>, the first press only turns
-    /// its word to "Really?", and a second press soon after acts.
+    /// its word to "Really?", and a second press soon after acts. A
+    /// <paramref name="pose"/>, when set, holds the face that far struck, for a specimen.
     /// </summary>
     public void Stamp(
         Func<string> label,
@@ -285,7 +286,8 @@ internal sealed class PaperList
         Func<string>? value = null,
         StampFace? face = null,
         bool confirm = false,
-        Func<bool>? stamped = null)
+        Func<bool>? stamped = null,
+        Func<float?>? pose = null)
     {
         (PaperRow row, RectTransform line) = FieldRow(label, about, visible, leader: true);
         if (value != null)
@@ -295,7 +297,7 @@ internal sealed class PaperList
             row.Refreshers.Add(() => PaperText.Set(answer, value()));
         }
 
-        StampMark stamp = new(line, template, word, press, face, confirm, stamped);
+        StampMark stamp = new(line, template, word, press, face, confirm, stamped, pose);
         row.First = stamp.Control;
         row.Refreshers.Add(() => stamp.Refresh(available?.Invoke() ?? true));
         Add(row);
@@ -955,11 +957,17 @@ internal sealed class StampMark
     private const float WetSeconds = 0.25f;
 
     /// <summary>How long a struck face takes to dry back to its outline.</summary>
-    private const float DrySeconds = 1.1f;
+    private const float DrySeconds = 1.4f;
 
     private readonly Func<bool>? stamped;
 
+    private readonly Func<float?>? pose;
+
+    /// <summary>When the face was last struck, or last held struck by its state.</summary>
     private float struckAt = float.NegativeInfinity;
+
+    /// <summary>The pattern the ink of the last strike dries in.</summary>
+    private int pattern = 1;
 
     private readonly Func<string> word;
 
@@ -976,13 +984,15 @@ internal sealed class StampMark
     private int usesWhenArmed;
 
     /// <param name="confirm">Whether the first press only asks "Really?" and a second press acts.</param>
-    /// <param name="stamped">Whether the face stays struck, as while a request it made stands.</param>
-    public StampMark(Transform parent, TMP_Text template, Func<string> word, Action press, StampFace? face = null, bool confirm = false, Func<bool>? stamped = null)
+    /// <param name="stamped">Whether the face stays struck, as while a request it made stands; it dries back once that ends.</param>
+    /// <param name="pose">How struck the face shows when set, instead of following its presses, as for a specimen.</param>
+    public StampMark(Transform parent, TMP_Text template, Func<string> word, Action press, StampFace? face = null, bool confirm = false, Func<bool>? stamped = null, Func<float?>? pose = null)
     {
         this.word = word;
         this.press = press;
         this.confirm = confirm;
         this.stamped = stamped;
+        this.pose = pose;
         this.face = face ?? new RubberFace();
         RectTransform holder = PaperList.NewRect("Stamp", parent);
         ink = holder.gameObject.AddComponent<CanvasGroup>();
@@ -1023,16 +1033,27 @@ internal sealed class StampMark
     private void Act()
     {
         struckAt = Time.unscaledTime;
+        pattern = UnityEngine.Random.Range(1, int.MaxValue);
         PaperSounds.Play(PaperSounds.Kind.Stamp);
         press();
     }
 
-    /// <summary>How struck the face shows: solid while its state holds, else drying back after a press.</summary>
+    /// <summary>How struck the face shows: solid while its state holds, else drying back after a press or once its state ends.</summary>
     private float Struck()
     {
+        if (pose?.Invoke() is float posed)
+        {
+            return posed;
+        }
+
+        if (stamped?.Invoke() == true)
+        {
+            struckAt = Time.unscaledTime;
+            return 1f;
+        }
+
         float since = Time.unscaledTime - struckAt;
-        float wet = since < WetSeconds ? 1f : 1f - Mathf.SmoothStep(0f, 1f, (since - WetSeconds) / DrySeconds);
-        return Mathf.Max(stamped?.Invoke() == true ? 1f : 0f, wet);
+        return since < WetSeconds ? 1f : 1f - Mathf.SmoothStep(0f, 1f, (since - WetSeconds) / DrySeconds);
     }
 
     /// <summary>
@@ -1061,7 +1082,7 @@ internal sealed class StampMark
     {
         KeepArmed();
         face.Show(Armed ? Strings.StampReally : word());
-        face.Strike(Struck());
+        face.Strike(Struck(), pattern);
         float alpha = available ? 1f : 0.35f;
         if (!Mathf.Approximately(ink.alpha, alpha))
         {
