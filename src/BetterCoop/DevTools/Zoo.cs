@@ -61,6 +61,12 @@ internal sealed class ZooPage : PaperPage
 
     private int seed = 1;
 
+    private ZooLetter.Scene letterScene = ZooLetter.Scenes[0];
+
+    private RunEnding ending = RunEnding.Summit;
+
+    private static readonly RunEnding[] Endings = [RunEnding.Summit, RunEnding.Lost, RunEnding.Returned];
+
     public static ZooPage Build(UIPageHandler handler, PauseMenuControlsPage controls, Button template, UIPage parent)
     {
         ZooPage zoo = Create<ZooPage>(handler, controls, template, parent, () => "Zoo");
@@ -228,15 +234,35 @@ internal sealed class ZooPage : PaperPage
             () => T("주의 통지", "Caution"),
             () => T("재생", "Play"),
             () => CoopNotice.Warning(Strings.MissingMod("Cedar")));
+        list.Choice(
+            () => T("짝 편지의 경우", "Pair letter case"),
+            () => letterScene,
+            scene => letterScene = scene,
+            () => ZooLetter.Scenes,
+            scene => scene.Label(),
+            about: () => T(
+                "편지는 받는 사람에게 무엇이 바뀌는지 말합니다. 아래 줄은 실제 편지와 같은 규칙으로 정해집니다.",
+                "The letter says what changes for its reader; its last line comes from the same rules as a real letter's."));
         list.Stamp(
-            () => T("짝 편지: 짝 섞기", "Pair letter: shuffle"),
+            () => T("짝 편지", "Pair letter"),
             () => T("재생", "Play"),
-            () => ZooLetter.Play(OperationKind.TimedShuffle, seed),
-            about: () => T("섞기 전에는 새 짝이 누구인지 모르고, 바뀐 뒤 보입니다.", "Before a shuffle the new partner is a surprise, shown once it is made."));
+            () => ZooLetter.Play(letterScene, seed));
         list.Stamp(
-            () => T("짝 편지: 역할 교대", "Pair letter: role swap"),
+            () => T("메모: 자리 바꾸기 요청함", "Memo: swap asked"),
             () => T("재생", "Play"),
-            () => ZooLetter.Play(OperationKind.RoleSwap, seed));
+            () => CoopNotice.Show(NoticeKind.Memo, Strings.SwapAsked("Birch")));
+        list.Stamp(
+            () => T("메모: 자리 바꾸기 요청 받음", "Memo: swap offered"),
+            () => T("재생", "Play"),
+            () => CoopNotice.Show(NoticeKind.Memo, Strings.SwapOffered("Birch")));
+        list.Stamp(
+            () => T("메모: 자리 바꾸기 요청 취소됨", "Memo: swap withdrawn"),
+            () => T("재생", "Play"),
+            () => CoopNotice.Show(NoticeKind.Memo, Strings.SwapWithdrawn("Birch")));
+        list.Stamp(
+            () => T("전보: 자리 바꾸기 만료", "Telegram: swap expired"),
+            () => T("재생", "Play"),
+            () => CoopNotice.Info(Strings.SwapExpired));
         list.Stamp(
             () => T("게임 기록으로 보내기", "Send to the game's log"),
             () => T("재생", "Play"),
@@ -265,6 +291,18 @@ internal sealed class ZooPage : PaperPage
                 "실제 규칙으로 짝을 섞고 지정하는 가짜 방에서 편성표를 엽니다. 게임, 설정, 네트워크에는 닿지 않습니다.",
                 "Opens the Roster on a made-up room that shuffles and assigns Pairs by the real rules. It never touches the game, the config, or the network."));
 
+        list.Choice(
+            () => T("지난 원정의 결말", "Last Run's ending"),
+            () => ending,
+            value => ending = value,
+            () => Endings,
+            value => value switch
+            {
+                RunEnding.Summit => T("정상 도착", "Summit"),
+                RunEnding.Lost => T("전멸", "Lost"),
+                _ => T("공항 귀환", "Returned"),
+            },
+            about: () => T("공항의 편성표와 보고서 예제가 보일 지난 원정의 결말입니다.", "How the last Run ended, for the Roster at the Airport and the report example."));
         list.Stamp(
             () => T("보고서 예제 열기", "Open the report example"),
             () => T("열기", "Open"),
@@ -285,14 +323,14 @@ internal sealed class ZooPage : PaperPage
 
     private void OpenReport()
     {
-        reportExample.Show(new FakeRoom(players, leader, formed, seed, reported: true));
+        reportExample.Show(new FakeRoom(players, leader, formed, seed, reported: true, ending: ending));
         seed++;
         reportExample.Open();
     }
 
     private void OpenExample()
     {
-        example.Show(new FakeRoom(players, leader, formed, seed, reported), new ZooPortraits(seed));
+        example.Show(new FakeRoom(players, leader, formed, seed, reported, ending), new ZooPortraits(seed));
         seed++;
         example.Open();
     }
@@ -306,7 +344,60 @@ internal sealed class ZooLetter : MonoBehaviour
 {
     private const float Countdown = 3f;
 
-    private OperationKind kind;
+    /// <summary>
+    /// A Pair letter's case for its reader, scout 1: their partner and role
+    /// before, as known during the countdown, and after.
+    /// </summary>
+    internal sealed class Scene
+    {
+        public Scene(OperationKind kind, string korean, string english, int? before, bool? carried, int? soon, bool? soonCarries, bool known, int? after, bool? carries)
+        {
+            Kind = kind;
+            this.korean = korean;
+            this.english = english;
+            Before = before;
+            Carried = carried;
+            Soon = soon;
+            SoonCarries = soonCarries;
+            Known = known;
+            After = after;
+            Carries = carries;
+        }
+
+        private readonly string korean;
+
+        private readonly string english;
+
+        public OperationKind Kind { get; }
+
+        public int? Before { get; }
+
+        public bool? Carried { get; }
+
+        public int? Soon { get; }
+
+        public bool? SoonCarries { get; }
+
+        public bool Known { get; }
+
+        public int? After { get; }
+
+        public bool? Carries { get; }
+
+        public string Label() => Strings.Korean ? korean : english;
+    }
+
+    public static readonly Scene[] Scenes =
+    [
+        new(OperationKind.TimedShuffle, "짝 섞기: 새 짝 (모름)", "Shuffle: new partner (a surprise)", 2, false, null, null, false, 4, true),
+        new(OperationKind.LatePairing, "짝 이어주기: 짝이 생김", "Late Pairing: gains a Pair", null, null, 4, null, true, 4, true),
+        new(OperationKind.PairAssignment, "짝 지정: 짝이 바뀜", "Assignment: changes partner", 2, false, 4, true, true, 4, true),
+        new(OperationKind.RoleSwap, "자리 바꾸기: 자리를 바꿈", "Role Swap: swaps places", 2, false, 2, true, true, 2, true),
+        new(OperationKind.PairAssignment, "짝 지정: 짝이 풀림", "Assignment: loses the Pair", 2, false, null, null, true, null, null),
+        new(OperationKind.TimedShuffle, "짝 섞기: 짝 없던 사람", "Shuffle: had no Pair", null, null, null, null, false, 4, true),
+    ];
+
+    private Scene scene = Scenes[0];
 
     private FakeRoom room = null!;
 
@@ -314,7 +405,7 @@ internal sealed class ZooLetter : MonoBehaviour
 
     private bool closing;
 
-    public static void Play(OperationKind kind, int seed)
+    public static void Play(Scene scene, int seed)
     {
         PairLetter? letter = NoticeBoard.Letter;
         if (letter == null)
@@ -324,12 +415,12 @@ internal sealed class ZooLetter : MonoBehaviour
         }
 
         ZooLetter play = letter.GetComponent<ZooLetter>() ?? letter.gameObject.AddComponent<ZooLetter>();
-        play.kind = kind;
+        play.scene = scene;
         play.room = new FakeRoom(6, true, true, seed);
         play.age = 0f;
         play.closing = false;
         play.enabled = true;
-        letter.Open(Strings.LetterHeading(kind), new ZooPortraits(seed), play.room.NameOf, 1);
+        letter.Open(Strings.LetterHeading(scene.Kind), new ZooPortraits(seed), play.room.NameOf, 1);
         NoticeBoard.Chime(bad: false);
         play.Update();
     }
@@ -338,15 +429,16 @@ internal sealed class ZooLetter : MonoBehaviour
     {
         PairLetter letter = GetComponent<PairLetter>();
         age += Time.unscaledDeltaTime;
-        bool swap = kind == OperationKind.RoleSwap;
         if (age < Countdown)
         {
             int left = Mathf.CeilToInt(Countdown - age);
-            letter.Show(swap ? 2 : null, swap ? false : null, known: swap, left.ToString(), Strings.LetterSoon(swap ? PairChangeForMe.Swaps : PairChangeForMe.Changes, left));
+            PairChangeForMe soon = PairLetterPlan.ChangeFor(scene.Before, scene.Carried, scene.Soon, scene.SoonCarries, scene.Known);
+            letter.Show(scene.Soon, scene.SoonCarries, scene.Known, left.ToString(), Strings.LetterSoon(soon, left));
             return;
         }
 
-        letter.Show(swap ? 2 : 4, swap ? false : true, known: true, Strings.LetterArrived, Strings.LetterDoneFor(swap ? PairChangeForMe.Swaps : PairChangeForMe.Changes));
+        PairChangeForMe done = PairLetterPlan.ChangeFor(scene.Before, scene.Carried, scene.After, scene.Carries, known: true);
+        letter.Show(scene.After, scene.Carries, known: true, Strings.LetterArrived, Strings.LetterDoneFor(done));
         if (!closing)
         {
             closing = true;

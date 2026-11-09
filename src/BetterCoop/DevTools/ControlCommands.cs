@@ -41,6 +41,8 @@ internal static partial class ControlCommands
     {
         "AchievementManager", "Ascents", "PassportManager", "CharacterCustomization",
         "RunSettings.Increment", "RunSettings.ResetAll",
+        // Ends the Run for the whole room and counts toward the account's achievements; drill end does it in a Twin.
+        "Character.TestWin",
     };
 
     public static readonly Dictionary<string, ControlCommand> All = new(StringComparer.Ordinal)
@@ -59,7 +61,7 @@ internal static partial class ControlCommands
         ["depart"] = new("At the Airport: boards for the Run as the boarding pass does, through the mod's own checks.", _ => Depart()),
         ["order"] = new("{what, ...}: a Roster order, under the Roster's rules; without what, lists them.", Order),
         ["photo"] = new("{actor}: takes that player's passport photo again, here and now, and saves it as a PNG; answers with its path.", Photo),
-        ["drill"] = new("{what: forge, key, actor?, value?}: from this copy, writes a made-up value to a mod key of the room, or of player 'actor', as a player who may not write it would; Pairs, without a value, swaps every Pair's roles. The other copies should drop it.", Drill),
+        ["drill"] = new("{what, ...}: forge {key, actor?, value?} writes a made-up value to a mod key of the room, or of player 'actor', as a player who may not write it would (Pairs, without a value, swaps every Pair's roles), and the other copies should drop it; letter {case} plays the Zoo's Pair letter case (0 to 5); end {ending: summit|lost}, in a Twin only, ends the real Run for the whole room.", Drill),
     };
 
     private static JToken Commands() =>
@@ -389,11 +391,64 @@ internal static partial class ControlCommands
 
     private static JToken Drill(JObject args)
     {
-        string what = (string?)args["what"] ?? throw new ArgumentException("what: forge");
-        if (what != "forge")
+        string what = (string?)args["what"] ?? throw new ArgumentException("what: forge, letter, end");
+        switch (what)
         {
-            throw new ArgumentException($"no drill '{what}'; drills: forge");
+            case "forge":
+                return Forge(args);
+            case "letter":
+                int scene = (int?)args["case"] ?? 0;
+                if (scene < 0 || scene >= ZooLetter.Scenes.Length)
+                {
+                    throw new ArgumentException($"case: 0 to {ZooLetter.Scenes.Length - 1}");
+                }
+
+                ZooLetter.Play(ZooLetter.Scenes[scene], seed: scene + 1);
+                return ZooLetter.Scenes[scene].Label();
+            case "end":
+                return EndRun((string?)args["ending"] ?? "summit");
+            default:
+                throw new ArgumentException($"no drill '{what}'; drills: forge, letter, end");
         }
+    }
+
+    /// <summary>Ends the real Run for everyone, as the game's own win check or a party lost would; only in a Twin, which leaves the account alone.</summary>
+    private static JToken EndRun(string ending)
+    {
+        if (!Twin.Active)
+        {
+            throw new InvalidOperationException("ending a real Run is only for Twins, which leave the account alone");
+        }
+
+        if (!GameHandler.IsOnIsland || Character.localCharacter == null)
+        {
+            throw new InvalidOperationException("no Run under way here");
+        }
+
+        switch (ending)
+        {
+            case "summit":
+                Character.localCharacter.photonView.RPC("RPCEndGame_ForceWin", Photon.Pun.RpcTarget.All);
+                return "the Run ends at the summit";
+            case "lost":
+                if (!PhotonNetwork.IsMasterClient)
+                {
+                    throw new InvalidOperationException("only the Troop Leader's copy loses the whole party");
+                }
+
+                foreach (Character scout in Character.AllCharacters.Where(c => c != null && !c.data.dead))
+                {
+                    scout.photonView.RPC("RPCA_Die", Photon.Pun.RpcTarget.All);
+                }
+
+                return "the party is lost";
+            default:
+                throw new ArgumentException("ending: summit or lost");
+        }
+    }
+
+    private static JToken Forge(JObject args)
+    {
 
         if (!PhotonNetwork.InRoom)
         {

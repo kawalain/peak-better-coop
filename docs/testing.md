@@ -26,9 +26,11 @@ below:
 | `order {what, ...}` | a Roster order, under the Roster's rules |
 | `depart` | boards for the Run from the Airport |
 | `warp {to}` | moves this copy's scout, as the game's warp |
-| `console {name}` | the game's console, e.g. `Character.Die`, `Character.TestWin` |
+| `console {name}` | the game's console, e.g. `Character.Die`; none that change what the account keeps |
 | `photo {actor}` | takes a passport photo again and saves it as a PNG |
 | `drill {what: forge, key, actor?}` | writes a made-up mod value as a player who may not |
+| `drill {what: letter, case}` | plays one of the Zoo's Pair letter cases (0 to 5) |
+| `drill {what: end, ending}` | in a Twin, ends the real Run at the summit or with the party lost |
 
 A Twin closed by force is started again with `--only host` or `--only guest`.
 
@@ -62,9 +64,9 @@ what must happen.
 10. **Shared Life.** Kill the Rider (`console Character.Die` on its copy). The
     Rider comes back on the Carrier, with no remains left in front of the
     view. Kill the Carrier: both die.
-11. **Run endings.** `console Character.TestWin`: the Run Report says Summit,
-    and the time together of a Pair is no longer than the Run. Kill both: the
-    report says Lost. Back at the Airport a notice says the report arrived; the
+11. **Run endings.** `drill {what: end, ending: summit}`: the Run Report says
+    Summit, and the time together of a Pair is no longer than the Run.
+    `drill {what: end, ending: lost}` on the host: the report says Lost. Back at the Airport a notice says the report arrived; the
     Roster opens it.
 12. **Photos.** Open the Roster on both copies at the Airport and after a Run:
     no photo is black or shows the default look. `photo {actor}` on the
@@ -92,7 +94,8 @@ what must happen.
 ### Notices
 
 - Pair letters say what the change does to their reader: gains a Pair,
-  changes partner, swaps places, loses the Pair, or a mix.
+  changes partner, swaps places, loses the Pair, or a mix. The Zoo, and
+  `drill letter`, play each case.
 - A player who left is named by the last name seen.
 - Rule changes the Troop Leader publishes together give one notice.
 

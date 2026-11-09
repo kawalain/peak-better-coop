@@ -69,9 +69,11 @@ internal sealed class FakeRoom : ICoopRoom
     /// <param name="troopLeader">Whether the local player leads.</param>
     /// <param name="formed">Whether the Run's Pair Formation has happened.</param>
     /// <param name="reported">Whether a room not yet formed holds the Run Report of a made-up last Run.</param>
-    public FakeRoom(int count, bool troopLeader, bool formed, int seed = 1, bool reported = false)
+    /// <param name="ending">How that last Run ended; without one, it changes with the seed.</param>
+    public FakeRoom(int count, bool troopLeader, bool formed, int seed = 1, bool reported = false, RunEnding? ending = null)
     {
         this.reported = reported;
+        this.ending = ending;
         random = new Random(seed);
         this.seed = seed;
         players = Enumerable.Range(1, Math.Max(1, count)).ToList();
@@ -110,6 +112,8 @@ internal sealed class FakeRoom : ICoopRoom
         ? []
         : Enumerable.Range(0, players.Count / 2).Select(i => new Pair(players[2 * i + 1], players[2 * i])).ToList();
 
+    private readonly RunEnding? ending;
+
     /// <summary>On the island, a made-up record of the Run so far: two segments, Pairs drawn anew for each.</summary>
     public CarryRecord? Record => Formed ? record ??= MakeRecord(2, pairs) : null;
 
@@ -118,7 +122,7 @@ internal sealed class FakeRoom : ICoopRoom
     /// up the whole mountain; how it ended changes with the seed.
     /// </summary>
     public RunReport? Report => !Formed && reported
-        ? report ??= new RunReport((RunEnding)(seed % 3), 3000 + (seed * 731 % 4000), MakeRecord(Titles.Length, []))
+        ? report ??= new RunReport(ending ?? (RunEnding)(seed % 3), 3000 + (seed * 731 % 4000), MakeRecord(Titles.Length, []))
         : null;
 
     /// <summary>A made-up Run some way up the mountain, its clock running while the room is formed.</summary>

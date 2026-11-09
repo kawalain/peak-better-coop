@@ -291,7 +291,6 @@ internal static class Strings
         _ => Korean ? "짝 섞기 통지" : "Shuffle orders",
     };
 
-    /// <summary>Under the photos while the countdown runs.</summary>
     /// <summary>The countdown on a Pair letter, saying what the change does to the reader.</summary>
     public static string LetterSoon(PairChangeForMe change, int seconds) => change switch
     {
