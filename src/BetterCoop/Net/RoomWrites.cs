@@ -68,6 +68,17 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
         PhotonNetwork.CurrentRoom.SetCustomProperties(properties);
     }
 
+    /// <summary>
+    /// As the Troop Leader, the value it last wrote or took over under
+    /// <paramref name="key"/>, which the room shows only after a round trip.
+    /// False on any other client, or when it has none.
+    /// </summary>
+    public static bool TryOwn(string key, out object? value)
+    {
+        value = null;
+        return PhotonNetwork.InRoom && PhotonNetwork.IsMasterClient && Ward.TryLatest(key, out value);
+    }
+
     /// <summary>Whether the room's value under <paramref name="key"/> is the Troop Leader's own, as this client knows it.</summary>
     public static bool IsOwn(string key)
     {

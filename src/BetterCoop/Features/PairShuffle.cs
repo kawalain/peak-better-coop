@@ -233,7 +233,7 @@ internal static class PairShuffle
 
     /// <summary>Whether a Pair Assignment setting these Pairs could run now.</summary>
     internal static bool CanArrange(IReadOnlyList<Pair> pairs) =>
-        PairRoster.Formed && PairRoster.Read() is PairingResult before && Arranged(before, pairs) != null;
+        PairRoster.Formed && PairRoster.ReadLeading() is PairingResult before && Arranged(before, pairs) != null;
 
     private static void Publish(Operation op, PhotonHashtable? with = null)
     {
@@ -305,7 +305,7 @@ internal static class PairShuffle
     {
         if (RunRules.LatePairing
             && PairRoster.Formed
-            && PairRoster.Read() is PairingResult current
+            && PairRoster.ReadLeading() is PairingResult current
             && LatePairingRules.PickTwo(LateCandidates(current), FormerPairs.InRoom()) is (int first, int second))
         {
             Request(OperationKind.LatePairing, first, second);
@@ -340,7 +340,7 @@ internal static class PairShuffle
     private static void Execute(Operation op)
     {
         executedId = op.Id;
-        PairingResult? before = PairRoster.Read();
+        PairingResult? before = PairRoster.ReadLeading();
         PairingResult? after = null;
         HandoverPlan? plan = null;
         if (before != null && op.Kind == OperationKind.LatePairing)

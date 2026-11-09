@@ -28,6 +28,30 @@ public class RoomWardTests
     }
 
     [Fact]
+    public void The_latest_write_is_known_before_the_room_echoes_it()
+    {
+        var ward = new RoomWard();
+        Assert.False(ward.TryLatest("Pairs", out _));
+
+        ward.Wrote("Pairs", new object[] { new[] { 1, 2 } }, now: 0);
+        ward.Wrote("Pairs", new object[] { new[] { 2, 1 } }, now: 0.05);
+
+        Assert.True(ward.TryLatest("Pairs", out object? latest));
+        Assert.Equal(RoomWard.Print(new object[] { new[] { 2, 1 } }), RoomWard.Print(latest));
+    }
+
+    [Fact]
+    public void A_cleared_key_is_latest_as_nothing()
+    {
+        var ward = new RoomWard();
+        ward.Wrote("Pairs", new object[] { new[] { 1, 2 } }, now: 0);
+        ward.Wrote("Pairs", null, now: 1);
+
+        Assert.True(ward.TryLatest("Pairs", out object? latest));
+        Assert.Null(latest);
+    }
+
+    [Fact]
     public void Another_players_value_is_put_back_to_the_last_one_written()
     {
         var ward = new RoomWard();

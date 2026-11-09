@@ -73,6 +73,13 @@ internal sealed class RoomWard
     /// <summary>What to put back under <paramref name="key"/>: the last value this client wrote, or nothing.</summary>
     public object? Restore(string key) => latest.TryGetValue(key, out object? last) ? last : null;
 
+    /// <summary>
+    /// The last value this client wrote or took over under <paramref name="key"/>,
+    /// ahead of the room, which shows a write only after a server round trip.
+    /// False when it has written nothing there.
+    /// </summary>
+    public bool TryLatest(string key, out object? value) => latest.TryGetValue(key, out value);
+
     /// <summary>A text standing for a room property value, equal for equal values.</summary>
     public static string Print(object? value)
     {

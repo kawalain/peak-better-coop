@@ -81,10 +81,22 @@ internal static class PairRoster
 
     public static int ActorOf(Character character) => character.photonView.Owner.ActorNumber;
 
-    public static PairingResult? Read()
+    /// <summary>The Pairs as the room shows them, which every client follows.</summary>
+    public static PairingResult? Read() => RoomProtocol.TryGet(RoomKeys.Pairs, out object value) ? Decode(value) : null;
+
+    /// <summary>
+    /// The Pairs a change works from, on the Troop Leader: the ones it last
+    /// wrote. The room shows a write only after a server round trip, so a
+    /// change worked out from the room before then, such as a Pair dissolved
+    /// as a member leaves just after a Pair Shuffle, would write the old Pairs
+    /// back over the new ones.
+    /// </summary>
+    public static PairingResult? ReadLeading() =>
+        RoomWrites.TryOwn(RoomKeys.Pairs, out object? value) ? Decode(value) : Read();
+
+    private static PairingResult? Decode(object? value)
     {
-        if (!RoomProtocol.TryGet(RoomKeys.Pairs, out object value)
-            || value is not object[] { Length: 3 } parts
+        if (value is not object[] { Length: 3 } parts
             || parts[0] is not int[] flat
             || parts[1] is not int[] unpaired
             || parts[2] is not int[] overridden
@@ -415,17 +427,17 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
     private static void PlayerLeft(PhotonPlayer otherPlayer)
     {
         KnownPlayers.Remember(otherPlayer);
-        if (PhotonNetwork.IsMasterClient && PairRoster.Read() is PairingResult current)
+        if (PhotonNetwork.IsMasterClient && PairRoster.ReadLeading() is PairingResult current)
         {
             DissolveAbsent(current, otherPlayer.ActorNumber);
         }
     }
 
     /// <summary>
-    /// Dissolves the Pairs of players who left. The room property reflects a
-    /// write only after a server round trip, so this works from what is in the
-    /// room now rather than from the last change: rerunning it on a stale copy
-    /// writes the same result instead of reviving a dissolved Pair.
+    /// Dissolves the Pairs of players who left, from the Pairs the Troop
+    /// Leader last wrote (<see cref="PairRoster.ReadLeading"/>): rerunning it
+    /// finds nothing more to dissolve rather than writing again, and it never
+    /// writes back Pairs an operation has just replaced.
     /// </summary>
     private static void DissolveAbsent(PairingResult current, int leavingActor = -1)
     {
@@ -511,7 +523,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
             return;
         }
 
-        if (PairRoster.Read() is PairingResult current)
+        if (PairRoster.ReadLeading() is PairingResult current)
         {
             CarryRecords.Sample(current);
 
