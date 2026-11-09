@@ -107,7 +107,7 @@ internal sealed class RiderBarsKeeper : MonoBehaviour
         var characters = new HashSet<Character>();
         foreach (Pair pair in PairRoster.Pairs)
         {
-            if (PlayerHandler.TryGetCharacter(pair.Rider, out Character rider) && rider != null)
+            if (PairRoster.TryGetCharacter(pair.Rider, out Character rider))
             {
                 characters.Add(rider);
             }

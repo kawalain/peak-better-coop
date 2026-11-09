@@ -184,7 +184,7 @@ internal static class SharedLife
     /// </summary>
     private static bool CouldEat(Photon.Realtime.Player sender, Character carrier) =>
         (carrier.data._cannibalismPermitted || carrier.data.isSkeleton || consentUnknown.Contains(carrier.photonView.ViewID))
-        && PlayerHandler.TryGetCharacter(sender.ActorNumber, out Character eater)
+        && PairRoster.TryGetCharacter(sender.ActorNumber, out Character eater)
         && eater.data.cannibalismPermitted;
 
     /// <summary>The Rider never dies alone, so the Carrier never dies for the Rider.</summary>
@@ -301,8 +301,7 @@ internal static class TroopLeaderRevive
 
     private static bool NearOwnCarrier(Character target, Pair pair, Vector3 position) =>
         PairRoster.ActorOf(target) == pair.Rider
-        && PlayerHandler.TryGetCharacter(pair.Carrier, out Character carrier)
-        && carrier != null
+        && PairRoster.TryGetCharacter(pair.Carrier, out Character carrier)
         && WireLimits.IsFinite(position.x) && WireLimits.IsFinite(position.y) && WireLimits.IsFinite(position.z)
         && (position - carrier.Center).sqrMagnitude <= NearCarrier * NearCarrier;
 

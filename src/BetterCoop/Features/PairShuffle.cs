@@ -921,7 +921,7 @@ internal static class PairShuffle
     private static Vector3 ToVector(float[] place) => new(place[0], place[1], place[2]);
 
     private static Character? CharacterOf(int actor) =>
-        PlayerHandler.TryGetCharacter(actor, out Character character) && character != null ? character : null;
+        PairRoster.TryGetCharacter(actor, out Character character) ? character : null;
 
     private static bool IsAlive(int actor) => CharacterOf(actor) is Character character && !character.data.dead;
 }

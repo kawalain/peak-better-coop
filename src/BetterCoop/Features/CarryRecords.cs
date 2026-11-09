@@ -115,7 +115,7 @@ internal static class CarryRecords
         var samples = new List<PairSample>();
         foreach (Pair pair in current.Pairs)
         {
-            if (!PlayerHandler.TryGetCharacter(pair.Carrier, out Character carrier) || carrier == null)
+            if (!PairRoster.TryGetCharacter(pair.Carrier, out Character carrier))
             {
                 continue;
             }

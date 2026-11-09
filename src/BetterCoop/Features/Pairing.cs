@@ -60,9 +60,40 @@ internal static class PairRoster
     {
         partner = null!;
         return TryGetPair(character, out Pair pair)
-            && PlayerHandler.TryGetCharacter(pair.PartnerOf(ActorOf(character!)), out partner)
-            && partner != null;
+            && TryGetCharacter(pair.PartnerOf(ActorOf(character!)), out partner);
     }
+
+    /// <summary>
+    /// The scout of that player, when they have one. The game's own lookup
+    /// can lose a scout for good when several players join at once, so the
+    /// scouts in the scene are searched as well.
+    /// </summary>
+    public static bool TryGetCharacter(int actor, out Character character)
+    {
+        if (PlayerHandler.TryGetCharacter(actor, out character) && character != null)
+        {
+            return true;
+        }
+
+        foreach (Character scout in Character.AllCharacters)
+        {
+            if (scout != null && !scout.isBot && scout.photonView != null && scout.photonView.Owner?.ActorNumber == actor)
+            {
+                if (LostToGame.Add(actor))
+                {
+                    Plugin.Verbose($"The game lost the scout of player {actor}; found {scout.characterName} in the scene.");
+                }
+
+                character = scout;
+                return true;
+            }
+        }
+
+        character = null!;
+        return false;
+    }
+
+    private static readonly HashSet<int> LostToGame = new();
 
     /// <summary>The Carrier and Rider of the local player's Pair.</summary>
     public static bool TryGetLocalPair(out Character carrier, out Character rider)
@@ -75,8 +106,7 @@ internal static class PairRoster
             return false;
         }
 
-        return PlayerHandler.TryGetCharacter(pair.Carrier, out carrier) && carrier != null
-            && PlayerHandler.TryGetCharacter(pair.Rider, out rider) && rider != null;
+        return TryGetCharacter(pair.Carrier, out carrier) && TryGetCharacter(pair.Rider, out rider);
     }
 
     public static int ActorOf(Character character) => character.photonView.Owner.ActorNumber;
@@ -556,7 +586,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
 
         windowOpenedAt ??= Time.unscaledTime;
         PhotonPlayer[] players = PhotonNetwork.PlayerList.Where(p => !p.IsInactive).ToArray();
-        var spawned = players.Where(p => PlayerHandler.TryGetCharacter(p.ActorNumber, out Character c) && c != null).ToList();
+        var spawned = players.Where(p => PairRoster.TryGetCharacter(p.ActorNumber, out _)).ToList();
         bool waited = Time.unscaledTime - windowOpenedAt.Value >= SpawnWaitSeconds;
         if (spawned.Count < players.Length && !waited)
         {

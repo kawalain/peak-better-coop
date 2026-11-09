@@ -113,7 +113,7 @@ internal sealed class UnmoddedPlayers : MonoBehaviourPunCallbacks
         foreach (PhotonPlayer player in PhotonNetwork.PlayerListOthers)
         {
             int actor = player.ActorNumber;
-            if (!PlayerHandler.TryGetCharacter(actor, out Character scout) || scout == null)
+            if (!PairRoster.TryGetCharacter(actor, out Character scout))
             {
                 firstSeen.Remove(actor);
                 continue;
