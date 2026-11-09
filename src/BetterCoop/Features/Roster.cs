@@ -122,9 +122,6 @@ internal sealed class RosterPage : PaperPage
 
     protected override string Shape() => room.Shape();
 
-    /// <summary>The Roster goes back to the Scoutmaster however it is left, read or changed.</summary>
-    protected override bool HandsInOnLeave => true;
-
     protected override bool HasDraft => draft is { Changed: true } && room.InRoom && room.IsTroopLeader && !room.Busy;
 
     protected override string FormNumber() => Strings.FormTitle;

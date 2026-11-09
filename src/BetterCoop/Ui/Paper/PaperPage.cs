@@ -89,9 +89,6 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     /// <summary>Whether the paper is away, crumpled or handed in, until it rises again.</summary>
     private bool away;
 
-    /// <summary>Whether the page is on its way out, the paper being handed in.</summary>
-    private bool leaving;
-
     private enum Motion
     {
         Resting,
@@ -156,11 +153,6 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     /// <summary>Gives Back to the form first, as to put a held card back; false to leave the page.</summary>
     internal bool TakeBack()
     {
-        if (leaving)
-        {
-            return true;
-        }
-
         if (asking != null && asking.Open)
         {
             asking.Stay();
@@ -175,12 +167,6 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         if (HasDraft)
         {
             AskToLeave();
-            return true;
-        }
-
-        if (HandsInOnLeave)
-        {
-            LeaveByHand();
             return true;
         }
 
@@ -203,7 +189,6 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     public override void OnPageEnter()
     {
         base.OnPageEnter();
-        leaving = false;
         scroll.Reset();
         lastSelected = null;
         if (asking != null)
@@ -260,9 +245,6 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     /// <summary>Whether the page holds work not yet sent, which leaving would throw away.</summary>
     protected virtual bool HasDraft => false;
 
-    /// <summary>Whether leaving with no draft hands the paper in to the Scoutmaster rather than dropping it.</summary>
-    protected virtual bool HandsInOnLeave => false;
-
     /// <summary>Throws the page's unsent work away, as the player leaves without sending it.</summary>
     protected virtual void DropDraft()
     {
@@ -300,7 +282,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
 
     private void GoBack()
     {
-        if (leaving || (asking != null && asking.Open))
+        if (asking != null && asking.Open)
         {
             return;
         }
@@ -311,20 +293,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
             return;
         }
 
-        if (HandsInOnLeave)
-        {
-            LeaveByHand();
-            return;
-        }
-
         Leave();
-    }
-
-    /// <summary>Leaves with the paper handed in to the Scoutmaster, as a form returned with nothing changed; nothing is sent.</summary>
-    private void LeaveByHand()
-    {
-        leaving = true;
-        HandIn(Leave);
     }
 
     /// <summary>Asks on a slip of paper whether to throw the draft away before leaving.</summary>
