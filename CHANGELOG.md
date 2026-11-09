@@ -43,3 +43,7 @@ party at the Airport.
 - A player who left is named, not shown as a number.
 - A Rider brought back on their Carrier leaves no remains in front of the view.
 - A Pair's time together in the Run Report is no longer longer than the Run.
+- A Rider whose Carrier leaves the room is no longer left marked as carried,
+  which kept statuses off them until they were paired again.
+- Paper pages, stamps, and the Scoutmaster's hand now make the game's own
+  paper sounds.

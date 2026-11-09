@@ -1,10 +1,10 @@
 # Testing in the game
 
 Unit tests (`dotnet test`) cover the game-independent rules. Everything else
-is tried in the game, in two Twins driven over the Control Line (see
+is tried in the game, in Twins driven over the Control Line (see
 `CLAUDE.md`), never in the player's own game. Items marked **two people**
-need real hands on both copies (mouse, keys, voice) and are tried with
-another player before a test build goes out.
+need real hands on both copies (mouse, keys, voice), a real network, or a
+real party, and are tried with other players before a test build goes out.
 
 ## Setting up
 
@@ -14,8 +14,11 @@ python -I tools/dev_profile.py twins <profile_dir> <PeakGameDir> --plugin src/Be
 ```
 
 The host Twin opens a room and the guest Twin joins it; both log verbosely.
-`tools/peak_mcp.py` reaches them as `host` and `guest`. The commands used
-below:
+`tools/peak_mcp.py` reaches them as `host` and `guest`. For a party of four,
+add `--guests 3` (`guest2`, `guest3`); `--unmodded guest3` makes that guest an
+Unmodded Player. Photon makes the player with the lowest actor number Troop
+Leader when one leaves, so to choose who takes over, start the host first and
+then each guest with `--only` in the order wanted. The commands used below:
 
 | Command | Use |
 | --- | --- |
@@ -31,8 +34,11 @@ below:
 | `drill {what: forge, key, actor?}` | writes a made-up mod value as a player who may not |
 | `drill {what: letter, case}` | plays one of the Zoo's Pair letter cases (0 to 5) |
 | `drill {what: end, ending}` | in a Twin, ends the real Run at the summit or with the party lost |
+| `sounds {contains, play?}` | the game's loaded audio clips and the effects that use them |
 
-A Twin closed by force is started again with `--only host` or `--only guest`.
+A Twin closed by force is started again with `--only <role>`. Close a Twin by
+its process id (`hello` gives it), never by the game's name: the player's own
+game may be running.
 
 ## Required before every test build
 
@@ -78,6 +84,31 @@ what must happen.
 14. **Warp with a Rider.** `warp {to: <Carrier>}` on the Rider's copy. The
     Carrier does not move.
 
+Then, in four Twins (`--guests 3`):
+
+15. **Four scouts.** Plan two Pairs, `depart`, then `order {what: shuffle}`.
+    Every copy shows the same Pairs, and every scout has a new partner.
+16. **Troop Leader leaves with Pairs under way.** With the host in one Pair,
+    close the host. The other Pair stays carried; the host's partner is not
+    left marked carried (`carried: false`, log `no longer carried`); the next
+    Troop Leader pairs the partnerless by Late Pairing.
+17. **A Rider leaves while carried.** Close a carried Rider's copy. Their
+    Carrier carries no one and plays on alone until a Late Pairing.
+
+And in four Twins with an Unmodded Player (`--guests 3 --unmodded guest3`,
+started so the Unmodded guest joins second):
+
+18. **Unmodded Player.** Every copy with the mod tells once that the Unmodded
+    guest climbs without a Pair; the Roster lists them under Unmodded with
+    "No mod". With Allow Odd Player Count off and three who can pair, the
+    kiosk blocks and says the Unmodded Player is not counted; with it on, the
+    party departs and the Unmodded guest is never in a Pair, nor told of at
+    Pair Formation as waiting for one.
+19. **Unmodded Troop Leader.** Close the host while the Unmodded guest is
+    next by actor number. The others lose their Pairs, each is told once that
+    the mod rests in this room, and their Roster says why instead of showing
+    a board.
+
 ## Features
 
 ### Roster
@@ -112,3 +143,31 @@ what must happen.
 - Climbing, jumping and falling with a Rider never pushes either body apart.
 - A Body Handover moves the Carrier to the place and items as the rules say.
 - Carry weight, when on, slows the Carrier as the rules say.
+
+### Paper sounds (two people)
+
+- A page rising, a stamp coming down, a draft crushed and tossed, and the
+  Scoutmaster's hand taking a page each sound once, quieter than the game's
+  own menu, at the Airport and on the island. `sounds {contains: Passport}`
+  lists them, with `BetterCoop` copies once played.
+
+### Real play (two people)
+
+- A Campfire Shuffle when a campfire is lit: the game's console jump to a
+  segment does not take the campfire's path, so it is tried in real play.
+- The party with real Steam accounts, through a Steam lobby invite: the
+  Twins share one account and skip the lobby.
+- A real network, with players far apart: the Twins share one computer.
+- An Unmodded Player with the plain game, not a Twin: their carry of a
+  passed-out Pair member is set down at once by the Troop Leader.
+- A gamepad, the English game, and the other mods the players use.
+
+## Known limits
+
+- When the Troop Leader changes, a Pair Shuffle that was waiting behind a
+  Role Swap or Late Pairing is lost (a Timed Shuffle comes again), up to 15
+  seconds of carry time can be missing from the Carry Record, and a Troop
+  Leader who leaves just as the Run ends leaves no Run Report. None of these
+  leaves a Pair or operation stuck.
+- When Photon makes an Unmodded Player the Troop Leader, everyone else rests
+  until a player with the mod leads again.
