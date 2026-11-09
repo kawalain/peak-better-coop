@@ -31,7 +31,10 @@ internal sealed class PaperList
 
     private const float CheckSize = 46f;
 
-    private const float SignatureWidth = 340f;
+    private const float SignatureWidth = 400f;
+
+    /// <summary>How far in from the blank's left the name starts.</summary>
+    private const float SignatureInset = 16f;
 
     private const float StampHeight = 56f;
 
@@ -260,7 +263,7 @@ internal sealed class PaperList
         RectTransform spare = NewRect("Spare", line);
         spare.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
         TMP_Text printed = AddText(line, "Label", PaperText.Label, TextAlignmentOptions.BottomRight, flexible: false);
-        RectTransform blank = Fixed(line, "Blank", SignatureWidth, 48f);
+        RectTransform blank = Fixed(line, "Blank", SignatureWidth, 56f);
         RectTransform rule = NewRect("Line", blank);
         rule.anchorMin = Vector2.zero;
         rule.anchorMax = new Vector2(1f, 0f);
@@ -268,12 +271,12 @@ internal sealed class PaperList
         rule.sizeDelta = new Vector2(0f, 4f);
         VectorView.Add(rule, size => FormDrawing.Line(size.x, size.y), PaperText.Ink);
 
-        // Drawn before the name, so the name is written over it.
+        // Drawn before the name, so the name is written over it; placed by the
+        // name's end once the name is known, its rays reaching over the last letters.
         RectTransform doodle = NewRect("Doodle", blank);
-        doodle.anchorMin = doodle.anchorMax = new Vector2(1f, 0f);
-        doodle.pivot = new Vector2(1f, 0f);
+        doodle.anchorMin = doodle.anchorMax = Vector2.zero;
+        doodle.pivot = new Vector2(0.5f, 0.5f);
         doodle.sizeDelta = new Vector2(150f, 128f);
-        doodle.anchoredPosition = new Vector2(-6f, 14f);
         doodle.localRotation = Quaternion.Euler(0f, 0f, -8f);
         string drawn = string.Empty;
         VectorView sketch = VectorView.Add(doodle, size => FormDrawing.Doodle(size.x, size.y, drawn), Color.clear);
@@ -281,9 +284,10 @@ internal sealed class PaperList
         RectTransform nameRect = NewRect("Name", blank);
         nameRect.anchorMin = Vector2.zero;
         nameRect.anchorMax = Vector2.one;
-        nameRect.offsetMin = new Vector2(16f, 2f);
+        nameRect.offsetMin = new Vector2(SignatureInset, 2f);
         nameRect.offsetMax = Vector2.zero;
-        TMP_Text name = PaperText.Make(nameRect.gameObject, template, PaperText.Title * 0.75f, TextAlignmentOptions.BottomLeft);
+        TMP_Text name = PaperText.Make(nameRect.gameObject, template, PaperText.Title * 1.125f, TextAlignmentOptions.BottomLeft);
+        PaperText.Fit(name, PaperText.Title * 0.6f);
         name.fontStyle = FontStyles.Italic;
         name.color = Pen;
         nameRect.localRotation = Quaternion.Euler(0f, 0f, 2f);
@@ -295,6 +299,8 @@ internal sealed class PaperList
             if (who != drawn)
             {
                 drawn = who;
+                float end = SignatureInset + Mathf.Min(name.GetPreferredValues(who).x, SignatureWidth - SignatureInset);
+                doodle.anchoredPosition = new Vector2(end + 34f, 30f);
                 sketch.Redraw();
             }
         });
