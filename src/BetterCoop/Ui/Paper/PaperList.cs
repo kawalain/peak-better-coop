@@ -171,9 +171,27 @@ internal sealed class PaperList
     }
 
     /// <summary>A label with a check box after it; pressing the row's box ticks or clears it.</summary>
-    public void Check(Func<string> label, Func<bool> get, Action<bool> set, Func<string>? about = null, Func<bool>? visible = null)
+    /// <remarks>While <paramref name="locked"/> gives a reason, the box shows faint and a press only says why.</remarks>
+    public void Check(Func<string> label, Func<bool> get, Action<bool> set, Func<string>? about = null, Func<bool>? visible = null, Func<string?>? locked = null)
     {
         (PaperRow row, RectTransform line) = FieldRow(label, about, visible, leader: true);
+        void Toggle()
+        {
+            if (locked?.Invoke() is string reason)
+            {
+                CoopNotice.Info(reason);
+                return;
+            }
+
+            set(!get());
+        }
+
+        if (locked != null)
+        {
+            CanvasGroup faint = line.gameObject.AddComponent<CanvasGroup>();
+            row.Refreshers.Add(() => faint.alpha = locked() != null ? 0.45f : 1f);
+        }
+
         RectTransform box = Fixed(line, "Box", CheckSize, CheckSize);
         VectorView.Add(box, size => FormDrawing.CheckBox(size.x), PaperText.Paper);
         RectTransform tick = Fill(NewRect("Tick", box));
@@ -181,7 +199,7 @@ internal sealed class PaperList
 
         // The whole line answers, label and all; only the box grows under the pointer.
         line.gameObject.AddComponent<Image>().color = Color.clear;
-        PaperControl control = PaperControl.Add<PaperControl>(line.gameObject, () => set(!get()));
+        PaperControl control = PaperControl.Add<PaperControl>(line.gameObject, Toggle);
         control.Back = control.Pressed;
         control.Visual = box;
         row.First = control;

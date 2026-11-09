@@ -1,3 +1,5 @@
+using BetterCoop.Core;
+
 namespace BetterCoop.Ui;
 
 /// <summary>
@@ -221,6 +223,38 @@ internal static class Strings
         : "Coop: another Pair change is under way; try again in a moment.";
 
     public static string MenuRunRules => Korean ? "원정 규칙" : "Run Rules";
+
+    public static string MenuRulesRead => Korean
+        ? "분대장이 정한 이번 원정의 규칙입니다. 바뀌면 전보로 알려 드립니다."
+        : "The rules the Troop Leader set for this Run. A telegram tells you when they change.";
+
+    /// <summary>A rule's name, as the Roster prints it.</summary>
+    public static string RuleName(RunRule rule) => rule switch
+    {
+        RunRule.AllowOddPlayerCount => RuleAllowOddPlayerCount,
+        RunRule.CarryWeight => RuleCarryWeight,
+        RunRule.CampfireShuffle => RuleCampfireShuffle,
+        RunRule.TimedShuffle => RuleTimedShuffle,
+        RunRule.HandOverPlace => RuleHandOverPlace,
+        RunRule.HandOverItems => RuleHandOverItems,
+        RunRule.RiderPicksFromBackpack => RuleRiderPicksFromBackpack,
+        RunRule.FollowRolePreferences => RuleFollowRolePreferences,
+        RunRule.AllowSwapRequests => RuleAllowSwapRequests,
+        RunRule.LatePairing => RuleLatePairing,
+        _ => rule.ToString(),
+    };
+
+    public static string RuleLeaderOnly => Korean ? "원정 규칙은 분대장이 정합니다." : "The Troop Leader sets the Run Rules.";
+
+    public static string RuleTurnedOn(string rule) => Korean ? $"{rule} 켬" : $"{rule} on";
+
+    public static string RuleTurnedOff(string rule) => Korean ? $"{rule} 끔" : $"{rule} off";
+
+    public static string RuleSetTo(string rule, string value) => Korean ? $"{rule} {value}" : $"{rule} {value}";
+
+    public static string RulesChanged(string changes) => Korean
+        ? $"코옵: 분대장이 원정 규칙을 바꿨습니다. {changes}"
+        : $"Coop: the Troop Leader changed the Run Rules. {changes}";
 
     public static string Minutes(int minutes) => Korean ? $"{minutes}분" : $"{minutes} min";
 

@@ -43,7 +43,8 @@ the Troop Leader (host) allows an odd one.
 In the **Roster** of the ESC menu, or in your mod manager's config editor
 under `in.kawala.bettercoop`. The Troop Leader's values apply to the room,
 except your own Role Preference and the Debug settings; a new Troop Leader
-keeps the room's rules. The Troop Leader's
+keeps the room's rules. Everyone reads the Run Rules on the Roster, and a
+telegram tells them when the rules change. The Troop Leader's
 Roster can also shuffle the Pairs at once, re-carry every Pair, and lay the
 Pairs out as they like by moving the photos about as a draft, then announce
 them to everyone with a postmark: the Scoutmaster's hand reaches down and

@@ -110,6 +110,11 @@ internal sealed class FakeRoom : ICoopRoom
         get => shuffleMinutes;
         set
         {
+            if (!IsTroopLeader)
+            {
+                return;
+            }
+
             shuffleMinutes = ShuffleInterval.Clamp(value);
             untilShuffle = shuffleMinutes * 60.0;
         }
@@ -195,6 +200,15 @@ internal sealed class FakeRoom : ICoopRoom
     public bool Rule(RunRule rule) => rules[rule];
 
     public void SetRule(RunRule rule, bool on)
+    {
+        if (IsTroopLeader)
+        {
+            LeaderSets(rule, on);
+        }
+    }
+
+    /// <summary>The room's Troop Leader, whoever it is, sets a rule, as one led by someone else sees it change.</summary>
+    public void LeaderSets(RunRule rule, bool on)
     {
         rules[rule] = on;
         if (rule == RunRule.TimedShuffle)

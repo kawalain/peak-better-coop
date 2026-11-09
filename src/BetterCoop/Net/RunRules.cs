@@ -1,5 +1,6 @@
 using System;
 using BetterCoop.Core;
+using BetterCoop.Ui;
 using Photon.Pun;
 using UnityEngine;
 using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
@@ -47,6 +48,12 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
 
     /// <summary>The last rules that stood in the room for a while, as the Troop Leader puts back any others.</summary>
     private static int? steady;
+
+    /// <summary>How long a change of rules waits for more before the telegram goes out, so a few clicks make one telegram.</summary>
+    private const float TellAfterSeconds = 2f;
+
+    /// <summary>The rules before the changes not yet told, and when the last change came.</summary>
+    private static (int From, float Last)? untold;
 
     public static bool AllowOddPlayerCount => Has(Flags.AllowOddPlayerCount);
 
@@ -169,7 +176,12 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
     {
         if (changed.ContainsKey(RoomKeys.Rules) && changed[RoomKeys.Rules] is int rules)
         {
+            int? before = seen?.Value;
             See(rules);
+            if (before is int from && from != rules && !PhotonNetwork.IsMasterClient)
+            {
+                untold = (untold?.From ?? from, Time.realtimeSinceStartup);
+            }
         }
     }
 
@@ -177,6 +189,50 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
     {
         seen = null;
         steady = null;
+        untold = null;
+    }
+
+    private void Update()
+    {
+        if (untold is not (int from, float last) || Time.realtimeSinceStartup - last < TellAfterSeconds)
+        {
+            return;
+        }
+
+        untold = null;
+        try
+        {
+            if (PhotonNetwork.InRoom && !PhotonNetwork.IsMasterClient && Changes(from, Current) is { Length: > 0 } changes)
+            {
+                CoopNotice.Info(Strings.RulesChanged(changes));
+            }
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("RunRules.Update", exception);
+        }
+    }
+
+    /// <summary>What changed from one set of rules to another, as a line of text: each rule turned on or off, and the new interval.</summary>
+    private static string Changes(int from, int to)
+    {
+        var changes = new System.Collections.Generic.List<string>();
+        foreach (RunRule rule in All)
+        {
+            int flag = (int)FlagOf(rule);
+            if ((from & flag) != (to & flag))
+            {
+                changes.Add((to & flag) != 0 ? Strings.RuleTurnedOn(Strings.RuleName(rule)) : Strings.RuleTurnedOff(Strings.RuleName(rule)));
+            }
+        }
+
+        int interval = ShuffleInterval.Clamp(to >> IntervalShift);
+        if (ShuffleInterval.Clamp(from >> IntervalShift) != interval)
+        {
+            changes.Add(Strings.RuleSetTo(Strings.RuleTimedShuffleInterval, Strings.Minutes(interval)));
+        }
+
+        return string.Join(", ", changes);
     }
 
     /// <summary>Notes the room's rules; the ones they replace become steady if they stood long enough.</summary>

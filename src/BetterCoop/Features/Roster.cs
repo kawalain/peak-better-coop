@@ -169,6 +169,11 @@ internal sealed class RosterPage : PaperPage
             TroopLeaderRows.Add(list, room, DrawPlan, ShowPairs);
         }
 
+        if (room.InRoom)
+        {
+            RunRuleRows.Add(list, room, leads);
+        }
+
         PlayerRows.Sign(list, room);
         Makers.Add(list);
     }
@@ -387,12 +392,9 @@ internal static class PlayerRows
     }
 }
 
-/// <summary>The Troop Leader's part of the Roster: orders for the Pairs, and the Run Rules.</summary>
+/// <summary>The Troop Leader's orders for the Pairs on the Roster.</summary>
 internal static class TroopLeaderRows
 {
-    /// <summary>Timed Shuffle intervals the form steps through, in minutes.</summary>
-    private static readonly int[] Intervals = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60];
-
     /// <param name="drawPlan">At the Airport, draws a plan at random into the Troop Leader's draft.</param>
     /// <param name="showPairs">Carries the eye up to the Pairs once they are shuffled.</param>
     public static void Add(PaperList list, ICoopRoom room, Action drawPlan, Action showPairs)
@@ -430,29 +432,6 @@ internal static class TroopLeaderRows
             about: () => Strings.AboutRecover,
             visible: () => room.Formed,
             confirm: true);
-
-        list.Header(() => Strings.MenuRunRules);
-        list.Subheading(() => Strings.RulesPairs);
-        Rule(list, room, RunRule.FollowRolePreferences, () => Strings.RuleFollowRolePreferences, () => Strings.AboutFollowRolePreferences);
-        Rule(list, room, RunRule.AllowSwapRequests, () => Strings.RuleAllowSwapRequests, () => Strings.AboutAllowSwapRequests);
-        Rule(list, room, RunRule.LatePairing, () => Strings.RuleLatePairing, () => Strings.AboutLatePairing);
-        Rule(list, room, RunRule.AllowOddPlayerCount, () => Strings.RuleAllowOddPlayerCount, () => Strings.AboutAllowOddPlayerCount);
-        list.Subheading(() => Strings.RulesShuffles);
-        Rule(list, room, RunRule.CampfireShuffle, () => Strings.RuleCampfireShuffle, () => Strings.AboutCampfireShuffle);
-        Rule(list, room, RunRule.TimedShuffle, () => Strings.RuleTimedShuffle, () => Strings.AboutTimedShuffle);
-        list.Choice(
-            () => Strings.RuleTimedShuffleInterval,
-            () => room.ShuffleMinutes,
-            minutes => room.ShuffleMinutes = minutes,
-            () => Intervals,
-            Strings.Minutes,
-            about: () => Strings.AboutTimedShuffleInterval);
-        list.Subheading(() => Strings.RulesHandover);
-        Rule(list, room, RunRule.HandOverPlace, () => Strings.RuleHandOverPlace, () => Strings.AboutHandOverPlace);
-        Rule(list, room, RunRule.HandOverItems, () => Strings.RuleHandOverItems, () => Strings.AboutHandOverItems);
-        list.Subheading(() => Strings.RulesCarrying);
-        Rule(list, room, RunRule.CarryWeight, () => Strings.RuleCarryWeight, () => Strings.AboutCarryWeight);
-        Rule(list, room, RunRule.RiderPicksFromBackpack, () => Strings.RuleRiderPicksFromBackpack, () => Strings.AboutRiderPicksFromBackpack);
     }
 
     /// <summary>Says why a Pair change the Troop Leader ordered did not start.</summary>
@@ -463,10 +442,49 @@ internal static class TroopLeaderRows
             CoopNotice.Info(Strings.MenuBusy);
         }
     }
+}
 
-    private static void Rule(PaperList list, ICoopRoom room, RunRule rule, Func<string> label, Func<string> about) =>
-        list.Check(label, () => room.Rule(rule), on => room.SetRule(rule, on), about);
+/// <summary>The Run Rules: the Troop Leader sets them; every other player reads them.</summary>
+internal static class RunRuleRows
+{
+    /// <summary>Timed Shuffle intervals the form steps through, in minutes.</summary>
+    private static readonly int[] Intervals = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60];
 
+    public static void Add(PaperList list, ICoopRoom room, bool leads)
+    {
+        Func<string?> locked = () => leads ? null : Strings.RuleLeaderOnly;
+        list.Header(() => Strings.MenuRunRules);
+        if (!leads)
+        {
+            list.Note(() => Strings.MenuRulesRead);
+        }
+
+        void Rule(RunRule rule, Func<string> label, Func<string> about) =>
+            list.Check(label, () => room.Rule(rule), on => room.SetRule(rule, on), about, locked: locked);
+
+        list.Subheading(() => Strings.RulesPairs);
+        Rule(RunRule.FollowRolePreferences, () => Strings.RuleFollowRolePreferences, () => Strings.AboutFollowRolePreferences);
+        Rule(RunRule.AllowSwapRequests, () => Strings.RuleAllowSwapRequests, () => Strings.AboutAllowSwapRequests);
+        Rule(RunRule.LatePairing, () => Strings.RuleLatePairing, () => Strings.AboutLatePairing);
+        Rule(RunRule.AllowOddPlayerCount, () => Strings.RuleAllowOddPlayerCount, () => Strings.AboutAllowOddPlayerCount);
+        list.Subheading(() => Strings.RulesShuffles);
+        Rule(RunRule.CampfireShuffle, () => Strings.RuleCampfireShuffle, () => Strings.AboutCampfireShuffle);
+        Rule(RunRule.TimedShuffle, () => Strings.RuleTimedShuffle, () => Strings.AboutTimedShuffle);
+        list.Choice(
+            () => Strings.RuleTimedShuffleInterval,
+            () => room.ShuffleMinutes,
+            minutes => room.ShuffleMinutes = minutes,
+            () => Intervals,
+            Strings.Minutes,
+            about: () => Strings.AboutTimedShuffleInterval,
+            locked: locked);
+        list.Subheading(() => Strings.RulesHandover);
+        Rule(RunRule.HandOverPlace, () => Strings.RuleHandOverPlace, () => Strings.AboutHandOverPlace);
+        Rule(RunRule.HandOverItems, () => Strings.RuleHandOverItems, () => Strings.AboutHandOverItems);
+        list.Subheading(() => Strings.RulesCarrying);
+        Rule(RunRule.CarryWeight, () => Strings.RuleCarryWeight, () => Strings.AboutCarryWeight);
+        Rule(RunRule.RiderPicksFromBackpack, () => Strings.RuleRiderPicksFromBackpack, () => Strings.AboutRiderPicksFromBackpack);
+    }
 }
 
 /// <summary>
@@ -510,10 +528,19 @@ internal sealed class LiveRoom : ICoopRoom
 
     public double? SecondsToTimedShuffle => PairShuffle.SecondsToTimedShuffle();
 
+    /// <summary>The Troop Leader's own setting, which the room follows; every other player reads the room's.</summary>
     public int ShuffleMinutes
     {
-        get => ShuffleInterval.Clamp(CoopConfig.TimedShuffleInterval.Value);
-        set => CoopConfig.TimedShuffleInterval.Value = value;
+        get => IsTroopLeader
+            ? ShuffleInterval.Clamp(CoopConfig.TimedShuffleInterval.Value)
+            : (int)Math.Round(RunRules.TimedShuffleSeconds / 60.0);
+        set
+        {
+            if (IsTroopLeader)
+            {
+                CoopConfig.TimedShuffleInterval.Value = value;
+            }
+        }
     }
 
     public string NameOf(int actor) =>
@@ -535,7 +562,13 @@ internal sealed class LiveRoom : ICoopRoom
 
     public bool Rule(RunRule rule) => IsTroopLeader ? RunRules.Entry(rule).Value : RunRules.Is(rule);
 
-    public void SetRule(RunRule rule, bool on) => RunRules.Entry(rule).Value = on;
+    public void SetRule(RunRule rule, bool on)
+    {
+        if (IsTroopLeader)
+        {
+            RunRules.Entry(rule).Value = on;
+        }
+    }
 
     public void Tick(float seconds)
     {

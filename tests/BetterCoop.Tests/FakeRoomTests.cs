@@ -68,13 +68,16 @@ public class FakeRoomTests
     {
         var room = new FakeRoom(4, troopLeader: false, formed: true);
         Pair mine = room.PairOf(room.Me)!;
+        // A member's own setting changes nothing; the Troop Leader's does.
         room.SetRule(RunRule.AllowSwapRequests, false);
+        Assert.True(room.Rule(RunRule.AllowSwapRequests));
+        room.LeaderSets(RunRule.AllowSwapRequests, false);
 
         Assert.False(room.CanAskSwap);
         room.ToggleSwap();
         Assert.Equal(mine.Carrier, room.PairOf(room.Me)!.Carrier);
 
-        room.SetRule(RunRule.AllowSwapRequests, true);
+        room.LeaderSets(RunRule.AllowSwapRequests, true);
         Assert.True(room.CanAskSwap);
         room.ToggleSwap();
         Assert.Equal(mine.Rider, room.PairOf(room.Me)!.Carrier);
