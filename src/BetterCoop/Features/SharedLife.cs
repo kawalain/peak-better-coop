@@ -160,8 +160,18 @@ internal static class TroopLeaderRevive
     /// <summary>How soon the Troop Leader relays another revive of the same scout.</summary>
     private const float RelaySeconds = 1.5f;
 
+    /// <summary>How far from their Carrier a Rider may ask to come back, allowing for the Troop Leader's view lagging behind.</summary>
+    private const float NearCarrier = 8f;
+
     /// <summary>When the Troop Leader last relayed a revive, by the target's view.</summary>
     private static readonly System.Collections.Generic.Dictionary<int, float> Relayed = new();
+
+    private static bool NearOwnCarrier(Character target, Pair pair, Vector3 position) =>
+        PairRoster.ActorOf(target) == pair.Rider
+        && PlayerHandler.TryGetCharacter(pair.Carrier, out Character carrier)
+        && carrier != null
+        && WireLimits.IsFinite(position.x) && WireLimits.IsFinite(position.y) && WireLimits.IsFinite(position.z)
+        && (position - carrier.Center).sqrMagnitude <= NearCarrier * NearCarrier;
 
     internal static void Handle(EventData photonEvent)
     {
@@ -177,13 +187,17 @@ internal static class TroopLeaderRevive
             return;
         }
 
-        // Only a member of the target's own Pair may ask, so the relay revives
-        // nobody the game would not have.
+        // Only a member of the target's own Pair may ask, and only as the mod
+        // asks: a Rider back at their Carrier, or a member woken where they
+        // are; never a statue's revive or its statuses.
         PhotonView view = PhotonView.Find(viewId);
         Character? target = view != null ? view.GetComponent<Character>() : null;
         if (target == null
             || !PairRoster.TryGetPair(target, out Pair pair)
-            || !pair.Contains(photonEvent.Sender))
+            || !pair.Contains(photonEvent.Sender)
+            || applyStatus
+            || statueSegment != -1
+            || (atPosition && !NearOwnCarrier(target, pair, position)))
         {
             Plugin.Verbose($"Ignored a revive request from #{photonEvent.Sender} for view {viewId}.");
             return;

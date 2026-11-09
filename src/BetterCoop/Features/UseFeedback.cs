@@ -63,7 +63,10 @@ internal static class UseFeedback
             return;
         }
 
-        RiderProgress.Receive(progress, Time.unscaledTime);
+        if (WireLimits.IsFinite(progress))
+        {
+            RiderProgress.Receive(Mathf.Clamp01(progress), Time.unscaledTime);
+        }
     }
 
     /// <summary>The progress bar the game would show the one using the item.</summary>
