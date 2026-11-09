@@ -444,7 +444,8 @@ internal static class PlayerRows
                 ? Strings.AboutSwapWaiting
                 : room.Rule(RunRule.AllowSwapRequests) ? Strings.AboutSwapPlaces : Strings.AboutSwapNotAllowed,
             visible: () => paired() && !answering(),
-            face: new SealFace(StampShape.Notary, FormDrawing.StampBlue, () => Strings.SealNotary, () => Strings.SealTroop, seed: 14),
+            // Inked, not embossed: a blind emboss read as a stamp that could not be pressed.
+            face: new SealFace(StampShape.DoubleRing, FormDrawing.StampBlue, () => Strings.SealNotary, () => Strings.SealTroop, seed: 14),
             stamped: () => room.SwapPending);
         list.Stamp(
             () => Strings.SwapPlaces,
