@@ -113,4 +113,15 @@ public class WireBoundsTests
         Assert.Empty(after.PreferenceOverridden);
         Assert.False(PairingRules.TryDissolveAbsent(after, present.Contains, out _));
     }
+
+    [Fact]
+    public void Past_the_seats_the_first_to_join_are_paired()
+    {
+        HashSet<int> seated = PairSeats.Seated(Enumerable.Range(1, 100).Reverse());
+
+        Assert.Equal(WireLimits.MaxScouts, seated.Count);
+        Assert.Contains(1, seated);
+        Assert.Contains(WireLimits.MaxScouts, seated);
+        Assert.DoesNotContain(WireLimits.MaxScouts + 1, seated);
+    }
 }

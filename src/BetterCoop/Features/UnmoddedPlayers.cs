@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using BetterCoop.Core;
 using BetterCoop.Net;
 using BetterCoop.Ui;
 using Photon.Pun;
@@ -12,6 +13,8 @@ namespace BetterCoop.Features;
 /// protocol hears once of each Unmodded Player in the room, and a client
 /// resting in the room hears once why. A player is judged only after they
 /// have been in the room a while, as their properties arrive after them.
+/// Everyone also hears once when more players who can pair are in the room
+/// than the mod pairs at once (<see cref="Seats"/>).
 /// </summary>
 internal sealed class UnmoddedPlayers : MonoBehaviourPunCallbacks
 {
@@ -27,6 +30,9 @@ internal sealed class UnmoddedPlayers : MonoBehaviourPunCallbacks
 
     private float joinedAt;
 
+    /// <summary>Whether this client told of the room being past the seats the mod pairs, since it last was not.</summary>
+    private bool toldOverfull;
+
     private float nextCheck;
 
     public override void OnJoinedRoom()
@@ -35,6 +41,7 @@ internal sealed class UnmoddedPlayers : MonoBehaviourPunCallbacks
         firstSeen.Clear();
         told.Clear();
         restingToldUnder = 0;
+        toldOverfull = false;
     }
 
     public override void OnLeftRoom()
@@ -42,6 +49,7 @@ internal sealed class UnmoddedPlayers : MonoBehaviourPunCallbacks
         firstSeen.Clear();
         told.Clear();
         restingToldUnder = 0;
+        toldOverfull = false;
     }
 
     public override void OnPlayerLeftRoom(PhotonPlayer otherPlayer)
@@ -91,6 +99,16 @@ internal sealed class UnmoddedPlayers : MonoBehaviourPunCallbacks
         }
 
         restingToldUnder = 0;
+        if (Seats.Overfull != toldOverfull)
+        {
+            toldOverfull = !toldOverfull;
+            if (toldOverfull)
+            {
+                Plugin.Log.LogInfo($"More than {WireLimits.MaxScouts} players who can pair are in the room; the first {WireLimits.MaxScouts} to join are paired.");
+                CoopNotice.Warning(Strings.Overfull(WireLimits.MaxScouts));
+            }
+        }
+
         foreach (PhotonPlayer player in PhotonNetwork.PlayerListOthers)
         {
             int actor = player.ActorNumber;

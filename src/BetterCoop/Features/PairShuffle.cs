@@ -322,7 +322,7 @@ internal static class PairShuffle
         foreach (PhotonPlayer player in PhotonNetwork.PlayerList)
         {
             if (player.IsInactive
-                || !RoomProtocol.Speaks(player)
+                || !Seats.Has(player)
                 || current.Pairs.Any(p => p.Contains(player.ActorNumber))
                 || CharacterOf(player.ActorNumber) is not Character character
                 || !Arrivals.Settled(player.ActorNumber, character.GetInstanceID(), Time.unscaledTime))
@@ -400,7 +400,7 @@ internal static class PairShuffle
         var kept = before.Pairs.Where(p => !IsAlive(p.Carrier) || !IsAlive(p.Rider)).ToList();
         var candidates = PhotonNetwork.PlayerList
             .Where(p => !p.IsInactive
-                && RoomProtocol.Speaks(p)
+                && Seats.Has(p)
                 && IsAlive(p.ActorNumber)
                 && !kept.Any(k => k.Contains(p.ActorNumber)))
             .Select(p => new PairCandidate(p.ActorNumber, ModPresence.PairingRoleOf(p)))
@@ -501,7 +501,7 @@ internal static class PairShuffle
     private static bool IsEligible(int actor) =>
         PhotonNetwork.CurrentRoom?.GetPlayer(actor) is PhotonPlayer player
         && !player.IsInactive
-        && RoomProtocol.Speaks(player)
+        && Seats.Has(player)
         && CharacterOf(actor) != null;
 
     private static PairingResult? Swap(PairingResult before, Operation op)

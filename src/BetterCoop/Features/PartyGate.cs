@@ -25,6 +25,12 @@ internal static class PartyGate
         {
             foreach (PhotonPlayer player in PhotonNetwork.PlayerList)
             {
+                // Past the seats the mod pairs at once, a player who could pair is told so and not counted.
+                if ((player.IsLocal || RoomProtocol.Speaks(player)) && !Seats.Has(player) && Seats.Overfull)
+                {
+                    continue;
+                }
+
                 members.Add(new PartyMember(KnownPlayers.NameOf(player, player.ActorNumber), player.IsLocal || RoomProtocol.Speaks(player)));
             }
         }

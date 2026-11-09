@@ -117,6 +117,52 @@ internal static class PairRoster
 }
 
 /// <summary>
+/// The players who can be in a Pair now: in the room, with this client's
+/// protocol, and among the first to join when more are here than the mod
+/// pairs at once (<see cref="PairSeats"/>).
+/// </summary>
+internal static class Seats
+{
+    private static int frame = -1;
+
+    private static HashSet<int> seated = new();
+
+    private static int pairable;
+
+    /// <summary>Whether <paramref name="player"/> can be in a Pair now.</summary>
+    public static bool Has(PhotonPlayer player)
+    {
+        Refresh();
+        return !player.IsInactive && RoomProtocol.Speaks(player) && seated.Contains(player.ActorNumber);
+    }
+
+    /// <summary>Whether more players who can pair are in the room than the mod pairs at once.</summary>
+    public static bool Overfull
+    {
+        get
+        {
+            Refresh();
+            return pairable > WireLimits.MaxScouts;
+        }
+    }
+
+    private static void Refresh()
+    {
+        if (Time.frameCount == frame)
+        {
+            return;
+        }
+
+        frame = Time.frameCount;
+        var actors = PhotonNetwork.InRoom
+            ? PhotonNetwork.PlayerList.Where(p => !p.IsInactive && RoomProtocol.Speaks(p)).Select(p => p.ActorNumber).ToList()
+            : [];
+        pairable = actors.Count;
+        seated = PairSeats.Seated(actors);
+    }
+}
+
+/// <summary>
 /// The Pair Plan as every client sees it: the room property the Troop Leader
 /// writes at the Airport, used and cleared by the Pair Formation.
 /// </summary>
@@ -219,7 +265,7 @@ internal static class PairPlans
     /// <summary>A plan drawn at random from the players who run this version, as the Pair Formation would form them.</summary>
     public static IReadOnlyList<Pair> Draw() => PairingRules.Form(
         PhotonNetwork.PlayerList
-            .Where(p => !p.IsInactive && RoomProtocol.Speaks(p))
+            .Where(Seats.Has)
             .Select(p => new PairCandidate(p.ActorNumber, ModPresence.PairingRoleOf(p)))
             .ToList(),
         new System.Random()).Pairs;
@@ -524,7 +570,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
     private static void FormPairs(PhotonPlayer[] players, List<PhotonPlayer> spawned)
     {
         var candidates = spawned
-            .Where(p => RoomProtocol.Speaks(p))
+            .Where(Seats.Has)
             .Select(p => new PairCandidate(p.ActorNumber, ModPresence.PairingRoleOf(p)))
             .ToList();
         // The Troop Leader's Pair Plan, set at the Airport, comes first.

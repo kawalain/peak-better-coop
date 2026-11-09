@@ -164,7 +164,9 @@ _Avoid_: passenger, carried player
 **Unpaired Player** (짝 없는 사람):
 A player in the room who is not in any Pair and plays as in unmodded PEAK,
 until a Late Pairing or a Pair Shuffle gives them a partner. A player joining
-during a Run starts as one.
+during a Run starts as one. When more players are in the room than the mod
+pairs at once, those who joined last stay Unpaired Players until a place
+frees up.
 _Avoid_: solo player, odd player
 
 **Unmodded Player** (모드 없는 대원):

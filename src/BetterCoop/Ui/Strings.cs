@@ -627,6 +627,11 @@ internal static class Strings
         ? $"코옵: 출발하려면 짝을 지을 인원이 짝수여야 합니다. (현재 {pairable}명{(unmodded > 0 ? $", 모드 없는 대원 {unmodded}명 제외" : string.Empty)})"
         : $"Coop: an even number of players who can pair is needed to depart. ({pairable}{(unmodded > 0 ? $", not counting {unmodded} Unmodded" : string.Empty)})";
 
+    /// <summary>More players who can pair are in the room than the mod pairs at once.</summary>
+    public static string Overfull(int seats) => Korean
+        ? $"코옵: 대원이 {seats}명을 넘어, 먼저 온 {seats}명만 짝을 짓습니다. 나머지 대원은 자리가 날 때까지 짝 없이 올라갑니다."
+        : $"Coop: more than {seats} scouts are here, so only the first {seats} to join are paired. The rest climb without a Pair until a place frees up.";
+
     /// <summary>An Unmodded Player in the room, told to everyone who plays with the mod.</summary>
     public static string UnmoddedPlayer(string player, string? theirs, string? leaders) => theirs == null
         ? Korean
