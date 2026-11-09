@@ -135,6 +135,12 @@ internal static class PhotoStudio
     /// <summary>The colour behind a hand while it is taken, keyed out after.</summary>
     private static readonly Color HandKey = new(1f, 0f, 1f, 1f);
 
+    /// <summary>The lamp's strength on the arm, as on a face the passport's distance away.</summary>
+    private const float HandLight = 1.5f;
+
+    /// <summary>The lamp's strength for passport photos.</summary>
+    private const float FaceLight = 1.5f;
+
     /// <summary>The Scoutmaster's prefab, as the game spawns him by name.</summary>
     private const string ScoutmasterPrefab = "Character_Scoutmaster";
 
@@ -181,7 +187,7 @@ internal static class PhotoStudio
             body = StillScoutmaster();
             if (body == null)
             {
-                Plugin.Verbose("The Scoutmaster's model could not be found to photograph.");
+                Plugin.Log.LogWarning("The Scoutmaster's model could not be found to photograph; his hand is drawn instead.");
                 return null;
             }
 
@@ -199,13 +205,14 @@ internal static class PhotoStudio
             Transform? upper = HelperFunctions.FindChildRecursive(nameof(BodypartType.Arm_R), body.transform);
             if (palm == null || elbow == null || upper == null)
             {
-                Plugin.Verbose("The Scoutmaster's model has no right hand, elbow, and arm bones to photograph.");
+                Plugin.Log.LogWarning("The Scoutmaster's model has no right hand, elbow, and arm bones to photograph; his hand is drawn instead.");
                 return null;
             }
 
             float forearm = Vector3.Distance(palm.position, elbow.position);
             if (forearm < 1e-3f)
             {
+                Plugin.Log.LogWarning("The Scoutmaster's forearm has no length to photograph; his hand is drawn instead.");
                 return null;
             }
 
@@ -243,8 +250,10 @@ internal static class PhotoStudio
                 camera.aspect = width / (float)height;
                 if (lamp != null)
                 {
-                    lamp.transform.position = lens.position + (up * forearm);
+                    // Near the arm and as bright on it as on a passport face, however long the arm is.
+                    lamp.transform.position = palm.position + (front * 1.5f * forearm) + (up * forearm);
                     lamp.range = 10f * forearm;
+                    lamp.intensity = HandLight * (lamp.transform.position - palm.position).sqrMagnitude;
                     lamp.enabled = true;
                 }
 
@@ -259,6 +268,9 @@ internal static class PhotoStudio
                 RenderTexture.active = shot;
                 var whole = new Texture2D(width, height, TextureFormat.RGBA32, false);
                 whole.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+#if DEBUG
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(BepInEx.Paths.CachePath, "BetterCoop-hand-raw.png"), whole.EncodeToPNG());
+#endif
                 Texture2D? taken = Crop(whole, out bool cut);
                 Object.Destroy(whole);
                 if (cut && taken != null && room * 1.5f <= 2.3f)
@@ -273,7 +285,7 @@ internal static class PhotoStudio
 
             if (scoutmasterHand == null)
             {
-                Plugin.Verbose("The Scoutmaster's hand was not in its picture.");
+                Plugin.Log.LogWarning("The Scoutmaster's hand was not in its picture; his hand is drawn instead.");
             }
 #if DEBUG
             else
@@ -317,6 +329,7 @@ internal static class PhotoStudio
             {
                 lamp.transform.position = lampPlace;
                 lamp.range = 6f;
+                lamp.intensity = FaceLight;
                 lamp.enabled = false;
             }
         }
@@ -380,11 +393,18 @@ internal static class PhotoStudio
             part.gameObject.layer = layer;
         }
 
+        // Skinned bounds follow the arm once it is held out, so the camera never culls it.
+        foreach (SkinnedMeshRenderer skin in copy.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            skin.updateWhenOffscreen = true;
+        }
+
         copy.SetActive(false);
         copy.transform.SetParent(studio.transform, false);
         copy.transform.localPosition = model.transform.localPosition;
         copy.transform.localRotation = model.transform.localRotation;
-        copy.transform.localScale = Vector3.one;
+        // The prefab shrinks his model; at full size he would stand many times too tall for the lamp.
+        copy.transform.localScale = visual.localScale;
         Object.Destroy(holder);
         return copy;
     }
@@ -483,7 +503,8 @@ internal static class PhotoStudio
 
         picture.SetPixels32(pixels);
         picture.Apply(false);
-        return solid > pixels.Length / 30;
+        // A thin arm in a roomy picture still covers this much.
+        return solid > pixels.Length / 200;
     }
 
     /// <summary>Whether a photo of this look is ready.</summary>
@@ -623,7 +644,7 @@ internal static class PhotoStudio
         lamp = light.AddComponent<Light>();
         lamp.type = LightType.Point;
         lamp.range = 6f;
-        lamp.intensity = 1.5f;
+        lamp.intensity = FaceLight;
         lamp.enabled = false;
         Plugin.Verbose("Set up the photo studio from the passport.");
     }
