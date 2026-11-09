@@ -201,7 +201,8 @@ internal sealed class PairLetter : MonoBehaviour
 
         float left = (Width - 2f * ScoutPhoto.Width - Between) / 2f;
         RectTransform mine = Cell(left);
-        ScoutPhoto.Add(mine, template, portraits, me, Strings.LetterYou, Role(carries));
+        // A player left with no Pair has no role to come.
+        ScoutPhoto.Add(mine, template, portraits, me, Strings.LetterYou, known && partner == null ? Strings.MenuUnpaired : Role(carries));
 
         RectTransform arrows = PaperList.NewRect("Arrows", photos);
         NoticeSlip.Place(arrows, left + ScoutPhoto.Width + (Between - 28f) / 2f, ScoutPhoto.PhotoHeight / 2f - 34f, 28f, 68f);
