@@ -105,6 +105,9 @@ internal static class PairShuffle
         Current is { Done: true, CalledOff: false } op && op.Involves(actor) && ServerClock.Since(PhotonNetwork.Time, op.At) < LockTimeoutSeconds;
 
     /// <summary>Whether the local player's hands stay empty for an operation now.</summary>
+    /// <summary>Whether an operation on this player is about to run or running, so their Pair is changing.</summary>
+    internal static bool Locked(int actor) => IsLocked(Current, actor, PhotonNetwork.Time);
+
     internal static bool LocalLocked
     {
         get

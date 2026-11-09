@@ -404,6 +404,7 @@ internal static class Strings
         RunRule.FollowRolePreferences => RuleFollowRolePreferences,
         RunRule.AllowSwapRequests => RuleAllowSwapRequests,
         RunRule.LatePairing => RuleLatePairing,
+        RunRule.RescueCarry => RuleRescueCarry,
         _ => rule.ToString(),
     };
 
@@ -432,6 +433,8 @@ internal static class Strings
     public static string RuleHandOverItems => Korean ? "몸 인계: 아이템" : "Hand Over Items";
 
     public static string RuleCarryWeight => Korean ? "업은 사람 무게" : "Carry Weight";
+
+    public static string RuleRescueCarry => Korean ? "구조 업기" : "Rescue Carry";
 
     public static string RuleRiderPicksFromBackpack => Korean ? "가방은 업힌 사람이 고르기" : "Rider Picks From Backpack";
 
@@ -538,6 +541,10 @@ internal static class Strings
     public static string AboutCarryWeight => Korean
         ? "업는 사람이 업힌 사람의 무게를 느낍니다."
         : "Carriers feel the weight of the person they carry.";
+
+    public static string AboutRescueCarry => Korean
+        ? "기절한 대원을 업힌 사람의 등에 얹어 업을 수 있습니다. 짝 없는 대원은 기절한 짝을 통째로 업습니다."
+        : "A Pair can carry a passed-out scout on the Rider's back; a scout without a partner can carry a passed-out Pair.";
 
     public static string AboutRiderPicksFromBackpack => Korean
         ? "가방 휠에서 업힌 사람이 아이템을 고릅니다. 끄면 업는 사람이 고릅니다."

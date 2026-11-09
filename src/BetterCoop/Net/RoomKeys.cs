@@ -68,4 +68,7 @@ internal static class RoomKeys
 
     /// <summary>Event: a Pair member asks the Troop Leader to revive or wake a member of their Pair.</summary>
     public const byte ReviveRequestEvent = 192;
+
+    /// <summary>Event: a Carrier asks their Rider to pick up or put down a Rescued.</summary>
+    public const byte RescueEvent = 193;
 }

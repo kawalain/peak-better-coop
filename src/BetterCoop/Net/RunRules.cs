@@ -30,6 +30,7 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
         FollowRolePreferences = 128,
         AllowSwapRequests = 256,
         LatePairing = 512,
+        RescueCarry = 1024,
     }
 
     /// <summary>The Timed Shuffle interval's minutes sit above the flags.</summary>
@@ -75,6 +76,8 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
 
     public static bool LatePairing => Has(Flags.LatePairing);
 
+    public static bool RescueCarry => Has(Flags.RescueCarry);
+
     /// <summary>Whether a rule is on in the room, as every client reads it.</summary>
     public static bool Is(RunRule rule) => Has(FlagOf(rule));
 
@@ -109,6 +112,7 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
         RunRule.FollowRolePreferences => Flags.FollowRolePreferences,
         RunRule.AllowSwapRequests => Flags.AllowSwapRequests,
         RunRule.LatePairing => Flags.LatePairing,
+        RunRule.RescueCarry => Flags.RescueCarry,
         _ => throw new ArgumentOutOfRangeException(nameof(rule), rule, null),
     };
 
@@ -125,6 +129,7 @@ internal sealed class RunRules : MonoBehaviourPunCallbacks
         RunRule.FollowRolePreferences => CoopConfig.FollowRolePreferences,
         RunRule.AllowSwapRequests => CoopConfig.AllowSwapRequests,
         RunRule.LatePairing => CoopConfig.LatePairing,
+        RunRule.RescueCarry => CoopConfig.RescueCarry,
         _ => throw new ArgumentOutOfRangeException(nameof(rule), rule, null),
     };
 

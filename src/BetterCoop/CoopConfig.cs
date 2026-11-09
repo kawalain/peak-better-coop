@@ -30,6 +30,8 @@ internal static class CoopConfig
 
     public static ConfigEntry<bool> LatePairing { get; private set; } = null!;
 
+    public static ConfigEntry<bool> RescueCarry { get; private set; } = null!;
+
     public static ConfigEntry<bool> VerboseLog { get; private set; } = null!;
 
 
@@ -70,6 +72,12 @@ internal static class CoopConfig
             "Rider Picks From Backpack",
             true,
             "In a backpack wheel the Carrier opens, the Rider picks with the mouse while the Carrier holds the key. Off: the Carrier picks, and only the Carrier sees the wheel. The Troop Leader's value applies.");
+
+        RescueCarry = config.Bind(
+            "Balance",
+            "Rescue Carry",
+            true,
+            "Let a Pair carry a passed-out scout on the Rider's back, and anyone without a partner carry a passed-out Pair, so the time they have left stops running out. Off: a Pair can only help a passed-out scout where they lie. The Troop Leader's value applies.");
 
         CarryWeight = config.Bind(
             "Balance",

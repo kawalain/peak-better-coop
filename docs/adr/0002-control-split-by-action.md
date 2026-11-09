@@ -34,6 +34,7 @@ key never moves an action to the other player.
   climb.
 - Carries never nest: while paired, a Carrier starts no other carry and a
   passed-out Carrier cannot be carried; others help them where they lie.
+  Superseded by ADR 0010: a Rescue Carry stacks the Rescued on the Rider.
 - The Shared Body has one set of statuses, the Carrier's. The Rider's own
   statuses are cleared at pairing and kept clear, and the Rider lives or dies
   only with the Shared Body (Shared Life): the Rider's client follows the

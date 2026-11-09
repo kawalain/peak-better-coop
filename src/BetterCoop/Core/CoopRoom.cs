@@ -16,6 +16,7 @@ internal enum RunRule
     FollowRolePreferences,
     AllowSwapRequests,
     LatePairing,
+    RescueCarry,
 }
 
 /// <summary>

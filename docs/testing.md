@@ -145,6 +145,27 @@ started so the Unmodded guest joins second):
 - A Body Handover moves the Carrier to the place and items as the rules say.
 - Carry weight, when on, slows the Carrier as the rules say.
 
+### Rescue Carry
+
+In four Twins with two Pairs. `console {name: CharacterAfflictions.Starve}` on
+a Carrier's copy passes that Shared Body out (a Body Handover passes on the
+hunger; `CharacterAfflictions.ClearAll` wakes it).
+
+- The other Carrier `interact {actor}` with it: the Rider's log says `Picking
+  up`, and `state` shows Carrier, Rider, Rescued, and the Rescued's Rider each
+  carrying the next. The Carrier's back slot shows the Rescued, and the
+  Rescued is still alive a minute and more later.
+- With Late Pairing off, `order {what: assign}` with one Pair leaves two
+  Unpaired Players: a Pair rescues a passed-out one, and an Unpaired Player
+  rescues a passed-out Shared Body with its Rider still on it.
+- The rescuer's log says `Putting down` when Rescue Carry is turned off, just
+  before a Pair Shuffle, and when the rescuing Shared Body passes out; a
+  Rescued who wakes is put down as in unmodded PEAK. Every Pair's own carry
+  holds throughout.
+- (two people) The Carrier's back item drops where the Rescued lay; tapping
+  the back-slot key, or picking up a backpack, puts the Rescued down. The
+  stack stays together while climbing and falling.
+
 ### Paper sounds (two people)
 
 - A page rising, a stamp coming down, a draft crushed and tossed, and the

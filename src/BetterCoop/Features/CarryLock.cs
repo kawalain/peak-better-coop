@@ -16,6 +16,7 @@ namespace BetterCoop.Features;
 /// Keeps every Pair's carry in place for the whole Run: the Carrier's client
 /// starts and restores the carry, the Rider's client keeps the Rider awake
 /// and free of statuses (ADR 0002), and the game's own drops are refused.
+/// Other carries by or of a Pair are Rescue Carries (<see cref="RescueCarry"/>).
 /// </summary>
 internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
 {
@@ -77,6 +78,7 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
         }
 
         SharedLife.Keep();
+        RescueCarry.Keep();
         if (role == PairRole.Rider && Time.unscaledTime >= nextHandCheck)
         {
             nextHandCheck = Time.unscaledTime + 0.5f;
@@ -162,6 +164,7 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
         {
             HandleEvent(photonEvent);
             TroopLeaderRevive.Handle(photonEvent);
+            RescueCarry.Handle(photonEvent);
         }
         catch (Exception exception)
         {
@@ -212,8 +215,9 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
             return;
         }
 
-        // After a Role Swap or Pair Shuffle the former Carrier drops this one first.
-        if (carrier.data.carrier != null && !force)
+        // After a Role Swap or Pair Shuffle the former Carrier drops this one
+        // first, and a rescuer puts down a Rescued who gained this Pair.
+        if ((carrier.data.carrier != null || (rider.data.carrier != null && rider.data.carrier != carrier)) && !force)
         {
             return;
         }
@@ -325,6 +329,11 @@ internal static class CarryLockPatches
             return true;
         }
 
+        if (RescueCarry.PutDownForBackSlot(__instance.character))
+        {
+            return false;
+        }
+
         if (Time.unscaledTime < nextDropNote)
         {
             unnotedDrops++;
@@ -337,35 +346,6 @@ internal static class CarryLockPatches
         unnotedDrops = 0;
         nextDropNote = Time.unscaledTime + DropNoteSeconds;
         return false;
-    }
-
-    /// <summary>Carries never nest: a Carrier carries only their own Rider.</summary>
-    [HarmonyPrefix]
-    [HarmonyPatch(typeof(CharacterCarrying), nameof(CharacterCarrying.StartCarry))]
-    private static bool OnlyCarryOwnRider(CharacterCarrying __instance, Character target)
-    {
-        Character carrier = __instance.character;
-        bool carrierPaired = PairRoster.RoleOf(carrier) != PairRole.None;
-        bool targetPaired = PairRoster.RoleOf(target) != PairRole.None;
-        if (!carrierPaired && !targetPaired)
-        {
-            return true;
-        }
-
-        return PairRoster.TryGetPartner(carrier, out Character partner)
-            && partner == target
-            && PairRoster.RoleOf(carrier) == PairRole.Carrier;
-    }
-
-    /// <summary>Nobody else picks up a member of a Pair, such as a passed-out Carrier.</summary>
-    [HarmonyPostfix]
-    [HarmonyPatch(typeof(CharacterInteractible), nameof(CharacterInteractible.CanBeCarried))]
-    private static void PairsAreNotCarriable(CharacterInteractible __instance, ref bool __result)
-    {
-        if (__result && PairRoster.RoleOf(__instance.character) != PairRole.None)
-        {
-            __result = false;
-        }
     }
 
     /// <summary>
@@ -388,8 +368,9 @@ internal static class CarryLockPatches
 
     /// <summary>
     /// An Unmodded Player's game lets them pick up a passed-out member of a
-    /// Pair, which <see cref="PairsAreNotCarriable"/> never sees on their
-    /// client: the Troop Leader sets the member down again at once.
+    /// Pair, which the mod never judges on their client, and cannot keep the
+    /// Pair's carry while it does (ADR 0010): the Troop Leader sets the
+    /// member down again at once.
     /// </summary>
     [HarmonyPostfix]
     [HarmonyPatch(typeof(CharacterCarrying), nameof(CharacterCarrying.RPCA_StartCarry))]
@@ -462,10 +443,24 @@ internal static class CarryLockPatches
     [HarmonyPatch(typeof(Interaction), nameof(Interaction.DoInteractableRaycasts))]
     private static void RestoreRiderAfterInteract(Character? __state) => RestoreRider(Character.localCharacter, __state);
 
-    /// <summary>The HUD's back slot shows the back item, not the Rider.</summary>
+    /// <summary>
+    /// The HUD's back slot shows the back item, not the Rider; during a
+    /// Rescue Carry it shows the Rescued, as the game's does for a carry.
+    /// </summary>
+    private static Character? ShowRescuedOrBackItem(Character? carrier)
+    {
+        Character? rider = HideRider(carrier);
+        if (rider != null && RescueCarry.RescuedOn(carrier!) is Character rescued)
+        {
+            carrier!.data.carriedPlayer = rescued;
+        }
+
+        return rider;
+    }
+
     [HarmonyPrefix]
     [HarmonyPatch(typeof(InventoryItemUI), nameof(InventoryItemUI.SetItem))]
-    private static void ShowBackItemInSlot(out Character? __state) => __state = HideRider(Character.observedCharacter);
+    private static void ShowBackItemInSlot(out Character? __state) => __state = ShowRescuedOrBackItem(Character.observedCharacter);
 
     [HarmonyFinalizer]
     [HarmonyPatch(typeof(InventoryItemUI), nameof(InventoryItemUI.SetItem))]
@@ -473,7 +468,7 @@ internal static class CarryLockPatches
 
     [HarmonyPrefix]
     [HarmonyPatch(typeof(InventoryItemUI), nameof(InventoryItemUI.SetSelected))]
-    private static void ShowBackItemSelection(out Character? __state) => __state = HideRider(Character.observedCharacter);
+    private static void ShowBackItemSelection(out Character? __state) => __state = ShowRescuedOrBackItem(Character.observedCharacter);
 
     [HarmonyFinalizer]
     [HarmonyPatch(typeof(InventoryItemUI), nameof(InventoryItemUI.SetSelected))]

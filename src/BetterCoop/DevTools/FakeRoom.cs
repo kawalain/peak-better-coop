@@ -37,6 +37,7 @@ internal sealed class FakeRoom : ICoopRoom
         [RunRule.FollowRolePreferences] = true,
         [RunRule.AllowSwapRequests] = true,
         [RunRule.LatePairing] = true,
+        [RunRule.RescueCarry] = true,
     };
 
     private readonly List<int> players;

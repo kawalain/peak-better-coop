@@ -143,6 +143,22 @@ when the Carrier dies, comes back when the Carrier comes back, and never passes
 out or dies alone. Reviving either member revives both.
 _Avoid_: shared death, shared revival
 
+**Rescue Carry** (구조 업기):
+Carrying a passed-out scout so that the time they have left stops running out,
+as in unmodded PEAK, by someone in a Pair or not, unless the Run Rules turn it
+off: a Shared Body carries the Rescued on its Rider's back, and an Unpaired
+Player carries a passed-out Shared Body with its Rider still on it. A Shared
+Body carries one Rescued at a time, picks them up and puts them down as in
+unmodded PEAK, and drops its back item to do so. The Rescued is put down when
+they wake or die, when the Shared Body carrying them passes out or dies, and
+before its Pair changes. Nobody is told about it, as in unmodded PEAK.
+_Avoid_: nested carry, double carry, 중첩 업기
+
+**Rescued** (구조된 사람):
+The passed-out scout in a Rescue Carry: an Unpaired Player, or a Shared Body
+with its Rider.
+_Avoid_: passenger, carried player
+
 **Unpaired Player** (짝 없는 사람):
 A player in the room who is not in any Pair and plays as in unmodded PEAK,
 until a Late Pairing or a Pair Shuffle gives them a partner. A player joining
@@ -167,8 +183,9 @@ _Avoid_: Coop Menu, 코옵 메뉴, coop panel, admin menu
 **Run Rules** (원정 규칙):
 The Troop Leader's settings that hold for everyone in the room: whether Role
 Preferences are followed, whether Role Swaps may be asked for, whether Late
-Pairing happens, odd player counts, shuffles, Body Handover, carry weight, and
-who picks from the backpack wheel. Every rule that changes play is one; each
+Pairing happens, odd player counts, shuffles, Body Handover, carry weight,
+Rescue Carry, and who picks from the backpack wheel. Every rule that changes
+play is one; each
 starts out leaving players free. A new Troop Leader keeps the rules the room
 has. Every player can read them on the Roster and is told when they change.
 _Avoid_: host settings, room settings

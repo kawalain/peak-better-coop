@@ -659,6 +659,7 @@ internal static class RunRuleRows
         Rule(RunRule.HandOverItems, () => Strings.RuleHandOverItems, () => Strings.AboutHandOverItems);
         list.Subheading(() => Strings.RulesCarrying);
         Rule(RunRule.CarryWeight, () => Strings.RuleCarryWeight, () => Strings.AboutCarryWeight);
+        Rule(RunRule.RescueCarry, () => Strings.RuleRescueCarry, () => Strings.AboutRescueCarry);
         Rule(RunRule.RiderPicksFromBackpack, () => Strings.RuleRiderPicksFromBackpack, () => Strings.AboutRiderPicksFromBackpack);
     }
 }
