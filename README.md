@@ -24,18 +24,21 @@ and come back together.
   also trade roles with **Swap Places**. Items and statuses carry over;
   nothing is lost.
 - **Late Pairing**: a player who joins mid-Run, or whose partner leaves, is
-  paired with the next player without a partner, without waiting for a
+  paired with another player without a partner, without waiting for a
   shuffle. A player who reconnects gets their partner back in their old role.
+- **Rescue Carry**: a Pair, or a player without one, picks up a passed-out
+  scout as in the plain game, and the Pair's Rider holds them. Their time
+  stops running out while they are carried.
 - **Roster** in the ESC menu is a paper form: the Pairs as a yearbook page
   of the scouts' passport photos, the time to the next shuffle, and where you
   swap places and set the role you would like. Its Carry Record tallies how
-  long each scout carried and rode this Run, and how high they climbed
-  carrying.
+  long each scout carried, rode and rescued this Run, and how high they
+  climbed carrying.
 - The **Run Report** on the Roster follows the Run as it goes, and back at
   the Airport a telegram says it is complete: how the Run ended and how long
   it took, who carried whom in each segment, everyone's Carry Record, and
   pencilled Merit Badges for the steadiest back, the comfiest passenger, the
-  best climber, and the best buddies. It stays until the next Run departs,
+  Rescue Ranger, and the best buddies. It stays until the next Run departs,
   and mods that shorten or skip the end screen leave it whole.
 - News comes in on paper from the left: a telegram, a scout's memo, a
   baggage tag for your things, or a red-stamped caution. When your own Pair
@@ -79,6 +82,7 @@ Run ended with.
 | Campfire Shuffle | On | New Pairs at each campfire. |
 | Timed Shuffle, Interval | Off, 10 | New Pairs every few minutes (1–60). |
 | Hand Over Place, Items | On, On | A new Carrier takes the old body's place and items. |
+| Rescue Carry | On | Off: Pairs carry no passed-out scout, and no one carries a passed-out Pair. |
 | Carry Weight | Off | Carriers feel the weight of a person. |
 | Verbose Log | Off | Turn on when reporting a bug, and send `BepInEx/LogOutput.log`. |
 
