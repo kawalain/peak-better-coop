@@ -369,6 +369,24 @@ internal static class CarryLockPatches
     }
 
     /// <summary>
+    /// A carried player whose Carrier left the room stays marked as carried:
+    /// the game only turns their body's physics back on. Marked, they take no
+    /// statuses, and dropping them would reach for a Carrier who is gone. The
+    /// mark goes with the Carrier, on every client.
+    /// </summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(CharacterCarrying), nameof(CharacterCarrying.CarrierGone))]
+    private static void ForgetGoneCarrier(CharacterCarrying __instance)
+    {
+        Character character = __instance.character;
+        if (character != null && character.data.isCarried && character.data.carrier == null)
+        {
+            character.data.isCarried = false;
+            Plugin.Verbose($"Scout {PairRoster.ActorOf(character)} was carried by someone who left; no longer carried.");
+        }
+    }
+
+    /// <summary>
     /// An Unmodded Player's game lets them pick up a passed-out member of a
     /// Pair, which <see cref="PairsAreNotCarriable"/> never sees on their
     /// client: the Troop Leader sets the member down again at once.
