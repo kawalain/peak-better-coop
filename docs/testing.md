@@ -35,6 +35,8 @@ then each guest with `--only` in the order wanted. The commands used below:
 | `drill {what: forge, key, actor?}` | writes a made-up mod value as a player who may not |
 | `drill {what: letter, case}` | plays one of the Zoo's Pair letter cases (0 to 5) |
 | `drill {what: end, ending}` | in a Twin, ends the real Run at the summit or with the party lost |
+| `drill {what: flood, kind, count?}` | sends many of one kind of the mod's own messages at once, as a misbehaving modded client would: `rider`, `revive`, `wheel`, `sound`, `recovery`, `swap`, `pairs` |
+| `drill {what: leave, atOperation?, delay?}` | leaves the room now, or just after the next operation runs |
 | `sounds {contains, play?}` | the game's loaded audio clips and the effects that use them |
 
 A Twin closed by force is started again with `--only <role>`. Close a Twin by
@@ -112,6 +114,43 @@ started so the Unmodded guest joins second):
     next by actor number. The others lose their Pairs, each is told once that
     the mod rests in this room, and their Roster says why instead of showing
     a board.
+
+## Extreme cases
+
+Run these in four Twins (`--guests 3`) after a change to the network side:
+operations, room or player values, events, or what the Troop Leader writes.
+The checks no Twin can reach (dozens of players, high frame rates, long
+Runs) are the unit tests on `WireLimits`, `PairSeats`, `RelayedButton`,
+`RelayedPresses`, `HudFeed`, `OrderPace`, `SourceGate` and `LatePairingRules`.
+
+1. **Mashed orders.** At the Airport, `order plan` twice at once: the second
+   answers `TooSoon`. On the island, `order shuffle`, `shuffle`, `callOff`,
+   `callOff`, `recover`, `recover` at once: each second one answers
+   `TooSoon`, and every copy logs one shuffle, one call-off and one
+   recovery.
+2. **Mashed Role Swap.** On a Rider's copy, `order swap` twice at once, then
+   `drill {what: flood, kind: swap, count: 200}`. The second ask is told to
+   wait; the partner's copy shows one notice of it, the rest held back, and
+   no Role Swap runs.
+3. **Floods.** From a Rider, `flood rider` and `flood revive`; from a
+   Carrier, `flood wheel` and `flood sound`; from any guest, `flood
+   recovery` and `flood pairs`. No copy logs `failed; it keeps running`,
+   no copy shows a recovery notice for the forged one, the Pairs on every
+   copy stay as they were, and the Troop Leader logs putting them back.
+   `perf` on the Troop Leader during a flood stays under a millisecond for
+   the mod.
+4. **Leave inside the round trip.** `drill {what: leave, atOperation: true,
+   delay: 0.03}` on a guest, then `order shuffle` on the host. Every copy
+   ends with the shuffle's Pairs minus the one who left: none goes back to
+   the Pairs from before the shuffle.
+5. **Rejoin.** Close a guest by its process id and start it again with
+   `--only`: one Late Pairing reunites it with its former partner in its
+   former roles.
+6. **A party joining together.** Close every guest, then start them all at
+   once. One Late Pairing pairs everyone who can pair (`LatePairing #n:`
+   names every new Pair).
+7. **Everyone dies.** `console {name: Character.Die}` on every copy at once.
+   Every copy shows everyone dead and the same Run Report, Lost.
 
 ## Features
 
