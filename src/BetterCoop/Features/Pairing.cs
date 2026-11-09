@@ -467,7 +467,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
             return;
         }
 
-        Plugin.Verbose($"Dissolving {current.Pairs.Count - reconciled.Pairs.Count} Pair(s) with a member gone.");
+        Plugin.Verbose($"Dissolving {current.Pairs.Count - reconciled.Pairs.Count} Pair(s) with a member gone; {current.Unpaired.Count(a => !reconciled.Unpaired.Contains(a))} who left no longer listed as unpaired.");
         PartedPairs parted = FormerPairs.HostCopy();
         foreach (Pair gone in current.Pairs.Except(reconciled.Pairs))
         {
