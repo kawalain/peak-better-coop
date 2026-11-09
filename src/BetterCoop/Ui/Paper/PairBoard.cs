@@ -384,6 +384,9 @@ internal sealed class PairBoard : MonoBehaviour
             text.color = empty ? PaperList.Faded(PaperText.Blue, 0.5f) : PaperText.Blue;
             AddSlot(Cell(pair, 0f), new Slot(SlotKind.Carrier, i));
             AddSlot(Cell(pair, PhotoWidth + PartnerGap), new Slot(SlotKind.Rider, i));
+
+            // Drawn over the photos, so one that grows as it is chosen never hides it.
+            label.SetAsLastSibling();
         }
 
         if (draft.Unpaired.Count == 0 && !editable)
