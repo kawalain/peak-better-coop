@@ -71,6 +71,12 @@ internal interface ICoopRoom
     /// <summary>Orders a Pair Shuffle; false when it cannot start now.</summary>
     bool Shuffle();
 
+    /// <summary>Whether the Troop Leader could call off the coming Pair Shuffle now.</summary>
+    bool CanCallOffShuffle { get; }
+
+    /// <summary>Calls off the coming Pair Shuffle; the Timed Shuffle counts again from the start.</summary>
+    bool CallOffShuffle();
+
     /// <summary>Re-attaches every Pair's carry and wakes every Rider.</summary>
     void Recover();
 

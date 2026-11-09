@@ -153,6 +153,19 @@ internal sealed class FakeRoom : ICoopRoom
         }
     }
 
+    public bool CanCallOffShuffle => IsTroopLeader && SecondsToTimedShuffle != null;
+
+    public bool CallOffShuffle()
+    {
+        if (!CanCallOffShuffle)
+        {
+            return false;
+        }
+
+        untilShuffle = shuffleMinutes * 60.0;
+        return true;
+    }
+
     public bool Shuffle()
     {
         if (!Formed)

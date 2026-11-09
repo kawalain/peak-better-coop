@@ -59,6 +59,20 @@ internal static class PairLetters
             NoticeBoard.Chime(bad: false);
         }
 
+        if (op.CalledOff)
+        {
+            // Nothing changed: the Pair stays as it was.
+            Pair? stays = PairRoster.Pairs.FirstOrDefault(p => p.Contains(me));
+            letter.Show(stays?.PartnerOf(me), stays == null ? null : stays.Carrier == me, known: true, Strings.LetterCalledOff, Strings.LetterStays);
+            if (!closing)
+            {
+                closing = true;
+                letter.CloseAfter(AfterChange);
+            }
+
+            return true;
+        }
+
         if (op.Done)
         {
             // The bodies have changed: show the Pair as it now stands.

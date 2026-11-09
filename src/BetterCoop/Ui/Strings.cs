@@ -131,6 +131,30 @@ internal static class Strings
 
     public static string StampReally => Korean ? "정말로?" : "Really?";
 
+    public static string StampCallOff => Korean ? "취소" : "Call off";
+
+    public static string MenuCallOffLabel => Korean ? "다가오는 짝 섞기 취소" : "Call off the coming shuffle";
+
+    public static string AboutCallOff => Korean
+        ? "곧 있을 짝 섞기를 취소합니다. 시간마다 짝 섞기는 처음부터 다시 셉니다."
+        : "Calls off the Pair Shuffle that is coming; the Timed Shuffle counts again from the start.";
+
+    public static string CallOffUnavailable => Korean
+        ? "코옵: 지금은 취소할 짝 섞기가 없습니다."
+        : "Coop: there is no Pair Shuffle to call off now.";
+
+    public static string ShuffleCalledOff => Korean
+        ? "코옵: 분대장이 다가오는 짝 섞기를 취소했습니다."
+        : "Coop: the Troop Leader called off the coming Pair Shuffle.";
+
+    public static string ShuffleCalledOffUntil(string clock) => Korean
+        ? $"코옵: 분대장이 다가오는 짝 섞기를 취소했습니다. 다음 짝 섞기는 {clock} 뒤입니다."
+        : $"Coop: the Troop Leader called off the coming Pair Shuffle. The next one is in {clock}.";
+
+    public static string LetterCalledOff => Korean ? "취소" : "Called off";
+
+    public static string LetterStays => Korean ? "지금 짝 그대로 오릅니다" : "Climbing on as you were";
+
     public static string Serial(int number) => $"No. {number:D7}";
 
     /// <summary>A notice's words without the "Coop:" the game's log needs to tell them from its own.</summary>

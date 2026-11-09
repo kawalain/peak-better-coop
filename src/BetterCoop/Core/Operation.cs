@@ -27,7 +27,7 @@ internal sealed class Operation
     /// <summary>How long before the operation hands are emptied and pickups refused.</summary>
     public const double LockLeadSeconds = 0.5;
 
-    public Operation(int id, OperationKind kind, double at, int swapCarrier, int swapRider, bool done)
+    public Operation(int id, OperationKind kind, double at, int swapCarrier, int swapRider, bool done, bool calledOff = false)
     {
         Id = id;
         Kind = kind;
@@ -35,6 +35,7 @@ internal sealed class Operation
         SwapCarrier = swapCarrier;
         SwapRider = swapRider;
         Done = done;
+        CalledOff = calledOff;
     }
 
     public int Id { get; }
@@ -52,6 +53,9 @@ internal sealed class Operation
 
     public bool Done { get; }
 
+    /// <summary>Whether the Troop Leader called it off: done, with nothing changed.</summary>
+    public bool CalledOff { get; }
+
     public bool IsShuffle => Kind is OperationKind.CampfireShuffle or OperationKind.TimedShuffle or OperationKind.OrderedShuffle;
 
     /// <summary>Whether the operation concerns this player: everyone for a Pair Shuffle or a Pair Assignment.</summary>
@@ -62,24 +66,43 @@ internal sealed class Operation
 
     public Operation Finished() => new(Id, Kind, At, SwapCarrier, SwapRider, true);
 
-    public object[] Encode() => [Id, (byte)Kind, At, SwapCarrier, SwapRider, Done];
+    /// <summary>This operation called off before it ran.</summary>
+    public Operation Cancelled() => new(Id, Kind, At, SwapCarrier, SwapRider, true, calledOff: true);
+
+    /// <summary>
+    /// The Troop Leader calling off the Pair Shuffle that is coming: the one
+    /// counting down now, if it has not run; otherwise a Timed Shuffle, whose
+    /// clock starts again. Null when there is nothing to call off.
+    /// </summary>
+    public static Operation? CallOff(Operation? current, bool timedComing, double now)
+    {
+        if (current is { Done: false })
+        {
+            return current.IsShuffle && ServerClock.Since(now, current.At) < 0 ? current.Cancelled() : null;
+        }
+
+        return timedComing ? new Operation((current?.Id ?? 0) + 1, OperationKind.TimedShuffle, now, -1, -1, true, calledOff: true) : null;
+    }
+
+    public object[] Encode() => [Id, (byte)Kind, At, SwapCarrier, SwapRider, Done, CalledOff];
 
     public static Operation? Decode(object? value)
     {
-        if (value is not object[] { Length: 6 } parts
+        if (value is not object[] { Length: 7 } parts
             || parts[0] is not int id
             || parts[1] is not byte kind
             || parts[2] is not double at
             || parts[3] is not int swapCarrier
             || parts[4] is not int swapRider
             || parts[5] is not bool done
+            || parts[6] is not bool calledOff
             || !ServerClock.IsTime(at)
             || !Enum.IsDefined(typeof(OperationKind), kind))
         {
             return null;
         }
 
-        return new Operation(id, (OperationKind)kind, at, swapCarrier, swapRider, done);
+        return new Operation(id, (OperationKind)kind, at, swapCarrier, swapRider, done, calledOff);
     }
 
     /// <summary>The whole seconds left to announce in the countdown, or 0 outside it.</summary>

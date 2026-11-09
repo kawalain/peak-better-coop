@@ -313,6 +313,36 @@ public class OperationTests
         Operation decoded = Operation.Decode(op.Encode())!;
 
         Assert.Equal((4, OperationKind.RoleSwap, 12.5, 7, 8, false), (decoded.Id, decoded.Kind, decoded.At, decoded.SwapCarrier, decoded.SwapRider, decoded.Done));
-        Assert.Null(Operation.Decode(new object[] { 1, (byte)9, 0.0, -1, -1, false }));
+        Assert.Null(Operation.Decode(new object[] { 1, (byte)9, 0.0, -1, -1, false, false }));
+    }
+
+    [Fact]
+    public void A_shuffle_counting_down_is_called_off_with_nothing_changed()
+    {
+        var coming = new Operation(3, OperationKind.CampfireShuffle, 10, -1, -1, false);
+
+        Operation called = Operation.CallOff(coming, timedComing: false, now: 8)!;
+
+        Assert.Equal(3, called.Id);
+        Assert.True(called.Done);
+        Assert.True(called.CalledOff);
+        Assert.True(Operation.Decode(called.Encode())!.CalledOff);
+    }
+
+    [Fact]
+    public void Only_a_shuffle_not_yet_run_can_be_called_off()
+    {
+        Assert.Null(Operation.CallOff(new Operation(3, OperationKind.TimedShuffle, 10, -1, -1, false), false, now: 11));
+        Assert.Null(Operation.CallOff(new Operation(3, OperationKind.RoleSwap, 10, 1, 2, false), true, now: 8));
+        Assert.Null(Operation.CallOff(new Operation(3, OperationKind.TimedShuffle, 10, -1, -1, true), timedComing: false, now: 20));
+    }
+
+    [Fact]
+    public void A_coming_Timed_Shuffle_is_called_off_as_a_new_operation_already_done()
+    {
+        Operation called = Operation.CallOff(new Operation(3, OperationKind.TimedShuffle, 10, -1, -1, true), timedComing: true, now: 50)!;
+
+        Assert.Equal(4, called.Id);
+        Assert.True(called.Done && called.CalledOff);
     }
 }

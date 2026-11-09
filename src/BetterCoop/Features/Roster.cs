@@ -426,6 +426,21 @@ internal static class TroopLeaderRows
             visible: () => room.Formed || room.Planning,
             confirm: true);
         list.Stamp(
+            () => Strings.MenuCallOffLabel,
+            () => Strings.StampCallOff,
+            () =>
+            {
+                if (!room.CallOffShuffle())
+                {
+                    CoopNotice.Info(Strings.CallOffUnavailable);
+                }
+            },
+            available: () => room.CanCallOffShuffle,
+            about: () => Strings.AboutCallOff,
+            visible: () => room.Formed && (room.SecondsToTimedShuffle != null || room.Busy),
+            value: () => room.Busy ? Strings.MenuShuffleNow : room.SecondsToTimedShuffle is double s ? Strings.Clock(s) : string.Empty,
+            confirm: true);
+        list.Stamp(
             () => Strings.MenuRecover,
             () => Strings.StampRestore,
             room.Recover,
@@ -551,6 +566,10 @@ internal sealed class LiveRoom : ICoopRoom
     public bool Shuffle() => PairShuffle.Request(OperationKind.OrderedShuffle);
 
     public void Recover() => CarryKeeper.RequestRecovery();
+
+    public bool CanCallOffShuffle => PairShuffle.CanCallOff;
+
+    public bool CallOffShuffle() => PairShuffle.CallOff();
 
     public bool CanArrange(IReadOnlyList<Pair> pairs) => PairShuffle.CanArrange(pairs);
 

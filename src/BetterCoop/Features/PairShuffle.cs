@@ -78,7 +78,7 @@ internal static class PairShuffle
 
     /// <summary>Whether an operation on this player ran in the last few seconds, so its Body Handover may still be arriving.</summary>
     internal static bool HandingOver(int actor) =>
-        Current is { Done: true } op && op.Involves(actor) && ServerClock.Since(PhotonNetwork.Time, op.At) < LockTimeoutSeconds;
+        Current is { Done: true, CalledOff: false } op && op.Involves(actor) && ServerClock.Since(PhotonNetwork.Time, op.At) < LockTimeoutSeconds;
 
     /// <summary>Whether the local player's hands stay empty for an operation now.</summary>
     internal static bool LocalLocked
@@ -98,6 +98,7 @@ internal static class PairShuffle
         Queue.Clear();
         appliedHandoverId = ReadHandover()?.Id ?? 0;
         countdownId = Current?.Id ?? 0;
+        calledOffShown = countdownId;
         emptiedHandsId = countdownId;
         startedId = countdownId;
         finishedId = countdownId;
@@ -173,6 +174,32 @@ internal static class PairShuffle
 
         publishedAssignment = Arrangement.Encode(op.Id, pairs);
         Publish(op, new PhotonHashtable { [RoomKeys.Assignment] = publishedAssignment });
+        return true;
+    }
+
+    /// <summary>Whether the Troop Leader could call off a Pair Shuffle now.</summary>
+    internal static bool CanCallOff =>
+        PhotonNetwork.IsMasterClient && PairRoster.Formed && Operation.CallOff(Current, SecondsToTimedShuffle() != null, PhotonNetwork.Time) != null;
+
+    /// <summary>
+    /// As the Troop Leader, calls off the coming Pair Shuffle: the one counting
+    /// down now, or the next Timed Shuffle. Either way the Timed Shuffle counts
+    /// again from the start, and everyone is told.
+    /// </summary>
+    internal static bool CallOff()
+    {
+        if (!PhotonNetwork.IsMasterClient
+            || !PairRoster.Formed
+            || Operation.CallOff(Current, SecondsToTimedShuffle() != null, PhotonNetwork.Time) is not Operation called)
+        {
+            return false;
+        }
+
+        Queue.Clear();
+        published = called;
+        hostClock = PhotonNetwork.Time;
+        RoomWrites.Set(new PhotonHashtable { [RoomKeys.Operation] = called.Encode(), [RoomKeys.ShuffleClock] = hostClock });
+        Plugin.Verbose($"Called off {called.Kind} #{called.Id}.");
         return true;
     }
 
@@ -519,6 +546,13 @@ internal static class PairShuffle
             return;
         }
 
+        if (op.CalledOff && op.Id > startedId)
+        {
+            // Called off before it started here: nothing to tell.
+            startedId = finishedId = op.Id;
+            return;
+        }
+
         if (op.Id > startedId)
         {
             startedId = op.Id;
@@ -532,8 +566,17 @@ internal static class PairShuffle
         }
     }
 
+    private static int calledOffShown;
+
     private static void ShowCountdown(Operation? op)
     {
+        if (op is { CalledOff: true } && op.Id > calledOffShown)
+        {
+            calledOffShown = op.Id;
+            double? next = SecondsToTimedShuffle();
+            CoopNotice.Info(next is double seconds ? Strings.ShuffleCalledOffUntil(Strings.Clock(seconds)) : Strings.ShuffleCalledOff);
+        }
+
         Character local = Character.localCharacter;
         if (op == null || local == null || !op.Involves(PairRoster.ActorOf(local)))
         {
