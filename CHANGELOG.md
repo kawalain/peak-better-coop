@@ -19,6 +19,8 @@ party at the Airport.
   partner back.
 - New Run Rules: Honour Role Preferences, Allow Role Swaps, Late Pairing.
 - Notices now arrive on paper.
+- Paper pages, stamps, and the Scoutmaster's hand now make the game's own
+  paper sounds.
 - `BetterCoop.Api` for other mods: read a character's role, partner, and
   Shared Body, and hear when the Pairs change (see the README).
 
@@ -45,5 +47,3 @@ party at the Airport.
 - A Pair's time together in the Run Report is no longer longer than the Run.
 - A Rider whose Carrier leaves the room is no longer left marked as carried,
   which kept statuses off them until they were paired again.
-- Paper pages, stamps, and the Scoutmaster's hand now make the game's own
-  paper sounds.
