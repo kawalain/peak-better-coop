@@ -62,10 +62,10 @@ except your own Role Preference and the Debug settings; a new Troop Leader
 keeps the room's rules. Everyone reads the Run Rules on the Roster, and a
 telegram tells them when the rules change. The Troop Leader's
 Roster can also shuffle the Pairs at once, call off the coming shuffle,
-re-carry every Pair, and lay the
+put every Pair back together, and lay the
 Pairs out as they like by moving the photos about as a draft, then announce
 them to everyone with a postmark: the Scoutmaster's hand reaches down and
-takes the paper. A draft thrown away is crumpled up and tossed. At the
+takes the paper. A discarded draft is crumpled up and tossed. At the
 Airport the Troop Leader plans the Pairs the same way before departure; the
 Pairs form as planned on arrival, and anyone left out is paired by lot. When
 the same scouts gather again, the plan's draft starts from the Pairs the last
