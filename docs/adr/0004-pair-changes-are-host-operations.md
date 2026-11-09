@@ -31,7 +31,7 @@ not done and runs it.
   new one runs the operation again; the Shared Bodies stay intact, but items may
   move twice.
 - A Late Pairing is an operation too, run whenever two Unpaired Players with
-  the same mod version and a spawned character are present, at least one of
+  the Troop Leader's protocol and a spawned character are present, at least one of
   them awake, and no other operation is running. A character counts only five
   seconds after it spawns: mods that let players join during a Run move and
   revive the newcomer in those first seconds, and would pull a Rider off the

@@ -107,8 +107,10 @@ project file).
 
 ## Test builds and versions
 
-Players must run the exact same version to depart, so bump `<Version>` in
-`BetterCoop.csproj` only when a test build goes to players: minor for a build with
+Players are paired by protocol, not version (ADR 0009): raise
+`RoomProtocol.Current` in the commit that changes a shared key, event, or wire
+format. Bump `<Version>` in `BetterCoop.csproj` only when a test build goes to
+players: minor for a build with
 new features, patch for a build of fixes. Commits in between keep the version.
 A Release build writes the test build to `artifacts/BetterCoop-<version>.zip`.
 

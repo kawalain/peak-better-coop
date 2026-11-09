@@ -8,8 +8,9 @@ exactly the hard-to-diagnose bugs of the previous version after the last update.
 
 ## Consequences
 
-- A disabled mod publishes no version, so the host's party gate reports that
-  player as missing the mod and the Run cannot depart half-modded.
+- A disabled mod publishes no protocol, so that player is an Unmodded Player
+  (ADR 0009): they climb along without a Pair, and no Pair runs half-modded.
+  Before 0.6.0 such a player kept the whole party at the Airport.
 - The same holds when Co-op Mod, the mod BetterCoop grew from, is loaded too:
   both patch the carry and shared stamina, so the mod turns itself off and asks
   the player to remove Co-op Mod.

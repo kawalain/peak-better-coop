@@ -45,8 +45,8 @@ and come back together.
 ## Installing
 
 Install with a mod manager (Gale, r2modman, or Thunderstore Mod Manager).
-The Troop Leader (host) needs the mod. Players with the Troop Leader's version
-are paired; anyone without the mod, or with a version that does not work with
+The Troop Leader (host) needs the mod. Players whose version works with the
+Troop Leader's are paired; anyone without the mod, or with a version that does not work with
 the Troop Leader's, climbs along without a Pair, and everyone is told who. The
 players who can pair need to be an even number unless the Troop Leader allows
 an odd one.
@@ -92,7 +92,7 @@ Co-op Mod, and after a game update it does not fit yet.
 
 `BetterCoop.Api` lets another mod read the Pairs without depending on
 BetterCoop's internals: `Enabled` (false while the mod is off, or sits out a
-room whose Troop Leader has another version), `RoleOf(character)`,
+room whose Troop Leader's version does not work with this one), `RoleOf(character)`,
 `TryGetPartner(character, out partner)`, `TryGetSharedBody(character, out body)`
 (a Rider plays through their Carrier's body), and the events `PairsChanged`,
 `PairChangeStarting`, and `PairChangeFinished`. `ApiVersion` rises only when a
