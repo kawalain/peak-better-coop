@@ -150,39 +150,58 @@ internal static partial class ControlCommands
 
         double delay = Math.Max(0, Math.Min(5, (double?)args["delay"] ?? 0.05));
         bool atOperation = (bool?)args["atOperation"] ?? false;
-        double at = PhotonNetwork.Time;
-        if (atOperation)
-        {
-            Operation op = PairShuffle.Current is { Done: false } coming
-                ? coming
-                : throw new InvalidOperationException("no operation counting down");
-            at = op.At + delay;
-        }
-
         var timer = new GameObject("BetterCoop.LeaveDrill");
         UnityEngine.Object.DontDestroyOnLoad(timer);
-        timer.AddComponent<LeaveTimer>().At = at;
-        return atOperation ? $"leaving at server time {at:F2}" : "leaving";
+        LeaveTimer leave = timer.AddComponent<LeaveTimer>();
+        leave.Delay = delay;
+        leave.AtOperation = atOperation;
+        leave.ArmedAt = Time.unscaledTime;
+        return atOperation ? $"leaving {delay:F2} s after the next operation runs" : "leaving";
     }
 
-    /// <summary>Leaves the room once server time reaches <see cref="At"/>.</summary>
+    /// <summary>
+    /// Leaves the room now, or once an operation counting down, the one now
+    /// or the next to be announced, has run plus <see cref="Delay"/>.
+    /// </summary>
     private sealed class LeaveTimer : MonoBehaviour
     {
-        public double At;
+        /// <summary>How long it waits for an operation to be announced before giving up.</summary>
+        private const float WaitSeconds = 60f;
+
+        public double Delay;
+
+        public bool AtOperation;
+
+        public float ArmedAt;
+
+        private double? at;
 
         private void Update()
         {
-            if (PhotonNetwork.InRoom && ServerClock.Since(PhotonNetwork.Time, At) < 0)
+            if (!PhotonNetwork.InRoom || (AtOperation && Time.unscaledTime - ArmedAt > WaitSeconds && at == null))
+            {
+                Destroy(gameObject);
+                return;
+            }
+
+            if (AtOperation && at == null)
+            {
+                if (PairShuffle.Current is not { Done: false } coming)
+                {
+                    return;
+                }
+
+                at = coming.At + Delay;
+                Plugin.Log.LogInfo($"Drill: will leave at server time {at:F2}, after {coming.Kind} #{coming.Id}.");
+            }
+
+            if (at is double when && ServerClock.Since(PhotonNetwork.Time, when) < 0)
             {
                 return;
             }
 
-            if (PhotonNetwork.InRoom)
-            {
-                Plugin.Log.LogInfo($"Drill: leaving the room at server time {PhotonNetwork.Time:F2}.");
-                PhotonNetwork.LeaveRoom();
-            }
-
+            Plugin.Log.LogInfo($"Drill: leaving the room at server time {PhotonNetwork.Time:F2}.");
+            PhotonNetwork.LeaveRoom();
             Destroy(gameObject);
         }
     }
