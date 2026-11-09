@@ -288,8 +288,24 @@ internal static class PairShuffle
         }
 
         double now = PhotonNetwork.Time;
+        bool own = op != null && (op == published || RoomWrites.IsOwn(RoomKeys.Operation));
+        // An operation a Run Rule started is called off when the Troop Leader turns that rule off before it runs.
+        if (op is { Done: false } && own && op.Id > executedId && Operation.StartedBy(op.Kind) is RunRule rule && !RunRules.Is(rule))
+        {
+            Operation called = op.Cancelled();
+            published = called;
+            RoomWrites.Set(new PhotonHashtable { [RoomKeys.Operation] = called.Encode() });
+            Plugin.Verbose($"Called off {op.Kind} #{op.Id}: {rule} was turned off.");
+            if (Queue.After(called, now) is Operation next)
+            {
+                Publish(next);
+            }
+
+            return;
+        }
+
         // Only an operation this Troop Leader announced, or found announced on taking over, runs.
-        if (op is { Done: false } && ServerClock.Since(now, op.At) >= 0 && op.Id > executedId && (op == published || RoomWrites.IsOwn(RoomKeys.Operation)))
+        if (op is { Done: false } && ServerClock.Since(now, op.At) >= 0 && op.Id > executedId && own)
         {
             Execute(op);
             return;
@@ -614,14 +630,21 @@ internal static class PairShuffle
 
     private static void ShowCountdown(Operation? op)
     {
+        Character local = Character.localCharacter;
         if (op is { CalledOff: true } && op.Id > calledOffShown)
         {
             calledOffShown = op.Id;
-            double? next = SecondsToTimedShuffle();
-            CoopNotice.Info(next is double seconds ? Strings.ShuffleCalledOffUntil(Strings.Clock(seconds)) : Strings.ShuffleCalledOff);
+            if (op.IsShuffle)
+            {
+                double? next = SecondsToTimedShuffle();
+                CoopNotice.Info(next is double seconds ? Strings.ShuffleCalledOffUntil(Strings.Clock(seconds)) : Strings.ShuffleCalledOff);
+            }
+            else if (local != null && op.Involves(PairRoster.ActorOf(local)))
+            {
+                CoopNotice.Info(Strings.CalledOffByRule(op.Kind));
+            }
         }
 
-        Character local = Character.localCharacter;
         if (op == null || local == null || !op.Involves(PairRoster.ActorOf(local)))
         {
             return;

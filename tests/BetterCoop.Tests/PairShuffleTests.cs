@@ -345,4 +345,20 @@ public class OperationTests
         Assert.Equal(4, called.Id);
         Assert.True(called.Done && called.CalledOff);
     }
+
+    [Fact]
+    public void What_a_rule_starts_that_rule_calls_off()
+    {
+        Assert.Equal(RunRule.CampfireShuffle, Operation.StartedBy(OperationKind.CampfireShuffle));
+        Assert.Equal(RunRule.TimedShuffle, Operation.StartedBy(OperationKind.TimedShuffle));
+        Assert.Equal(RunRule.AllowSwapRequests, Operation.StartedBy(OperationKind.RoleSwap));
+        Assert.Equal(RunRule.LatePairing, Operation.StartedBy(OperationKind.LatePairing));
+    }
+
+    [Fact]
+    public void What_the_Troop_Leader_orders_runs_whatever_the_rules()
+    {
+        Assert.Null(Operation.StartedBy(OperationKind.OrderedShuffle));
+        Assert.Null(Operation.StartedBy(OperationKind.PairAssignment));
+    }
 }

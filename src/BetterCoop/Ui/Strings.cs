@@ -248,6 +248,15 @@ internal static class Strings
         ? "코옵: 분대장이 다가오는 짝 섞기를 취소했습니다."
         : "Coop: the Troop Leader called off the coming Pair Shuffle.";
 
+    /// <summary>A Role Swap or Late Pairing called off because the Troop Leader turned off the rule that started it.</summary>
+    public static string CalledOffByRule(OperationKind kind) => kind == OperationKind.RoleSwap
+        ? Korean
+            ? "코옵: 분대장이 자리 바꾸기 요청을 막아, 다가오던 자리 바꾸기를 취소했습니다."
+            : "Coop: the Troop Leader stopped Role Swap requests, so the coming Role Swap is called off."
+        : Korean
+            ? "코옵: 분대장이 짝 이어주기를 꺼서, 다가오던 짝 이어주기를 취소했습니다."
+            : "Coop: the Troop Leader turned Late Pairing off, so the coming Late Pairing is called off.";
+
     public static string ShuffleCalledOffUntil(string clock) => Korean
         ? $"코옵: 분대장이 다가오는 짝 섞기를 취소했습니다. 다음 짝 섞기는 {clock} 뒤입니다."
         : $"Coop: the Troop Leader called off the coming Pair Shuffle. The next one is in {clock}.";

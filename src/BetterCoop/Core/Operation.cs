@@ -66,6 +66,20 @@ internal sealed class Operation
 
     public Operation Finished() => new(Id, Kind, At, SwapCarrier, SwapRider, true);
 
+    /// <summary>
+    /// The Run Rule that starts operations of <paramref name="kind"/>: turned
+    /// off before one runs, it calls that one off. Null for what the Troop
+    /// Leader orders, which runs whatever the rules say.
+    /// </summary>
+    public static RunRule? StartedBy(OperationKind kind) => kind switch
+    {
+        OperationKind.CampfireShuffle => RunRule.CampfireShuffle,
+        OperationKind.TimedShuffle => RunRule.TimedShuffle,
+        OperationKind.RoleSwap => RunRule.AllowSwapRequests,
+        OperationKind.LatePairing => RunRule.LatePairing,
+        _ => null,
+    };
+
     /// <summary>This operation called off before it ran.</summary>
     public Operation Cancelled() => new(Id, Kind, At, SwapCarrier, SwapRider, true, calledOff: true);
 
