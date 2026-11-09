@@ -17,10 +17,16 @@ internal static partial class DevHooks
     static partial void OnStarted(BaseUnityPlugin plugin, GameObject runtime)
     {
         DevTools.SoloPair.Bind(plugin.Config);
+        DevTools.ControlLine.Bind(plugin.Config);
         DevTools.Twin.Start(runtime);
+        if (DevTools.ControlLine.Asked)
+        {
+            runtime.AddComponent<DevTools.ControlLine>();
+        }
+
         runtime.AddComponent<DevTools.SoloPairNotice>();
         PhotoDarkroom.More = DevTools.ZooPortraits.WarmOne;
-        Plugin.Log.LogWarning("This is a development build: the Zoo, Solo Pair, and the Twin are in it. Never hand it to players.");
+        Plugin.Log.LogWarning("This is a development build: the Zoo, Solo Pair, the Twin, and the Control Line are in it. Never hand it to players.");
     }
 
     static partial void OnPauseMenu(PauseMenuMainPage menu, UIPageHandler handler, PauseMenuControlsPage controls, Button after, Func<string, Action, Button, Button> add)

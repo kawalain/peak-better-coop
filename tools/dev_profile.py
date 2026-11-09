@@ -6,8 +6,8 @@ the game started by Steam sees the real one.
 
 Usage:
   python -I tools/dev_profile.py install <profile_dir> <cache_dir> <Owner-Package>...
-  python -I tools/dev_profile.py launch <profile_dir> <game_dir>
-  python -I tools/dev_profile.py twin <profile_dir> <game_dir> [<twin_dir>] [--plugin <BetterCoop.dll>]
+  python -I tools/dev_profile.py launch <profile_dir> <game_dir> [--control]
+  python -I tools/dev_profile.py twin <profile_dir> <game_dir> [<twin_dir>] [--plugin <BetterCoop.dll>] [--control]
 
 install resolves dependencies to their latest versions, downloads each
 package from Thunderstore into <cache_dir>, and lays it out like Gale does:
@@ -24,6 +24,9 @@ be a development build in a room: it writes the room's name to its
 BepInEx/cache/BetterCoop-room.txt, which the Twin reads. --plugin gives the
 Twin another BetterCoop.dll than the profile's, as one just built while the
 first copy holds the profile's open.
+
+--control turns on the Control Line in that copy (development builds only),
+for tools/peak_mcp.py to watch and steer it.
 """
 
 import json
@@ -39,6 +42,7 @@ from pathlib import Path, PurePosixPath
 COMMUNITY_INDEX = "https://thunderstore.io/c/peak/api/v1/package/"
 LOADER = "BepInEx-BepInExPack_PEAK"
 PEAK_APP_ID = "3527290"
+CONTROL = "--bettercoop-control"
 SUBDIRS = {"plugins", "patchers", "core", "monomod", "config"}
 USER_AGENT = "peak-better-coop-dev-profile"
 
@@ -105,7 +109,7 @@ def steam_exe() -> Path:
         return Path(winreg.QueryValueEx(key, "InstallPath")[0]) / "steam.exe"
 
 
-def launch(profile: Path, game: Path) -> None:
+def launch(profile: Path, game: Path, control: bool) -> None:
     for name in ("winhttp.dll", "doorstop_config.ini", ".doorstop_version"):
         shutil.copy2(profile / name, game / name)
     preloader = profile / "BepInEx" / "core" / "BepInEx.Preloader.dll"
@@ -116,11 +120,13 @@ def launch(profile: Path, game: Path) -> None:
         else ("--doorstop-enable", "--doorstop-target")
     )
     command = [str(steam_exe()), "-applaunch", PEAK_APP_ID, enable, "true", target, str(preloader)]
+    if control:
+        command.append(CONTROL)
     print(" ".join(command))
     subprocess.Popen(command)
 
 
-def twin(profile: Path, game: Path, twin_dir: Path, plugin: Path | None) -> None:
+def twin(profile: Path, game: Path, twin_dir: Path, plugin: Path | None, control: bool) -> None:
     def leave_out(folder: str, names: list[str]) -> set[str]:
         here = Path(folder)
         skipped = {n for n in names if n.startswith("LogOutput") or n == "in.kawala.bettercoop.twin-id.txt"}
@@ -148,6 +154,8 @@ def twin(profile: Path, game: Path, twin_dir: Path, plugin: Path | None) -> None
         "-logFile", str(twin_dir / "Player.log"),
         f"--bettercoop-twin={card}",
     ]
+    if control:
+        command.append(CONTROL)
     # Started directly rather than through Steam, which would only bring the
     # first copy forward; the app id lets Steamworks start without relaunching.
     env = dict(os.environ, SteamAppId=PEAK_APP_ID, SteamGameId=PEAK_APP_ID)
@@ -156,10 +164,12 @@ def twin(profile: Path, game: Path, twin_dir: Path, plugin: Path | None) -> None
 
 
 def main(argv: list[str]) -> None:
+    control = "--control" in argv
+    argv = [a for a in argv if a != "--control"]
     if len(argv) >= 4 and argv[1] == "install":
         install(Path(argv[2]), Path(argv[3]), argv[4:])
     elif len(argv) == 4 and argv[1] == "launch":
-        launch(Path(argv[2]), Path(argv[3]))
+        launch(Path(argv[2]), Path(argv[3]), control)
     elif len(argv) >= 4 and argv[1] == "twin":
         rest = argv[4:]
         plugin = None
@@ -167,7 +177,7 @@ def main(argv: list[str]) -> None:
             at = rest.index("--plugin")
             plugin = Path(rest[at + 1])
             del rest[at : at + 2]
-        twin(Path(argv[2]), Path(argv[3]), Path(rest[0]) if rest else Path.home() / "BetterCoopTwin", plugin)
+        twin(Path(argv[2]), Path(argv[3]), Path(rest[0]) if rest else Path.home() / "BetterCoopTwin", plugin, control)
     else:
         sys.exit(__doc__)
 

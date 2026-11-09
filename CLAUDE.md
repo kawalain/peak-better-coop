@@ -86,6 +86,18 @@ project file).
   `Player.UserId`, so the two stay apart. The Twin leaves the account and the
   first copy's files alone (no achievements, stats, rich presence, Steam lobby,
   quicksave, or saved settings), though Unity may still save its window size.
+- The Control Line lets a tool watch and steer a running copy: its state (room,
+  scouts, Pairs, Run Rules, Carry Record, Run Report), log, and screen; Roster
+  orders through the Roster's own `LiveRoom`; warps; pressing what is on
+  screen; and the game's console commands, except those that change what the
+  account keeps. It is off unless asked for: `--control` on `dev_profile.py
+  launch` or `twin`, `BETTERCOOP_CONTROL=1`, or `[Debug] Control Line`. A copy
+  with it on listens on 127.0.0.1 with a token made at every start, announced
+  in `~/.bettercoop/control/<pid>.json`. `tools/peak_mcp.py`, registered in
+  `.mcp.json`, reads those files and exposes each copy (`host` or `twin`) as
+  MCP tools. A new command goes in `DevTools/ControlCommands.cs` (or
+  `ControlRoom.cs` for the mod's own state), never anything that runs code or
+  feeds raw input.
 
 ## Test builds and versions
 
