@@ -356,14 +356,17 @@ internal sealed class PaperHandIn : MonoBehaviour
 
     private const float LiftSeconds = 0.55f;
 
-    /// <summary>How long a forearm is beside the page, in canvas units.</summary>
-    private const float Forearm = 150f;
+    /// <summary>How long a hand is, wrist to fingertips, beside the page's width: about a real hand's on a sheet of paper.</summary>
+    private const float HandShare = 0.5f;
+
+    /// <summary>How much of a hand reaches down over the paper's top edge to take it.</summary>
+    private const float GripShare = 0.22f;
 
     /// <summary>A drawn arm's width beside the page, in canvas units.</summary>
     private const float DrawnWidth = 210f;
 
-    /// <summary>How far the fingers come down over the paper's top edge, in canvas units.</summary>
-    private const float Grip = 34f;
+    /// <summary>How far a drawn arm's fingers come down over the paper's top edge, in canvas units.</summary>
+    private const float DrawnGrip = 34f;
 
     private RectTransform paper = null!;
 
@@ -383,6 +386,8 @@ internal sealed class PaperHandIn : MonoBehaviour
 
     private float handX;
 
+    private float grip;
+
     public void Begin(Texture2D picture, Texture? arm, Color skin, Action done)
     {
         shot = picture;
@@ -398,10 +403,12 @@ internal sealed class PaperHandIn : MonoBehaviour
         page.texture = picture;
         page.raycastTarget = false;
 
-        // A taken picture shows at a forearm's length beside the page; a drawn arm is twice as tall as wide.
-        float scale = Forearm / ScoutmasterHand.ForearmPixels;
+        // A drawn hand shows as large beside the page as a real one beside a sheet; a drawn arm is twice as tall as wide.
+        float handLength = HandShare * size.x;
+        float scale = handLength / ScoutmasterHand.HandPixels;
         float handWidth = arm != null ? arm.width * scale : DrawnWidth;
         handHeight = arm != null ? arm.height * scale : DrawnWidth * 2f;
+        grip = arm != null ? GripShare * handLength : DrawnGrip;
         handX = UnityEngine.Random.Range(-0.18f, 0.18f) * size.x;
         hand = PaperList.NewRect("Hand", holder);
         hand.anchorMin = hand.anchorMax = new Vector2(0.5f, 1f);
@@ -455,7 +462,7 @@ internal sealed class PaperHandIn : MonoBehaviour
     private void Pose()
     {
         // The hand's foot, where its fingers are, measured down from the paper's top edge.
-        float gripped = -Grip;
+        float gripped = -grip;
         float handFoot;
         float lift = 0f;
         float squeeze = 1f;
