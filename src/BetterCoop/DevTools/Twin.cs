@@ -166,7 +166,8 @@ internal static class Twin
 
     private static void OwnUserId(ref ulong __result) => __result = Id;
 
-    private static void OwnName(ref string __result) => __result = (__result + " " + label).Trim();
+    /// <summary>Shows the Twin by its own name alone, not the account's every copy shares.</summary>
+    private static void OwnName(ref string __result) => __result = label;
 
     /// <summary>
     /// Photon's client asks every room it makes to refuse a second player with

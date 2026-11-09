@@ -96,7 +96,8 @@ project file).
   scouts, Pairs, Run Rules, Carry Record, Run Report), log, and screen; Roster
   orders through the Roster's own `LiveRoom`; warps; pressing what is on
   screen; and the game's console commands, except those that change what the
-  account keeps. It is off unless asked for: `--control` on `dev_profile.py
+  account keeps (a Twin, which keeps nothing, may also change its scout's
+  look). It is off unless asked for: `--control` on `dev_profile.py
   launch` or `twins`, `BETTERCOOP_CONTROL=1`, or `[Debug] Control Line`. A copy
   with it on listens on 127.0.0.1 with a token made at every start, announced
   in `~/.bettercoop/control/<pid>.json`. `tools/peak_mcp.py`, registered in

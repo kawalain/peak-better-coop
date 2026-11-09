@@ -36,7 +36,7 @@ then each guest with `--only` in the order wanted. The commands used below:
 | `room {action}` | in a Twin, `leave` leaves the room as a player closing the game would and keeps it out; `join` lets it join again |
 | `warp {to}` | moves this copy's scout, as the game's warp |
 | `interact {actor}` | acts on that scout as the interact key does when aimed at them, e.g. a Rescue Carry |
-| `console {name}` | the game's console, e.g. `Character.Die`; none that change what the account keeps |
+| `console {name}` | the game's console, e.g. `Character.Die`; none that change what the account keeps, though a Twin may `CharacterCustomization.Randomize` its look |
 | `photo {actor}` | takes a passport photo again and saves it as a PNG |
 | `drill {what: forge, key, actor?}` | writes a made-up mod value as a player who may not |
 | `drill {what: letter, case}` | plays one of the Zoo's Pair letter cases (0 to 5) |

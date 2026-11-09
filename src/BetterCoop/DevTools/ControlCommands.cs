@@ -46,6 +46,16 @@ internal static partial class ControlCommands
         "Character.TestWin",
     };
 
+    /// <summary>
+    /// Kept out but let into a Twin, which leaves the account and the
+    /// Windows user's files alone: a scout's look, so each Twin can show one
+    /// of its own.
+    /// </summary>
+    private static readonly HashSet<string> TwinsMay = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "CharacterCustomization",
+    };
+
     public static readonly Dictionary<string, ControlCommand> All = new(StringComparer.Ordinal)
     {
         ["commands"] = new("Every command with what it takes.", _ => Commands()),
@@ -316,8 +326,8 @@ internal static partial class ControlCommands
             foreach (MethodInfo method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.DeclaredOnly))
             {
                 if (method.GetCustomAttribute<ConsoleCommandAttribute>() != null
-                    && !KeepsOut.Contains(type.Name)
-                    && !KeepsOut.Contains($"{type.Name}.{method.Name}"))
+                    && ((Twin.Active && TwinsMay.Contains(type.Name))
+                        || (!KeepsOut.Contains(type.Name) && !KeepsOut.Contains($"{type.Name}.{method.Name}"))))
                 {
                     found[$"{type.Name}.{method.Name}"] = method;
                 }
