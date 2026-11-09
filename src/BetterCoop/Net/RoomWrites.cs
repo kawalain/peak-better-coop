@@ -107,9 +107,24 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
 
     public override void OnJoinedRoom() => Run("RoomWrites.OnJoinedRoom", TrustIfLeading);
 
-    public override void OnMasterClientSwitched(PhotonPlayer newMasterClient) => Run("RoomWrites.OnMasterClientSwitched", TrustIfLeading);
+    /// <summary>
+    /// A client that stops leading forgets what it wrote, so that leading
+    /// again later, without leaving, it works from the room's values and not
+    /// from those of its earlier term.
+    /// </summary>
+    public override void OnMasterClientSwitched(PhotonPlayer newMasterClient) => Run("RoomWrites.OnMasterClientSwitched", () =>
+    {
+        if (!PhotonNetwork.IsMasterClient)
+        {
+            Forget();
+        }
 
-    public override void OnLeftRoom()
+        TrustIfLeading();
+    });
+
+    public override void OnLeftRoom() => Forget();
+
+    private static void Forget()
     {
         Ward.Clear();
         Changed.Clear();
