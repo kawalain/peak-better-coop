@@ -14,3 +14,6 @@ artifacts/
 
 # Thunderstore service account token for tools/publish.py
 .thunderstore-token
+
+# Python bytecode of the tools
+__pycache__/

@@ -50,6 +50,21 @@ A Twin closed by force is started again with `--only <role>`. Close a Twin by
 its process id (`hello` gives it), never by the game's name: the player's own
 game may be running.
 
+## Running the checks
+
+```bash
+python -I tools/twin_checks.py <profile_dir> <PeakGameDir> --plugin src/BetterCoop/bin/Debug/netstandard2.1/BetterCoop.dll
+```
+
+The runner starts four headless Twins and runs, in order and in those same
+four copies, every check below that a Twin can reach: Twins leave and join the
+room rather than restart, and only the Unmodded Player is started again. It
+prints each check as it starts and ends, also to `~/BetterCoopTwins/checks.log`,
+and after a failed check rejoins the room so the rest still run. `--only a,b`
+runs only those (by their names in `CHECKS`), `--keep` leaves the Twins running
+afterwards, and `--visible` shows them. The checks marked **two people**, and
+how the Roster looks in the screenshots it lists, are still for a person.
+
 ## Required before every test build
 
 Run these in order in one pair of Twins. Each line is setup, action, and
