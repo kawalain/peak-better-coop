@@ -171,3 +171,15 @@ A debug mode in which a player alone in the room plays both Carrier and Rider
 of one Shared Body, with the Rider's actions held back as if sent over the
 network.
 _Avoid_: solo mode, loopback
+
+**Twin** (분신):
+A second copy of the game on the same computer, in a development build, that
+joins the first copy's room as a real second player, so features that need two
+players can be tried alone.
+_Avoid_: second client, clone, bot
+
+**Control Line** (조종선):
+A development build's way for test tools on the same computer to look at the
+game and give it orders, such as reading the Pairs or ordering a Pair Shuffle.
+It is off unless asked for at launch.
+_Avoid_: debug server, remote, backdoor
