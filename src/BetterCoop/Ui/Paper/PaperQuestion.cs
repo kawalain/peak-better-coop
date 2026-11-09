@@ -8,11 +8,13 @@ using UnityEngine.UI;
 namespace BetterCoop.Ui.Paper;
 
 /// <summary>
-/// A slip of paper laid over a page to ask one question before going on,
-/// such as whether to throw a draft away: the question, a line of small
-/// print, and two stamps, the one that goes on in red and the one that
-/// stays in pen blue. Back, or a click beside the slip, answers "stay".
-/// It drops onto the page and lifts away softly.
+/// One question asked over a page before going on, such as whether to
+/// throw a draft away, in the game's own window that asks before leaving
+/// the game, so it looks as the game's questions do. Back answers "stay".
+/// Only when that window cannot be found is it asked on a slip of paper:
+/// the question, a line of small print, and two stamps, the one that goes
+/// on in red and the one that stays in pen blue, dropped onto the page and
+/// lifted away softly.
 /// </summary>
 internal sealed class PaperQuestion : MonoBehaviour
 {
@@ -35,10 +37,118 @@ internal sealed class PaperQuestion : MonoBehaviour
 
     private bool closing;
 
+    /// <summary>The game's own confirmation window this question was asked in, or null for a paper slip.</summary>
+    private MenuWindow? window;
+
     public bool Open => isActiveAndEnabled && !closing;
 
-    /// <summary>Lays a question over <paramref name="page"/>; <paramref name="go"/> runs when the player stamps the first answer.</summary>
+    /// <summary>
+    /// Asks a question over <paramref name="page"/> in the game's own
+    /// confirmation window, the one the pause menu asks before leaving the
+    /// game; <paramref name="onGo"/> runs when the player confirms. Only when
+    /// that window cannot be found is the question laid on a paper slip.
+    /// </summary>
     public static PaperQuestion Ask(RectTransform page, TMP_Text template, string question, string note, string go, string stay, Action onGo)
+    {
+        try
+        {
+            if (InGameWindow(page, question, note, go, stay, onGo) is PaperQuestion asked)
+            {
+                return asked;
+            }
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PaperQuestion.InGameWindow", exception);
+        }
+
+        return OnSlip(page, template, question, note, go, stay, onGo);
+    }
+
+    /// <summary>
+    /// A copy of the pause menu's leave-the-game window, its words and buttons
+    /// our own, as the game itself reuses that window to ask about kicking a
+    /// player. A copy, since the window belongs to the pause menu's first
+    /// page, which is put away while another page is open.
+    /// </summary>
+    private static PaperQuestion? InGameWindow(RectTransform page, string question, string note, string go, string stay, Action onGo)
+    {
+        PauseMenuMainPage? main = GUIManager.instance != null ? GUIManager.instance.pauseMenuMainPage : null;
+        if (main == null || main.confirmWindow == null || main.m_confirmOkButton == null || main.m_confirmCancelButton == null)
+        {
+            return null;
+        }
+
+        Transform source = main.confirmWindow.transform;
+        string? okPath = PathFrom(source, main.m_confirmOkButton.transform);
+        string? cancelPath = PathFrom(source, main.m_confirmCancelButton.transform);
+        string? textPath = main.confirmText != null ? PathFrom(source, main.confirmText.transform) : null;
+        if (okPath == null || cancelPath == null)
+        {
+            return null;
+        }
+
+        GameObject copy = Instantiate(source.gameObject, page);
+        copy.name = "BetterCoop.Question";
+        copy.transform.SetAsLastSibling();
+
+        // The game's words come back whenever a localized text wakes; these words are ours.
+        foreach (LocalizedText localized in copy.GetComponentsInChildren<LocalizedText>(true))
+        {
+            localized.enabled = false;
+        }
+
+        MenuWindow window = copy.GetComponent<MenuWindow>();
+        Button ok = Find(copy.transform, okPath).GetComponent<Button>();
+        Button cancel = Find(copy.transform, cancelPath).GetComponent<Button>();
+        PaperQuestion asking = copy.AddComponent<PaperQuestion>();
+        asking.window = window;
+        asking.onGo = onGo;
+        ok.onClick.RemoveAllListeners();
+        ok.onClick.AddListener(asking.Go);
+        cancel.onClick.RemoveAllListeners();
+        cancel.onClick.AddListener(asking.Stay);
+        Label(ok, go);
+        Label(cancel, stay);
+        if (textPath != null && Find(copy.transform, textPath).GetComponentInChildren<TMP_Text>(true) is TMP_Text words)
+        {
+            words.text = string.IsNullOrEmpty(note) ? question : $"{question}\n<size=70%>{note}</size>";
+        }
+
+        window.Open();
+        cancel.Select();
+        return asking;
+    }
+
+    /// <summary>The path from <paramref name="root"/> down to <paramref name="child"/>, or null when it is not under it.</summary>
+    private static string? PathFrom(Transform root, Transform child)
+    {
+        string path = string.Empty;
+        for (Transform? at = child; at != null; at = at.parent)
+        {
+            if (at == root)
+            {
+                return path;
+            }
+
+            path = path.Length == 0 ? at.name : at.name + "/" + path;
+        }
+
+        return null;
+    }
+
+    private static Transform Find(Transform root, string path) => path.Length == 0 ? root : root.Find(path);
+
+    private static void Label(Button button, string text)
+    {
+        if (button.GetComponentInChildren<TMP_Text>(true) is TMP_Text label)
+        {
+            label.text = text;
+        }
+    }
+
+    /// <summary>The question on a slip of paper laid over the page, for when the game's window is not there.</summary>
+    private static PaperQuestion OnSlip(RectTransform page, TMP_Text template, string question, string note, string go, string stay, Action onGo)
     {
         RectTransform cover = PaperList.NewRect("BetterCoop.Question", page);
         cover.anchorMin = Vector2.zero;
@@ -136,19 +246,58 @@ internal sealed class PaperQuestion : MonoBehaviour
         rect.sizeDelta = new Vector2(width, height);
     }
 
-    /// <summary>Answers "stay": the slip lifts away and the page carries on.</summary>
-    public void Stay() => closing = true;
+    /// <summary>Answers "stay": the question goes away and the page carries on.</summary>
+    public void Stay()
+    {
+        closing = true;
+        CloseWindow();
+    }
 
     private void Go()
     {
         closing = true;
+        CloseWindow();
         Action? go = onGo;
         onGo = null;
         go?.Invoke();
     }
 
+    /// <summary>Takes the question away at once, unanswered, as when the page goes.</summary>
+    public void Dismiss()
+    {
+        closing = true;
+        if (window != null && window.isOpen)
+        {
+            window.Close();
+        }
+
+        gameObject.SetActive(false);
+        Destroy(gameObject);
+    }
+
+    /// <summary>Closes the game's window the question was asked in, as the game closes it, and lets it go.</summary>
+    private void CloseWindow()
+    {
+        if (window == null)
+        {
+            return;
+        }
+
+        if (window.isOpen)
+        {
+            window.Close();
+        }
+
+        Destroy(gameObject);
+    }
+
     private void LateUpdate()
     {
+        if (window != null)
+        {
+            return;
+        }
+
         shown = Mathf.Clamp01(shown + (closing ? -1f : 1f) * Time.unscaledDeltaTime / Seconds);
         Pose();
         if (closing && shown <= 0f)

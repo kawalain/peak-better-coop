@@ -176,7 +176,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         lastSelected = null;
         if (asking != null)
         {
-            Destroy(asking.gameObject);
+            asking.Dismiss();
             asking = null;
         }
         if (!filled)
@@ -285,7 +285,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         try
         {
             asking = PaperQuestion.Ask(
-                panel,
+                (RectTransform)transform,
                 List.Template,
                 Strings.DiscardDraft,
                 Strings.DiscardDraftNote,
@@ -312,8 +312,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         if (asking != null)
         {
             // Out of the picture before it is taken.
-            asking.gameObject.SetActive(false);
-            Destroy(asking.gameObject);
+            asking.Dismiss();
             asking = null;
         }
 
