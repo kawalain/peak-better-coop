@@ -268,8 +268,8 @@ internal sealed class NoticeSlip : MonoBehaviour
         words.textWrappingMode = TextWrappingModes.Normal;
         words.fontStyle = style.Words;
         words.color = style.Ink;
-        words.text = message;
-        float height = Mathf.Max(PaperText.Value * 1.3f, words.GetPreferredValues(message, inner, 0f).y);
+        PaperText.Set(words, message);
+        float height = Mathf.Max(PaperText.Value * 1.3f, words.GetPreferredValues(words.text, inner, 0f).y);
         Place(words.rectTransform, left, Band + 14f, inner, height);
         slip.Height = Band + 14f + height + 22f;
         rect.sizeDelta = new Vector2(Width, slip.Height);

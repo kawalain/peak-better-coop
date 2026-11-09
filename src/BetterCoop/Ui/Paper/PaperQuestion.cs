@@ -113,7 +113,8 @@ internal sealed class PaperQuestion : MonoBehaviour
         if (textPath != null && Find(copy.transform, textPath).GetComponentInChildren<TMP_Text>(true) is TMP_Text words)
         {
             // The note set apart from the question by a little air, and kept clear of the window's edges.
-            words.text = string.IsNullOrEmpty(note) ? question : $"{question}\n<size=45%> </size>\n<size=68%>{note}</size>";
+            string asked = HangulWords.KeepWhole(question);
+            words.text = string.IsNullOrEmpty(note) ? asked : $"{asked}\n<size=45%> </size>\n<size=68%>{HangulWords.KeepWhole(note)}</size>";
             words.margin = new Vector4(words.margin.x + 36f, words.margin.y, words.margin.z + 36f, words.margin.w);
             words.textWrappingMode = TextWrappingModes.Normal;
             Shrink(words, 0.6f);
@@ -195,12 +196,12 @@ internal sealed class PaperQuestion : MonoBehaviour
         number.color = PaperList.Faded(PaperText.Ink, 0.55f);
 
         TMP_Text asked = Text(slip, template, "Question", PaperText.Heading, TextAlignmentOptions.Center);
-        asked.text = question;
         asked.fontStyle = FontStyles.Bold;
         asked.textWrappingMode = TextWrappingModes.Normal;
+        PaperText.Set(asked, question);
         TMP_Text small = Text(slip, template, "Note", PaperText.Value, TextAlignmentOptions.Center);
-        small.text = note;
         small.textWrappingMode = TextWrappingModes.Normal;
+        PaperText.Set(small, note);
         small.color = PaperList.Faded(PaperText.Ink, 0.75f);
 
         RectTransform answers = PaperList.NewRect("Answers", slip);

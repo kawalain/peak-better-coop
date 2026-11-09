@@ -52,8 +52,14 @@ internal static class PaperText
         text.enableAutoSizing = true;
     }
 
+    /// <summary>Sets the words, keeping Korean words whole where the text wraps.</summary>
     public static void Set(TMP_Text text, string value)
     {
+        if (text.textWrappingMode != TextWrappingModes.NoWrap)
+        {
+            value = HangulWords.KeepWhole(value);
+        }
+
         if (text.text != value)
         {
             text.text = value;
