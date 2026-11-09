@@ -32,7 +32,8 @@ internal sealed class PairBoard : MonoBehaviour
 
     private const float CellHeight = PhotoHeight + CaptionHeight;
 
-    private const float PairLabelHeight = 32f;
+    // Clear of the album corners that reach above the photos.
+    private const float PairLabelHeight = 32f + FormDrawing.CornerReach + 4f;
 
     private const float PartnerGap = 8f;
 
@@ -442,6 +443,8 @@ internal sealed class PairBoard : MonoBehaviour
         if (actor is int who)
         {
             Portrait(content, who, slot.Kind);
+            // The album's corners hold the print to the page, and stay there when it is taken out.
+            ScoutPhoto.Corners(rect, who);
         }
         else
         {
@@ -520,10 +523,10 @@ internal sealed class SlotView
         }
     }
 
-    /// <summary>Whether the photo has been picked up from here.</summary>
+    /// <summary>Whether the photo has been picked up from here, leaving only the album's empty corners.</summary>
     public bool Faded
     {
-        set => Content.alpha = value ? 0.3f : 1f;
+        set => Content.alpha = value ? 0f : 1f;
     }
 }
 

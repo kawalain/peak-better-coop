@@ -189,6 +189,10 @@ internal sealed class ZooPage : PaperPage
             new BadgeCard(MeritBadgeKind.RescueRanger, Strings.BadgeName(MeritBadgeKind.RescueRanger), "Elm", Strings.BadgeAmount(MeritBadgeKind.RescueRanger, 95)),
             new BadgeCard(MeritBadgeKind.BestBuddies, Strings.BadgeName(MeritBadgeKind.BestBuddies), "Birch & Dahlia", Strings.BadgeAmount(MeritBadgeKind.BestBuddies, 2410)),
         ]);
+        list.Note(() => T(
+            "사진: 앨범 귀퉁이에 끼운 것(짝 편성표), 클립으로 끼운 것(짝 편지), 꺼내 가 귀퉁이만 남은 자리.",
+            "Prints: held in album corners (the Pair page), clipped on (a Pair letter), and taken out, leaving the corners."));
+        Prints(list);
         list.Signature(() => T("서명", "Signed"), () => "Alder");
         Makers.Add(list);
 
@@ -346,6 +350,39 @@ internal sealed class ZooPage : PaperPage
         reportExample.Show(new FakeRoom(players, leader, formed, seed, reported: true, ending: ending));
         seed++;
         reportExample.Open();
+    }
+
+    /// <summary>
+    /// Three prints of made-up scouts as the papers hold them: in an album's
+    /// corners, as on the Pair page; clipped on, as with a Pair letter; and
+    /// taken out, leaving only the corners.
+    /// </summary>
+    private static void Prints(PaperList list)
+    {
+        RectTransform row = list.Custom("Prints", () => { });
+        RectTransform prints = PaperList.NewRect("Prints", row);
+        prints.gameObject.AddComponent<LayoutElement>().minHeight = ScoutPhoto.Height + 16f;
+        var portraits = new ZooPortraits(7);
+        (int Actor, Action<RectTransform, int> Mount)[] shown =
+        [
+            (1, (card, actor) =>
+            {
+                ScoutPhoto.Add(card, list.Template, portraits, actor, T("앨범 귀퉁이", "Album corners"), null);
+                ScoutPhoto.Corners(card, actor);
+            }),
+            (2, (card, actor) =>
+                ScoutPhoto.Add(card, list.Template, portraits, actor, T("클립", "Clipped"), null, ScoutPhoto.Mount.Clip)),
+            (3, (card, actor) => ScoutPhoto.Corners(card, actor)),
+        ];
+        for (int i = 0; i < shown.Length; i++)
+        {
+            RectTransform card = PaperList.NewRect("Card", prints);
+            card.anchorMin = card.anchorMax = new Vector2(0.5f, 1f);
+            card.pivot = new Vector2(0.5f, 1f);
+            card.sizeDelta = new Vector2(ScoutPhoto.Width, ScoutPhoto.Height);
+            card.anchoredPosition = new Vector2((i - 1) * (ScoutPhoto.Width + 60f), -8f);
+            shown[i].Mount(card, shown[i].Actor);
+        }
     }
 
     private void OpenExample()

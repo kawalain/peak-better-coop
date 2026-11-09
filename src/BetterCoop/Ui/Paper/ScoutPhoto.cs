@@ -6,14 +6,28 @@ using UnityEngine.UI;
 namespace BetterCoop.Ui.Paper;
 
 /// <summary>
-/// A scout's yearbook photo: their passport photo, or a silhouette in their
-/// skin colour when none can be taken, in a thin printed edge, with their
-/// name and, if given, their role printed under it. The Pair page and the
-/// Pair letter print scouts the same way.
+/// A scout's snapshot: their passport photo, or a silhouette in their skin
+/// colour when none can be taken, on a white print with a deckle edge, set a
+/// little askew as a hand mounts it, with their name and, if given, their
+/// role printed under it. The Pair page mounts its prints in an album's
+/// photo corners; the Pair letter clips them on.
 /// </summary>
 internal static class ScoutPhoto
 {
+    /// <summary>How a print is held to the paper.</summary>
+    internal enum Mount
+    {
+        /// <summary>Held by something else, such as an album's corners, or held in the hand.</summary>
+        Loose,
+
+        /// <summary>Clipped on at its top with a paper clip, as a photo sent with a letter.</summary>
+        Clip,
+    }
+
     public const float Width = 124f;
+
+    /// <summary>A paper clip's size, standing upright.</summary>
+    private static readonly Vector2 ClipSize = new(15f, 42f);
 
     public const float PhotoHeight = Width * PhotoStudio.Height / PhotoStudio.Width;
 
@@ -22,17 +36,35 @@ internal static class ScoutPhoto
     /// <summary>The whole print, photo and caption.</summary>
     public const float Height = PhotoHeight + CaptionHeight;
 
-    /// <summary>A scout as the yearbook prints them: their photo, and their name and role under it.</summary>
-    public static void Add(RectTransform parent, TMP_Text template, IPortraits portraits, int actor, string name, string? role)
+    /// <summary>A scout as a snapshot shows them: their photo, and their name and role under it.</summary>
+    public static void Add(RectTransform parent, TMP_Text template, IPortraits portraits, int actor, string name, string? role, Mount mount = Mount.Loose)
     {
         RectTransform photo = PhotoArea(parent);
-        PhotoPrint.Add(photo, portraits, actor);
+        photo.localRotation = Quaternion.Euler(0f, 0f, Tilt(actor));
+        VectorView.Add(photo, s => FormDrawing.Print(s.x, s.y), Color.clear);
+        RectTransform picture = PaperList.NewRect("Picture", photo);
+        picture.anchorMin = Vector2.zero;
+        picture.anchorMax = Vector2.one;
+        picture.offsetMin = new Vector2(FormDrawing.PrintBorder, FormDrawing.PrintBorder);
+        picture.offsetMax = new Vector2(-FormDrawing.PrintBorder, -FormDrawing.PrintBorder);
+        PhotoPrint.Add(picture, portraits, actor);
 
-        RectTransform edge = PaperList.NewRect("Edge", photo);
+        RectTransform edge = PaperList.NewRect("Edge", picture);
         edge.anchorMin = Vector2.zero;
         edge.anchorMax = Vector2.one;
         edge.offsetMin = edge.offsetMax = Vector2.zero;
         VectorView.Add(edge, s => FormDrawing.PhotoEdge(s.x, s.y), Color.clear);
+        if (mount == Mount.Clip)
+        {
+            // Slipped over the print's top edge, near its left corner, a little crooked.
+            RectTransform clip = PaperList.NewRect("Clip", photo);
+            clip.anchorMin = clip.anchorMax = new Vector2(0f, 1f);
+            clip.pivot = new Vector2(0.5f, 0.5f);
+            clip.sizeDelta = new Vector2(ClipSize.x, ClipSize.y);
+            clip.anchoredPosition = new Vector2(24f, -4f);
+            clip.localRotation = Quaternion.Euler(0f, 0f, -7f);
+            VectorView.Add(clip, s => FormDrawing.PaperClip(s.x, s.y), Color.clear);
+        }
 
         RectTransform caption = Caption(parent);
         VerticalLayoutGroup lines = caption.gameObject.AddComponent<VerticalLayoutGroup>();
@@ -53,6 +85,27 @@ internal static class ScoutPhoto
             Tall(under, 20f);
         }
     }
+
+    /// <summary>
+    /// An album's black photo corners over the print of <paramref name="actor"/>
+    /// in <paramref name="parent"/>, laid out as <see cref="Add"/> lays the print.
+    /// They belong to the page, so they stay when the print is taken out.
+    /// </summary>
+    public static void Corners(RectTransform parent, int actor)
+    {
+        RectTransform corners = PhotoArea(parent);
+        corners.name = "Corners";
+        float reach = FormDrawing.CornerReach;
+        corners.sizeDelta = new Vector2(Width + 2f * reach, PhotoHeight + 2f * reach);
+        // Turned about the same point as the print, the print's top middle.
+        corners.pivot = new Vector2(0.5f, 1f - reach / (PhotoHeight + 2f * reach));
+        corners.anchoredPosition = Vector2.zero;
+        corners.localRotation = Quaternion.Euler(0f, 0f, Tilt(actor));
+        VectorView.Add(corners, s => FormDrawing.PhotoCorners(s.x, s.y), Color.clear);
+    }
+
+    /// <summary>How far askew a scout's print is mounted, in degrees: the same for them every time.</summary>
+    public static float Tilt(int actor) => (((actor * 37) % 7 + 7) % 7 - 3) * 0.6f;
 
     /// <summary>Gives a caption line a set height, which a shrinking name cannot report for itself.</summary>
     private static void Tall(TMP_Text text, float height)
