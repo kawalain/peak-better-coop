@@ -90,6 +90,38 @@ internal sealed class PairBoard : MonoBehaviour
         return board;
     }
 
+    /// <summary>
+    /// Lays the board out again after its draft changed, each photo gliding
+    /// from where it was, without touching the rest of the form, whose marks
+    /// would otherwise all be drawn afresh.
+    /// </summary>
+    public void Redraw()
+    {
+        IReadOnlyDictionary<int, Vector3> before = Places();
+        released = null;
+        Drop();
+        slots.Clear();
+        foreach (Transform child in transform)
+        {
+            child.gameObject.SetActive(false);
+            Destroy(child.gameObject);
+        }
+
+        var root = (RectTransform)transform;
+        LayOut(root);
+
+        // The board may have grown or shrunk: the form around it is laid out again at once, so the photos glide from true places.
+        RectTransform outer = root;
+        while (outer.parent is RectTransform parent && parent.GetComponent<LayoutGroup>() != null)
+        {
+            outer = parent;
+        }
+
+        LayoutRebuilder.ForceRebuildLayoutImmediate(outer);
+        VectorView.DrawAll(root);
+        GlideFrom(before);
+    }
+
     /// <summary>The first photo a gamepad selects.</summary>
     public Selectable? First => slots.Select(s => s.Control).FirstOrDefault(c => c != null);
 

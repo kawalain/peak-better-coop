@@ -165,10 +165,10 @@ internal sealed class RosterPage : PaperPage
 
     protected override void Tick() => room.Tick(Time.unscaledDeltaTime);
 
-    /// <summary>Draws the board again after a card moved, its card still chosen on a gamepad.</summary>
+    /// <summary>Draws the board again after a photo moved, its photo still chosen on a gamepad.</summary>
     private void Moved(int actor)
     {
-        Refill();
+        board?.Redraw();
         if (Zorro.ControllerSupport.InputHandler.GetCurrentUsedInputScheme() == Zorro.ControllerSupport.InputScheme.Gamepad)
         {
             board?.Select(actor);
@@ -192,7 +192,7 @@ internal sealed class RosterPage : PaperPage
     private void StartOver()
     {
         draft?.Reset(room.Pairs, room.Players);
-        Refill();
+        board?.Redraw();
     }
 }
 
