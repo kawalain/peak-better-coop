@@ -673,6 +673,13 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         scroll.Travel(top - ListGap, ShowSeconds);
     }
 
+    /// <summary>Scrolls smoothly so <paramref name="rect"/>, somewhere on the form, shows at the top of the view.</summary>
+    public void Reveal(RectTransform rect)
+    {
+        scroll.Max = content.rect.height - viewport.rect.height;
+        scroll.Travel(Depth(rect, 1) - ListGap, ShowSeconds);
+    }
+
     /// <summary>How far down from the list's top a corner of <paramref name="rect"/> is, as the scroll position is measured.</summary>
     private float Depth(RectTransform rect, int corner)
     {

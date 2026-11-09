@@ -76,7 +76,7 @@ def call(target: str, command: str, **args: Any) -> Any:
 
 @mcp.tool()
 def peak_instances() -> list[dict[str, Any]]:
-    """List the running copies of the game with the Control Line on: role (host or twin), pid, profile."""
+    """List the running copies of the game with the Control Line on: role (host, guest, or player for a copy that is not a Twin), pid, profile."""
     return [{k: c[k] for k in ("role", "pid", "profile")} for c in instances()]
 
 
@@ -99,9 +99,9 @@ def peak_log(target: str = "host", lines: int = 80, contains: str = "") -> str:
 
 
 @mcp.tool()
-def peak_screenshot(target: str = "host") -> Image:
-    """A picture of the copy's screen as it is now."""
-    path = Path(call(target, "screenshot"))
+def peak_screenshot(target: str = "host", scale: int = 1) -> Image:
+    """A picture of the copy's screen as it is now, rendered at 1 to 4 times the window's size."""
+    path = Path(call(target, "screenshot", scale=scale))
     for _ in range(50):
         if path.exists() and path.stat().st_size > 0:
             break

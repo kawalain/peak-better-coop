@@ -47,11 +47,13 @@ internal static partial class ControlCommands
         ["hello"] = new("Who this copy is: role, process, version, scene.", _ => Hello()),
         ["state"] = new("The scene, the room and its players, this copy's scout, and the mod's state.", _ => State()),
         ["log"] = new("{lines?, contains?}: the last lines of this copy's BepInEx log.", Log),
-        ["screenshot"] = new("A picture of the screen, saved as a PNG; answers with its path.", Screenshot),
+        ["screenshot"] = new("{scale?}: a picture of the screen, rendered at 1 to 4 times its size, saved as a PNG; answers with its path.", Screenshot),
         ["controls"] = new("{contains?}: the controls that can be pressed now, with ids for 'press'.", Controls),
         ["press"] = new("{id, right?}: presses a control listed by 'controls', as a left (or right) click.", Press),
         ["console"] = new("{name?, args?}: runs one of the game's own console commands, but none that change what the account keeps; without a name, lists them.", Console),
         ["warp"] = new("{x, y, z} or {to: actor}: moves this copy's scout there, as the game's own warp.", Warp),
+        ["menu"] = new("{action: pause|back}: opens the pause menu, or goes back as the pause key does.", Menu),
+        ["scroll"] = new("{to}: scrolls the open paper form to the first text containing 'to'.", Scroll),
         ["order"] = new("{what, ...}: a Roster order, under the Roster's rules; without what, lists them.", Order),
     };
 
@@ -60,7 +62,7 @@ internal static partial class ControlCommands
 
     private static JToken Hello() => new JObject
     {
-        ["role"] = Twin.Active ? "twin" : "host",
+        ["role"] = Twin.Active ? (Twin.Hosts ? "host" : "guest") : "player",
         ["pid"] = System.Diagnostics.Process.GetCurrentProcess().Id,
         ["version"] = MyPluginInfo.PLUGIN_VERSION,
         ["scene"] = SceneManager.GetActiveScene().name,
@@ -160,8 +162,9 @@ internal static partial class ControlCommands
 
     private static IEnumerator Screenshot(JObject args, Action<JToken> reply)
     {
+        int scale = Math.Clamp((int?)args["scale"] ?? 1, 1, 4);
         yield return new WaitForEndOfFrame();
-        Texture2D picture = ScreenCapture.CaptureScreenshotAsTexture();
+        Texture2D picture = ScreenCapture.CaptureScreenshotAsTexture(scale);
         try
         {
             string file = Path.Combine(Paths.CachePath, "BetterCoop-control-screen.png");
@@ -317,6 +320,39 @@ internal static partial class ControlCommands
         {
             return partial.Types.Where(t => t != null)!;
         }
+    }
+
+    private static JToken Menu(JObject args)
+    {
+        switch ((string?)args["action"])
+        {
+            case "pause":
+                GUIManager.instance.pauseMenu.SetActive(true);
+                return "paused";
+            case "back":
+                Character me = Character.localCharacter ?? throw new InvalidOperationException("no scout to press pause for");
+                me.input.pauseWasPressed = true;
+                return "back";
+            default:
+                throw new ArgumentException("action: pause or back");
+        }
+    }
+
+    private static JToken Scroll(JObject args)
+    {
+        string to = (string?)args["to"] ?? throw new ArgumentException("needs to");
+        foreach (BetterCoop.Ui.Paper.PaperPage page in UnityEngine.Object.FindObjectsByType<BetterCoop.Ui.Paper.PaperPage>(FindObjectsInactive.Exclude, FindObjectsSortMode.None))
+        {
+            TMP_Text? found = page.GetComponentsInChildren<TMP_Text>()
+                .FirstOrDefault(t => t.isActiveAndEnabled && t.text != null && t.text.IndexOf(to, StringComparison.OrdinalIgnoreCase) >= 0);
+            if (found != null)
+            {
+                page.Reveal(found.rectTransform);
+                return $"scrolled to {found.text}";
+            }
+        }
+
+        throw new ArgumentException($"no open paper shows '{to}'");
     }
 
     private static JToken Warp(JObject args)
