@@ -152,7 +152,7 @@ internal sealed class RosterPage : PaperPage
                 shown = new PairDraft(room.Pairs, room.Players);
             }
 
-            board = PairRows.Add(list, room, shown, portraits, leads, Moved, StartOver);
+            board = PairRows.Add(list, room, shown, portraits, leads, Moved, StartOver, send => HandIn(portraits, room.TroopLeader, send));
         }
 
         if (leads)
@@ -206,7 +206,8 @@ internal static class PairRows
         IPortraits portraits,
         bool leads,
         Action<int> moved,
-        Action startOver)
+        Action startOver,
+        Action<Action> handIn)
     {
         list.Header(() => Strings.MenuPairs);
         if (leads)
@@ -224,7 +225,7 @@ internal static class PairRows
             list.Stamp(
                 () => Strings.MenuAssign,
                 () => Strings.StampNotify,
-                () => Approve(room, draft),
+                () => Approve(room, draft, handIn),
                 available: () => draft.Changed && !room.Busy && room.CanArrange(draft.Pairs),
                 about: () => Strings.AboutAssign,
                 face: new PostmarkFace(() => Strings.PostmarkOffice, () => Strings.PostmarkDate(System.DateTime.Now)));
@@ -238,7 +239,8 @@ internal static class PairRows
         return board;
     }
 
-    private static void Approve(ICoopRoom room, PairDraft draft)
+    /// <summary>Sends the draft as the Troop Leader's Pair Assignment, the paper handed in as it goes.</summary>
+    private static void Approve(ICoopRoom room, PairDraft draft, Action<Action> handIn)
     {
         if (!draft.Changed)
         {
@@ -251,7 +253,7 @@ internal static class PairRows
             return;
         }
 
-        TroopLeaderRows.Order(room.Arrange(draft.Pairs));
+        handIn(() => TroopLeaderRows.Order(room.Arrange(draft.Pairs)));
     }
 }
 

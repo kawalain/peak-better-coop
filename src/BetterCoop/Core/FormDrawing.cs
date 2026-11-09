@@ -285,6 +285,43 @@ internal static class FormDrawing
         return Close(svg);
     }
 
+    /// <summary>
+    /// A scout's arm reaching down, drawn in the game's way where no picture
+    /// of it can be taken: a jacket sleeve from the top, its cuff, and a
+    /// round mitten of a hand in <paramref name="skin"/> with its thumb out,
+    /// thick dark outlines, on a clear ground.
+    /// </summary>
+    public static string Hand(float width, float height, Ink skin)
+    {
+        var svg = Open(width, height);
+        string outline = PaperDrawing.InkBlack.Hex;
+        float line = Math.Max(2.5f, width * 0.03f);
+        var sleeve = new Ink(0.55f, 0.50f, 0.36f);
+        float cx = width / 2f;
+        float arm = width * 0.34f;
+        float cuff = height * 0.62f;
+
+        svg.Append(F($"<path d=\"M{cx - arm} {-line}L{cx - arm * 0.9f} {cuff}L{cx + arm * 0.9f} {cuff}L{cx + arm} {-line}Z\" fill=\"{sleeve.Hex}\" stroke=\"{outline}\" stroke-width=\"{line}\" stroke-linejoin=\"round\"/>"));
+        // A crease down the sleeve, as the game's cloth folds.
+        svg.Append(F($"<path d=\"M{cx + arm * 0.25f} {height * 0.1f}C{cx + arm * 0.1f} {height * 0.3f} {cx + arm * 0.35f} {height * 0.42f} {cx + arm * 0.2f} {cuff - line * 2f}\" fill=\"none\" stroke=\"{sleeve.Mix(PaperDrawing.InkBlack, 0.35f).Hex}\" stroke-width=\"{line * 0.6f}\" stroke-linecap=\"round\"/>"));
+
+        // The hand: a round palm with the fingers together, and the thumb out to one side.
+        float palm = width * 0.36f;
+        float py = cuff + (palm * 0.85f);
+        string flesh = skin.Hex;
+        svg.Append(F($"<ellipse cx=\"{cx - palm * 0.95f}\" cy=\"{py - palm * 0.35f}\" rx=\"{palm * 0.32f}\" ry=\"{palm * 0.5f}\" transform=\"rotate(-28 {cx - palm * 0.95f} {py - palm * 0.35f})\" fill=\"{flesh}\" stroke=\"{outline}\" stroke-width=\"{line}\"/>"));
+        svg.Append(F($"<ellipse cx=\"{cx}\" cy=\"{py}\" rx=\"{palm}\" ry=\"{palm * 1.08f}\" fill=\"{flesh}\" stroke=\"{outline}\" stroke-width=\"{line}\"/>"));
+        for (int finger = -1; finger <= 1; finger++)
+        {
+            float fx = cx + (finger * palm * 0.42f);
+            svg.Append(F($"<path d=\"M{fx} {py + palm * 0.35f}L{fx} {py + palm * 0.85f}\" stroke=\"{skin.Mix(PaperDrawing.InkBlack, 0.4f).Hex}\" stroke-width=\"{line * 0.6f}\" stroke-linecap=\"round\" fill=\"none\"/>"));
+        }
+
+        // The cuff over the wrist.
+        svg.Append(F($"<rect x=\"{cx - arm * 0.98f}\" y=\"{cuff - height * 0.05f}\" width=\"{arm * 1.96f}\" height=\"{height * 0.07f}\" rx=\"{height * 0.02f}\" fill=\"{sleeve.Mix(PaperDrawing.InkBlack, 0.15f).Hex}\" stroke=\"{outline}\" stroke-width=\"{line}\"/>"));
+        return Close(svg);
+    }
+
     /// <summary>The photo studio's backdrop, behind a drawn scout as behind a photographed one.</summary>
     public static readonly Ink Backdrop = new(0.80f, 0.86f, 0.90f);
 

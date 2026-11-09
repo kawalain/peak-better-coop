@@ -76,6 +76,9 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     /// <summary>The question laid over the page before leaving it, while it is asked.</summary>
     private PaperQuestion? asking;
 
+    /// <summary>Whether the paper is away, crumpled or handed in, until it rises again.</summary>
+    private bool away;
+
     private enum Motion
     {
         Resting,
@@ -189,6 +192,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     /// <summary>Plays the rise again from below.</summary>
     public void Rise()
     {
+        away = false;
         motion = Motion.Rising;
         motionSeconds = 0f;
         group.interactable = true;
@@ -287,16 +291,76 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
                 Strings.DiscardDraftNote,
                 Strings.StampDiscard,
                 Strings.StampKeep,
-                () =>
+                () => ThrowAway(() =>
                 {
                     DropDraft();
                     Leave();
-                });
+                }));
         }
         catch (Exception exception)
         {
             Guard.Report(name + ".AskToLeave", exception);
         }
+    }
+
+    /// <summary>
+    /// Crumples the paper into a ball and throws it away, then runs
+    /// <paramref name="after"/>, as the page goes or a fresh sheet rises.
+    /// </summary>
+    protected void ThrowAway(Action after)
+    {
+        if (asking != null)
+        {
+            // Out of the picture before it is taken.
+            asking.gameObject.SetActive(false);
+            Destroy(asking.gameObject);
+            asking = null;
+        }
+
+        PaperToss.Crumple(panel, () =>
+        {
+            away = true;
+            Pose();
+            after();
+        });
+    }
+
+    /// <summary>
+    /// Has the hand of <paramref name="actor"/> take the paper away upwards,
+    /// running <paramref name="send"/> as it is taken; a fresh sheet rises
+    /// once it is gone.
+    /// </summary>
+    protected void HandIn(IPortraits portraits, int actor, Action send)
+    {
+        Texture? hand = null;
+        Color skin = new(0.93f, 0.74f, 0.55f);
+        try
+        {
+            hand = portraits.Hand(actor);
+            skin = portraits.Skin(actor);
+        }
+        catch (Exception exception)
+        {
+            Guard.Report(name + ".HandIn", exception);
+        }
+
+        PaperToss.HandIn(
+            panel,
+            hand,
+            skin,
+            () =>
+            {
+                away = true;
+                Pose();
+                send();
+            },
+            () =>
+            {
+                if (isActiveAndEnabled && handler.currentPage == this)
+                {
+                    Rise();
+                }
+            });
     }
 
     private void Leave()
@@ -410,7 +474,12 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         float travel = ((RectTransform)panel.parent).rect.height * 0.94f + PaperDrawing.Margin + PaperDrawing.ShadowDrop;
         panel.anchoredPosition = new Vector2(0f, offset * travel);
         panel.localRotation = Quaternion.Euler(0f, 0f, tilt);
-        group.alpha = alpha;
+        group.alpha = away ? 0f : alpha;
+        if (away)
+        {
+            group.interactable = false;
+            group.blocksRaycasts = false;
+        }
     }
 
     private void OnWheel(PointerEventData eventData)

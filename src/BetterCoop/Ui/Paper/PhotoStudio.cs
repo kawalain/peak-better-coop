@@ -17,6 +17,9 @@ internal interface IPortraits
 
     /// <summary>The scout's skin colour, for the silhouette shown without a photo.</summary>
     Color Skin(int actor);
+
+    /// <summary>The scout's right forearm and hand, hand down, on a clear ground; null when none can be taken.</summary>
+    Texture? Hand(int actor);
 }
 
 /// <summary>
@@ -126,12 +129,207 @@ internal static class PhotoStudio
         }
     }
 
+    public const int HandWidth = 160;
+
+    public const int HandHeight = 320;
+
+    /// <summary>The colour behind a hand while it is taken, keyed out after.</summary>
+    private static readonly Color HandKey = new(1f, 0f, 1f, 1f);
+
+    private static readonly Dictionary<string, Texture2D?> Hands = new();
+
+    /// <summary>
+    /// A picture of the right forearm and hand of the scout the model is
+    /// dressed as, hanging down, on a clear ground: the camera looks at the
+    /// arm from outside the body, square to the forearm, and sees only as
+    /// deep as the arm so the body behind it is left out. Null when the
+    /// model's bones cannot be found or the arm is not in the picture.
+    /// </summary>
+    public static Texture? TakeHand(string look, Action<PlayerCustomizationDummy> dress)
+    {
+        if (Hands.TryGetValue(look, out Texture2D? kept))
+        {
+            return kept;
+        }
+
+        if (!Ready() || model == null || camera == null)
+        {
+            return null;
+        }
+
+        Transform lens = camera.transform;
+        Vector3 lensPlace = lens.position;
+        Quaternion lensTurn = lens.rotation;
+        float size = camera.orthographicSize;
+        float near = camera.nearClipPlane;
+        float far = camera.farClipPlane;
+        Vector3 lampPlace = lamp != null ? lamp.transform.position : Vector3.zero;
+        RenderTexture? shot = null;
+        RenderTexture? active = RenderTexture.active;
+        Texture2D? hand = null;
+        try
+        {
+            model.gameObject.SetActive(true);
+            dress(model);
+            if (model.anim != null)
+            {
+                model.anim.updateMode = AnimatorUpdateMode.UnscaledTime;
+                model.anim.Update(0f);
+            }
+
+            // The game names a scout's bones after their body parts.
+            Transform? palm = HelperFunctions.FindChildRecursive(nameof(BodypartType.Hand_R), model.transform);
+            Transform? elbow = HelperFunctions.FindChildRecursive(nameof(BodypartType.Elbow_R), model.transform)
+                ?? HelperFunctions.FindChildRecursive(nameof(BodypartType.Arm_R), model.transform);
+            if (palm == null || elbow == null)
+            {
+                Plugin.Verbose("The model has no right hand and elbow bones to photograph.");
+                Hands[look] = null;
+                return null;
+            }
+
+            Vector3 tip = palm.position;
+            float length = Vector3.Distance(tip, elbow.position);
+            if (length < 1e-3f)
+            {
+                Hands[look] = null;
+                return null;
+            }
+
+            Vector3 down = (tip - elbow.position) / length;
+            // From the body's middle out through the hand, square to the forearm.
+            Vector3 middle = model.transform.position + Vector3.Project(tip - model.transform.position, model.transform.up);
+            Vector3 outward = Vector3.ProjectOnPlane(tip - middle, down);
+            if (outward.sqrMagnitude < 1e-6f)
+            {
+                outward = Vector3.ProjectOnPlane(model.transform.right, down);
+            }
+
+            outward.Normalize();
+            // From past the fingertips to above the elbow, the hand at the foot of the picture.
+            Vector3 bottom = tip + (down * length * 0.55f);
+            Vector3 top = elbow.position - (down * length * 0.75f);
+            const float distance = 3f;
+            lens.position = ((bottom + top) / 2f) + (outward * distance);
+            lens.rotation = Quaternion.LookRotation(-outward, -down);
+            camera.orthographicSize = Vector3.Distance(bottom, top) / 2f;
+            camera.nearClipPlane = distance - (length * 0.45f);
+            camera.farClipPlane = distance + (length * 0.45f);
+            camera.backgroundColor = HandKey;
+            camera.aspect = HandWidth / (float)HandHeight;
+            if (lamp != null)
+            {
+                lamp.transform.position = lens.position + (lens.up * length);
+                lamp.enabled = true;
+            }
+
+            shot = RenderTexture.GetTemporary(HandWidth, HandHeight, 24, RenderTextureFormat.ARGB32);
+            camera.targetTexture = shot;
+            camera.Render();
+            RenderTexture.active = shot;
+            hand = new Texture2D(HandWidth, HandHeight, TextureFormat.RGBA32, false)
+            {
+                name = "BetterCoop.Hand",
+                wrapMode = TextureWrapMode.Clamp,
+                hideFlags = HideFlags.HideAndDontSave,
+            };
+            hand.ReadPixels(new Rect(0, 0, HandWidth, HandHeight), 0, 0);
+            if (!KeyOut(hand))
+            {
+                Plugin.Verbose("The hand was not in its picture.");
+                Object.Destroy(hand);
+                hand = null;
+            }
+
+            Hands[look] = hand;
+            return hand;
+        }
+        catch (Exception exception)
+        {
+            if (hand != null)
+            {
+                Object.Destroy(hand);
+            }
+
+            Hands[look] = null;
+            Guard.Report("PhotoStudio.TakeHand", exception);
+            return null;
+        }
+        finally
+        {
+            RenderTexture.active = active;
+            camera.targetTexture = null;
+            if (shot != null)
+            {
+                RenderTexture.ReleaseTemporary(shot);
+            }
+
+            lens.position = lensPlace;
+            lens.rotation = lensTurn;
+            camera.orthographicSize = size;
+            camera.nearClipPlane = near;
+            camera.farClipPlane = far;
+            camera.backgroundColor = Backdrop;
+            if (lamp != null)
+            {
+                lamp.transform.position = lampPlace;
+                lamp.enabled = false;
+            }
+
+            model.gameObject.SetActive(false);
+        }
+    }
+
+    /// <summary>Makes the key colour clear, edges half clear; false when hardly anything but the key was there.</summary>
+    private static bool KeyOut(Texture2D picture)
+    {
+        Color32[] pixels = picture.GetPixels32();
+        int solid = 0;
+        for (int i = 0; i < pixels.Length; i++)
+        {
+            Color c = pixels[i];
+            // How much the pixel is the key's magenta: red and blue high, green low.
+            float keyed = Mathf.Clamp01(Mathf.Min(c.r, c.b) - c.g);
+            float alpha = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.35f, 0.8f, keyed));
+            if (alpha <= 0.01f)
+            {
+                pixels[i] = new Color32(0, 0, 0, 0);
+                continue;
+            }
+
+            // Take the key's share out of a half-keyed edge.
+            float share = 1f - alpha;
+            pixels[i] = new Color(
+                Mathf.Clamp01((c.r - (share * HandKey.r)) / alpha),
+                Mathf.Clamp01((c.g - (share * HandKey.g)) / alpha),
+                Mathf.Clamp01((c.b - (share * HandKey.b)) / alpha),
+                alpha);
+            if (alpha > 0.5f)
+            {
+                solid++;
+            }
+        }
+
+        picture.SetPixels32(pixels);
+        picture.Apply(false);
+        return solid > pixels.Length / 30;
+    }
+
     /// <summary>Whether a photo of this look is ready.</summary>
     public static bool Has(string look) => Photos.TryGetValue(look, out RenderTexture? kept) && kept != null && kept.IsCreated();
 
     /// <summary>Lets a photo go, as when its scout has changed how they look.</summary>
     public static void Forget(string look)
     {
+        if (Hands.TryGetValue(look, out Texture2D? hand))
+        {
+            Hands.Remove(look);
+            if (hand != null)
+            {
+                Object.Destroy(hand);
+            }
+        }
+
         if (Photos.TryGetValue(look, out RenderTexture? photo))
         {
             Photos.Remove(look);
@@ -281,6 +479,15 @@ internal sealed class LivePortraits : IPortraits
     public Texture? Photo(int actor) => Take(actor);
 
     public Color Skin(int actor) => PhotoStudio.SkinColour(Data(actor)?.currentSkin ?? 0);
+
+    public Texture? Hand(int actor)
+    {
+        // The photo first, so a changed look has already let the old hand go.
+        Take(actor);
+        return PhotonNetwork.CurrentRoom?.GetPlayer(actor) is Photon.Realtime.Player player && Look(actor) is string look
+            ? PhotoStudio.TakeHand(look, model => model.UpdateDummy(player))
+            : null;
+    }
 
     /// <summary>Takes one photo a player in the room still lacks; false when every player has theirs.</summary>
     public static bool WarmOne()

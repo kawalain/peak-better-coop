@@ -26,6 +26,7 @@ public class FormDrawingTests
             FormDrawing.Silhouette(90f, 110f, new Ink(0.9f, 0.7f, 0.5f)),
             FormDrawing.Silhouette(124f, 155f, new Ink(0.6f, 0.6f, 0.6f), mystery: true),
             FormDrawing.TagHole(30f),
+            FormDrawing.Hand(160f, 320f, new Ink(0.9f, 0.7f, 0.5f)),
             FormDrawing.Airmail(300f, 10f),
         ];
 

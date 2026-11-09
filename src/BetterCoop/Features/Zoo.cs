@@ -118,6 +118,16 @@ internal sealed class ZooPage : PaperPage
             () => swapped = !swapped,
             value: () => swapped ? "Birch ⇄ Alder" : "Alder ⇄ Birch");
         list.Stamp(() => T("종이 다시 올리기", "Raise the paper again"), () => T("재생", "Play"), Rise);
+        list.Stamp(
+            () => T("구겨서 버리기", "Crumple and throw away"),
+            () => T("재생", "Play"),
+            () => ThrowAway(Rise),
+            about: () => T("초안을 버릴 때처럼 종이를 구겨 던지고, 새 종이가 올라옵니다.", "Crumples the paper and throws it, as when a draft is thrown away; a fresh sheet rises."));
+        list.Stamp(
+            () => T("손으로 가져가기", "Handed in"),
+            () => T("재생", "Play"),
+            () => HandIn(new ZooPortraits(seed), 1, () => presses++),
+            about: () => T("짝 명단을 통보할 때처럼 분대장의 손이 종이를 가져갑니다.", "The Troop Leader's hand takes the paper, as when the Pairs are announced."));
         list.Signature(() => T("서명", "Signed"), () => "Alder");
 
         list.Header(() => T("알림", "Notices"));
@@ -266,6 +276,9 @@ internal sealed class ZooPortraits : IPortraits
         Look(actor) is int[] look ? PhotoStudio.Take(Key(look), model => Dress(model, look)) : null;
 
     public Color Skin(int actor) => PhotoStudio.SkinColour(Look(actor)?[0] ?? actor % 4);
+
+    public Texture? Hand(int actor) =>
+        Look(actor) is int[] look ? PhotoStudio.TakeHand(Key(look), model => Dress(model, look)) : null;
 
     /// <summary>Takes one photo of the Zoo's looks not yet taken; false when all are.</summary>
     public static bool WarmOne()
