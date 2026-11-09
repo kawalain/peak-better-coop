@@ -34,13 +34,13 @@ internal sealed class PaperList
     private const float SignatureWidth = 400f;
 
     /// <summary>The corner the credits are scrawled over.</summary>
-    private static readonly Vector2 CreditsSize = new(260f, 112f);
+    private static readonly Vector2 CreditsSize = new(236f, 96f);
 
     /// <summary>Where each maker's name fell among the doodles, and its slant, crossing them.</summary>
     private static readonly (Vector2 Spot, float Slant)[] CreditSpots =
     [
-        (new Vector2(84f, 56f), 13f),
-        (new Vector2(166f, 30f), -19f),
+        (new Vector2(50f, 38f), 13f),
+        (new Vector2(138f, 13f), -19f),
     ];
 
     /// <summary>How a scrawled name shifts (x, y) and turns (z, degrees) in each boil frame.</summary>
@@ -365,13 +365,13 @@ internal sealed class PaperList
     public void Credits(IReadOnlyList<(string Name, Action Open)> makers)
     {
         PaperRow row = NewRow("Credits", 0f);
-        row.Root.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(16, 12, 0, 6);
+        row.Root.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(2, 12, 0, 0);
         RectTransform line = Line(row.Root.transform);
 
         // Laid out by hand rather than by the row: each piece where it fell.
         RectTransform scrawl = Fixed(line, "Scrawl", CreditsSize.x, CreditsSize.y);
-        Scribble(scrawl, "Anemone", new Vector2(64f, 56f), new Vector2(132f, 64f), -12f, size => FormDrawing.Anemone(size.x, size.y, Boil.Frame));
-        Scribble(scrawl, "Pony", new Vector2(80f, 62f), new Vector2(196f, 60f), 9f, size => FormDrawing.Pony(size.x, size.y, Boil.Frame));
+        Scribble(scrawl, "Anemone", new Vector2(64f, 56f), new Vector2(104f, 46f), -12f, size => FormDrawing.Anemone(size.x, size.y, Boil.Frame));
+        Scribble(scrawl, "Pony", new Vector2(80f, 62f), new Vector2(168f, 42f), 9f, size => FormDrawing.Pony(size.x, size.y, Boil.Frame));
 
         Color lead = ToColor(FormDrawing.Lead);
         for (int i = 0; i < makers.Count; i++)
@@ -381,7 +381,7 @@ internal sealed class PaperList
             holder.anchorMin = holder.anchorMax = Vector2.zero;
             holder.pivot = new Vector2(0.5f, 0.5f);
             holder.anchoredPosition = spot + new Vector2(0f, CreditsSize.y * (i / CreditSpots.Length));
-            TMP_Text name = PaperText.Make(holder.gameObject, template, PaperText.Note * 1.1f, TextAlignmentOptions.Center);
+            TMP_Text name = PaperText.Make(holder.gameObject, template, PaperText.Note * 0.8f, TextAlignmentOptions.Center);
             name.fontStyle = FontStyles.Italic;
             name.color = lead;
             name.raycastTarget = true;
