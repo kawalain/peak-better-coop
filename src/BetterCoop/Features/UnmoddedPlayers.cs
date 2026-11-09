@@ -83,7 +83,7 @@ internal sealed class UnmoddedPlayers : MonoBehaviourPunCallbacks
             {
                 restingToldUnder = leader.ActorNumber;
                 string name = KnownPlayers.NameOf(leader, leader.ActorNumber);
-                Plugin.Log.LogInfo($"Resting in the room: the Troop Leader {name} speaks protocol {RoomProtocol.OfRoom()?.ToString() ?? "none"}, version {ModPresence.VersionOf(leader) ?? "none"}.");
+                Plugin.Log.LogInfo($"Resting in the room: the Troop Leader {name} speaks protocol {RoomProtocol.Of(leader)?.ToString() ?? "none"} (the room's is {RoomProtocol.OfRoom()?.ToString() ?? "none"}), version {ModPresence.VersionOf(leader) ?? "none"}.");
                 CoopNotice.Warning(Strings.Resting(name, ModPresence.VersionOf(leader), MyPluginInfo.PLUGIN_VERSION));
             }
 

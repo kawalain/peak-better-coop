@@ -8,7 +8,9 @@ publishes a protocol number, raised only when the shared values or events
 change shape; clients with the same protocol work together whatever their
 version. A player without the mod, or with another protocol, is an Unmodded
 Player: they depart with the party and climb as an Unpaired Player, and are
-told which version the Troop Leader has.
+told which version the Troop Leader has. A client whose Troop Leader speaks
+another protocol, or none, as when Photon makes an Unmodded Player the Troop
+Leader after the last one left, sits the mod out until that changes.
 
 ## Consequences
 

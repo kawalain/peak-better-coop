@@ -141,7 +141,6 @@ internal sealed class RosterPage : PaperPage
             // The room's values are in another protocol (ADR 0009): nothing on it can be read.
             list.Header(() => Strings.MenuYou);
             list.Note(() => Strings.Unprefixed(Strings.Resting(room.NameOf(room.TroopLeader), room.ModVersionOf(room.TroopLeader), MyPluginInfo.PLUGIN_VERSION)));
-            PlayerRows.Sign(list, room);
             Makers.Add(list);
             return;
         }

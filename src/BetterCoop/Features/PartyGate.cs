@@ -42,7 +42,7 @@ internal static class PartyGate
         PartyGateVerdict verdict = Evaluate();
         if (verdict.Unmodded.Count > 0)
         {
-            Plugin.Log.LogInfo($"Departing with {verdict.Unmodded.Count} Unmodded Player(s): {string.Join(", ", verdict.Unmodded)}.");
+            Plugin.Log.LogInfo($"Unmodded Player(s) in the party: {string.Join(", ", verdict.Unmodded)}.");
         }
 
         if (verdict.CanDepart)

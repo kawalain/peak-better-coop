@@ -386,6 +386,20 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         Api.RaisePairsChanged();
     }
 
+    /// <summary>A new Troop Leader may speak another protocol, or none (ADR 0009): the Pairs are read again.</summary>
+    public override void OnMasterClientSwitched(PhotonPlayer newMasterClient)
+    {
+        try
+        {
+            PairRoster.Reload();
+            Api.RaisePairsChanged();
+        }
+        catch (Exception exception)
+        {
+            Guard.Report("PairingDirector.OnMasterClientSwitched", exception);
+        }
+    }
+
     public override void OnPlayerLeftRoom(PhotonPlayer otherPlayer)
     {
         try
@@ -574,7 +588,8 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
                 CoopNotice.Show(NoticeKind.Memo, Strings.PreferenceOverridden(NameOf(actor)));
             }
 
-            foreach (int actor in current.Unpaired)
+            // An Unmodded Player is never paired, and everyone heard so when they came.
+            foreach (int actor in current.Unpaired.Where(a => PhotonNetwork.CurrentRoom?.GetPlayer(a) is not PhotonPlayer player || RoomProtocol.Speaks(player)))
             {
                 CoopNotice.Show(NoticeKind.Memo, Strings.Unpaired(NameOf(actor)));
             }
