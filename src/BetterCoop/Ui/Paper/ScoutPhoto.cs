@@ -33,6 +33,9 @@ internal static class ScoutPhoto
 
     public const float CaptionHeight = 56f;
 
+    /// <summary>The air on each side of a caption, inside its photo's width.</summary>
+    private const float CaptionMargin = 4f;
+
     /// <summary>The whole print, photo and caption.</summary>
     public const float Height = PhotoHeight + CaptionHeight;
 
@@ -75,13 +78,15 @@ internal static class ScoutPhoto
         lines.spacing = -2f;
         TMP_Text printed = PaperText.Make(PaperList.NewRect("Name", caption).gameObject, template, PaperText.Value, TextAlignmentOptions.Top);
         PaperText.Fit(printed, 14f);
+        // A name too long even at the smallest size is cut, never spread under a neighbour's photo.
+        printed.overflowMode = TextOverflowModes.Ellipsis;
         Tall(printed, 30f);
         printed.text = name;
         if (role != null)
         {
             TMP_Text under = PaperText.Make(PaperList.NewRect("Role", caption).gameObject, template, PaperText.Note * 0.85f, TextAlignmentOptions.Top);
             under.text = role;
-            under.color = PaperList.Faded(PaperText.Ink, 0.6f);
+            under.color = PaperText.Ink;
             Tall(under, 20f);
         }
     }
@@ -142,7 +147,8 @@ internal static class ScoutPhoto
         caption.anchorMin = Vector2.zero;
         caption.anchorMax = new Vector2(1f, 0f);
         caption.pivot = new Vector2(0.5f, 0f);
-        caption.sizeDelta = new Vector2(8f, CaptionHeight - 4f);
+        // A little narrower than the photo, so captions side by side keep apart.
+        caption.sizeDelta = new Vector2(-2f * CaptionMargin, CaptionHeight - 4f);
         caption.anchoredPosition = Vector2.zero;
         return caption;
     }
