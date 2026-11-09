@@ -70,13 +70,17 @@ internal sealed class FakeRoom : ICoopRoom
     /// <param name="formed">Whether the Run's Pair Formation has happened.</param>
     /// <param name="reported">Whether a room not yet formed holds the Run Report of a made-up last Run.</param>
     /// <param name="ending">How that last Run ended; without one, it changes with the seed.</param>
-    public FakeRoom(int count, bool troopLeader, bool formed, int seed = 1, bool reported = false, RunEnding? ending = null)
+    /// <param name="unmodded">Unmodded Players besides, every other one with an old version.</param>
+    /// <param name="resting">Whether the local player rests, under a Troop Leader with a newer version.</param>
+    public FakeRoom(int count, bool troopLeader, bool formed, int seed = 1, bool reported = false, RunEnding? ending = null, int unmodded = 0, bool resting = false)
     {
+        Resting = resting && !troopLeader;
         this.reported = reported;
         this.ending = ending;
         random = new Random(seed);
         this.seed = seed;
         players = Enumerable.Range(1, Math.Max(1, count)).ToList();
+        unmoddedPlayers = Enumerable.Range(players.Count + 1, Math.Max(0, unmodded)).ToList();
         IsTroopLeader = troopLeader;
         var wishes = new[] { RolePreference.Random, RolePreference.Random, RolePreference.Carrier, RolePreference.Rider };
         foreach (int actor in players)
@@ -137,6 +141,18 @@ internal sealed class FakeRoom : ICoopRoom
     public int Me => 1;
 
     public IReadOnlyList<int> Players => players;
+
+    private readonly List<int> unmoddedPlayers;
+
+    public IReadOnlyList<int> Unmodded => unmoddedPlayers;
+
+    public bool Resting { get; }
+
+    /// <summary>Made-up versions: every other Unmodded Player has an old one, and a resting player's Troop Leader a newer one.</summary>
+    public string? ModVersionOf(int actor) =>
+        unmoddedPlayers.Contains(actor) ? (actor % 2 == 0 ? "0.5.4" : null)
+        : Resting && actor == TroopLeader ? "0.7.0"
+        : null;
 
     public IReadOnlyList<Pair> Pairs => pairs;
 

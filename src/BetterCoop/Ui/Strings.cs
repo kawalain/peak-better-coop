@@ -549,6 +549,16 @@ internal static class Strings
 
     public static string MenuUnpaired => Korean ? "짝 없는 사람" : "Unpaired";
 
+    public static string MenuUnmodded => Korean ? "모드 없는 대원" : "Unmodded";
+
+    public static string AboutUnmodded => Korean
+        ? "모드가 없거나 분대장과 맞지 않는 버전이라 짝 없이 함께 오릅니다. 짝 계획이나 짝 지정에 넣을 수 없습니다."
+        : "Without the mod, or with a version that does not work with the Troop Leader's, they climb without a Pair and cannot be planned or assigned.";
+
+    public static string UnmoddedVersion(string? version) => version == null
+        ? Korean ? "모드 없음" : "No mod"
+        : Korean ? $"버전 {version}" : $"Version {version}";
+
     public static string AssignmentCountdown(int seconds) => Korean
         ? $"코옵: {seconds}초 뒤 분대장이 정한 짝이 됩니다."
         : $"Coop: the Troop Leader's Pairs take effect in {seconds}...";

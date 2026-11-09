@@ -59,7 +59,17 @@ internal interface ICoopRoom
     /// <summary>The local player.</summary>
     int Me { get; }
 
+    /// <summary>The players who can be paired, the local player among them.</summary>
     IReadOnlyList<int> Players { get; }
+
+    /// <summary>The Unmodded Players in the room, who climb without a Pair.</summary>
+    IReadOnlyList<int> Unmodded { get; }
+
+    /// <summary>Whether the local player sits the mod out in this room: its Troop Leader has another version, or none.</summary>
+    bool Resting { get; }
+
+    /// <summary>The mod version a player runs, or null without the mod.</summary>
+    string? ModVersionOf(int actor);
 
     IReadOnlyList<Pair> Pairs { get; }
 

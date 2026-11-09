@@ -126,7 +126,7 @@ internal sealed class RosterPage : PaperPage
 
     protected override string FormNumber() => Strings.FormTitle;
 
-    protected override string FormNote() => room.InRoom ? Strings.FormMembers(room.Players.Count) : string.Empty;
+    protected override string FormNote() => room.InRoom ? Strings.FormMembers(room.Players.Count + room.Unmodded.Count) : string.Empty;
 
     /// <summary>A number for the troop, the same while the same scout leads it.</summary>
     protected override string FormSerial() =>
@@ -136,6 +136,16 @@ internal sealed class RosterPage : PaperPage
 
     protected override void Fill(PaperList list)
     {
+        if (room.InRoom && room.Resting)
+        {
+            // The room's values are in another protocol (ADR 0009): nothing on it can be read.
+            list.Header(() => Strings.MenuYou);
+            list.Note(() => Strings.Unprefixed(Strings.Resting(room.NameOf(room.TroopLeader), room.ModVersionOf(room.TroopLeader), MyPluginInfo.PLUGIN_VERSION)));
+            PlayerRows.Sign(list, room);
+            Makers.Add(list);
+            return;
+        }
+
         bool leads = room.InRoom && room.IsTroopLeader;
         PlayerRows.Add(list, room);
         if (room.HasReport())
@@ -163,6 +173,8 @@ internal sealed class RosterPage : PaperPage
             board = PairRows.Add(list, room, shown, portraits, leads, Moved, StartOver, HandIn, out RectTransform heading, () => fromLastRun && shown.Changed);
             pairsHeading = heading;
         }
+
+        UnmoddedRows.Add(list, room);
 
         if (room.Formed)
         {
@@ -382,6 +394,25 @@ internal static class PairRows
 }
 
 /// <summary>The parts of the Roster every player fills in: their own Pair and Role Preference, and the room's Pairs.</summary>
+/// <summary>The Unmodded Players, apart from the board: they climb without a Pair and cannot be placed in one.</summary>
+internal static class UnmoddedRows
+{
+    public static void Add(PaperList list, ICoopRoom room)
+    {
+        if (!room.InRoom || room.Unmodded.Count == 0)
+        {
+            return;
+        }
+
+        list.Subheading(() => Strings.MenuUnmodded);
+        list.Note(() => Strings.AboutUnmodded);
+        foreach (int actor in room.Unmodded)
+        {
+            list.Field(() => room.NameOf(actor), () => Strings.UnmoddedVersion(room.ModVersionOf(actor)));
+        }
+    }
+}
+
 internal static class PlayerRows
 {
     private static readonly RolePreference[] Preferences = [RolePreference.Random, RolePreference.Carrier, RolePreference.Rider];
@@ -668,7 +699,14 @@ internal sealed class LiveRoom : ICoopRoom
         ? PairRoster.ActorOf(local)
         : PhotonNetwork.LocalPlayer?.ActorNumber ?? -1;
 
-    public IReadOnlyList<int> Players => PhotonNetwork.PlayerList.Select(p => p.ActorNumber).ToList();
+    public IReadOnlyList<int> Players => PhotonNetwork.PlayerList.Where(p => p.IsLocal || RoomProtocol.Speaks(p)).Select(p => p.ActorNumber).ToList();
+
+    public IReadOnlyList<int> Unmodded => PhotonNetwork.PlayerList.Where(p => !p.IsLocal && !RoomProtocol.Speaks(p)).Select(p => p.ActorNumber).ToList();
+
+    public bool Resting => RoomProtocol.Resting;
+
+    public string? ModVersionOf(int actor) =>
+        PhotonNetwork.CurrentRoom?.GetPlayer(actor) is Photon.Realtime.Player player ? ModPresence.VersionOf(player) : null;
 
     public IReadOnlyList<Pair> Pairs => PairRoster.Pairs;
 

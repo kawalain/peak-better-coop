@@ -216,4 +216,23 @@ public class FakeRoomTests
         Assert.Null(new FakeRoom(4, troopLeader: true, formed: false).Record);
         Assert.True(new FakeRoom(1, troopLeader: true, formed: true).Record!.IsEmpty);
     }
+
+    [Fact]
+    public void Unmodded_players_stay_off_the_Pairs_and_the_board()
+    {
+        var room = new FakeRoom(4, troopLeader: true, formed: true, unmodded: 2);
+
+        Assert.Equal([5, 6], room.Unmodded);
+        Assert.True(EveryoneOnce(room));
+        Assert.DoesNotContain(room.Pairs, p => room.Unmodded.Contains(p.Carrier) || room.Unmodded.Contains(p.Rider));
+        Assert.Null(room.ModVersionOf(5));
+        Assert.Equal("0.5.4", room.ModVersionOf(6));
+    }
+
+    [Fact]
+    public void A_Troop_Leader_never_rests()
+    {
+        Assert.False(new FakeRoom(4, troopLeader: true, formed: true, resting: true).Resting);
+        Assert.True(new FakeRoom(4, troopLeader: false, formed: true, resting: true).Resting);
+    }
 }

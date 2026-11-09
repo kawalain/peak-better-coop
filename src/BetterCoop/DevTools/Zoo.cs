@@ -26,6 +26,8 @@ internal sealed class ZooPage : PaperPage
 
     private static readonly int[] Counts = Enumerable.Range(1, 12).ToArray();
 
+    private static readonly int[] UnmoddedCounts = [0, 1, 2];
+
     private RosterPage example = null!;
 
     private RunReportPage reportExample = null!;
@@ -54,6 +56,10 @@ internal sealed class ZooPage : PaperPage
     private int tableLines = 5;
 
     private int players = 8;
+
+    private int unmodded;
+
+    private bool resting;
 
     private bool leader = true;
 
@@ -276,7 +282,19 @@ internal sealed class ZooPage : PaperPage
             () => Counts,
             count => T($"{count}명", $"{count}"),
             about: () => T("가짜 방의 인원입니다. 첫 사람이 나입니다.", "Players in the made-up room; the first is you."));
+        list.Choice(
+            () => T("모드 없는 대원", "Unmodded Players"),
+            () => unmodded,
+            count => unmodded = count,
+            () => UnmoddedCounts,
+            count => T($"{count}명", $"{count}"),
+            about: () => T("인원과 별개로 방에 있는 모드 없는 대원입니다. 둘째마다 옛 버전입니다.", "Unmodded Players in the room besides; every other one has an old version."));
         list.Check(() => T("내가 분대장", "You lead"), () => leader, on => leader = on);
+        list.Check(
+            () => T("이 방에서 쉼", "Resting here"),
+            () => resting,
+            on => resting = on,
+            () => T("분대장의 모드가 내 것과 맞지 않아 이 방에서 모드를 쉬는 편성표입니다. 내가 분대장이면 쉬지 않습니다.", "The Roster of a player whose Troop Leader's mod does not work with theirs. Leading, you never rest."));
         list.Check(() => T("짝 편성 끝남", "Pairs formed"), () => formed, on => formed = on);
         list.Check(
             () => T("지난 원정 보고서", "Last Run's report"),
@@ -330,7 +348,7 @@ internal sealed class ZooPage : PaperPage
 
     private void OpenExample()
     {
-        example.Show(new FakeRoom(players, leader, formed, seed, reported, ending), new ZooPortraits(seed));
+        example.Show(new FakeRoom(players, leader, formed, seed, reported, ending, unmodded, resting), new ZooPortraits(seed));
         seed++;
         example.Open();
     }
