@@ -77,7 +77,16 @@ internal sealed class Typewritten : MonoBehaviour
             return;
         }
 
+        // A clock or count ticking on shows its new figures at once, without the keys.
+        bool ticking = !first && Typewriter.Ticks(typed, now);
         typed = now;
+        if (ticking)
+        {
+            startedAt = float.NegativeInfinity;
+            shown = int.MaxValue;
+            return;
+        }
+
         bool atOnce = first && FirstDelay < 0f;
         startedAt = atOnce ? float.NegativeInfinity : Time.unscaledTime + (first ? FirstDelay : 0f);
         first = false;

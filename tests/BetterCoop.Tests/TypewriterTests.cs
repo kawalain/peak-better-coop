@@ -52,4 +52,15 @@ public class TypewriterTests
         Assert.True(Typewriter.Typed(Typewriter.LineSeconds, 200, longest: 1.2f) < 200);
         Assert.Equal(200, Typewriter.Typed(1.2f, 200, longest: 1.2f));
     }
+
+    [Theory]
+    [InlineData("원정 중 · 0:29", "원정 중 · 0:30", true)]
+    [InlineData("9:59", "10:00", true)]
+    [InlineData("12 m", "130 m", true)]
+    [InlineData("원정 중 · 0:29", "정상 도착 · 0:30", false)]
+    [InlineData("Alder", "Birch", false)]
+    [InlineData("0:30", "0:30", false)]
+    [InlineData("", "0:01", false)]
+    public void Only_figures_moving_on_tick_rather_than_type(string before, string after, bool ticks) =>
+        Assert.Equal(ticks, Typewriter.Ticks(before, after));
 }

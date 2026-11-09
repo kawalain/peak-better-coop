@@ -62,6 +62,50 @@ internal static class Typewriter
         return typed >= length ? length : typed;
     }
 
+    /// <summary>
+    /// Whether going from <paramref name="before"/> to <paramref name="after"/>
+    /// only moves figures on, as a clock or a count ticking: such a value is
+    /// not typed again, or its keys would clack every second.
+    /// </summary>
+    public static bool Ticks(string before, string after)
+    {
+        if (before == after || before.Length == 0 || after.Length == 0)
+        {
+            return false;
+        }
+
+        int i = 0;
+        int j = 0;
+        bool figures = false;
+        while (true)
+        {
+            while (i < before.Length && char.IsDigit(before[i]))
+            {
+                i++;
+                figures = true;
+            }
+
+            while (j < after.Length && char.IsDigit(after[j]))
+            {
+                j++;
+                figures = true;
+            }
+
+            if (i == before.Length || j == after.Length)
+            {
+                return figures && i == before.Length && j == after.Length;
+            }
+
+            if (before[i] != after[j])
+            {
+                return false;
+            }
+
+            i++;
+            j++;
+        }
+    }
+
     private static float Unit(ref uint h)
     {
         h ^= h >> 16;
