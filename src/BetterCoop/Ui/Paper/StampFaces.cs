@@ -106,8 +106,8 @@ internal abstract class StampFace
             dry.Dried = 1f - inked;
         }
 
-        Color ink = ToColor(Ink);
-        Color paper = ToColor(PaperDrawing.Paper);
+        Color ink = WordInk;
+        Color paper = WordStruck;
         bool drying = inked > 0f && inked < 1f && inkArea != null;
         foreach (TMP_Text word in Words)
         {
@@ -154,6 +154,12 @@ internal abstract class StampFace
 
         word.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
     }
+
+    /// <summary>The words' colour before the face is struck: its ink.</summary>
+    protected virtual Color WordInk => ToColor(Ink);
+
+    /// <summary>The words' colour struck: the paper's, showing through the solid.</summary>
+    protected virtual Color WordStruck => ToColor(PaperDrawing.Paper);
 
     protected static Color ToColor(Ink ink) => new(ink.R, ink.G, ink.B, ink.A);
 }
@@ -288,6 +294,13 @@ internal sealed class SealFace : StampFace
         Words.Add(text);
         Paint();
     }
+
+    /// <summary>An embossed seal's words show by their shadow, deeper once struck.</summary>
+    protected override Color WordInk => shape == StampShape.Notary ? ToColor(FormDrawing.EmbossShade) : base.WordInk;
+
+    protected override Color WordStruck => shape == StampShape.Notary
+        ? ToColor(PaperDrawing.Paper.Mix(PaperDrawing.InkBlack, 0.5f))
+        : base.WordStruck;
 
     public override void Show(string word)
     {

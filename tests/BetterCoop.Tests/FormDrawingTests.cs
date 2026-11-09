@@ -58,12 +58,38 @@ public class FormDrawingTests
     [Fact]
     public void A_struck_stamp_fills_with_ink_where_its_outline_does_not()
     {
+        // Struck, the disc is filled and edged in the full ink squeezed to its rim.
         static int Filled(bool inked) => XElement.Parse(FormDrawing.Seal(StampShape.DateRing, 92f, 92f, FormDrawing.StampBlue, inked))
             .Descendants(Svg + "circle")
-            .Count(c => c.Attribute("fill")?.Value == FormDrawing.StampBlue.Hex);
+            .Count(c => c.Attribute("fill")?.Value != "none" && c.Attribute("stroke")?.Value == FormDrawing.StampBlue.Hex);
 
         Assert.Equal(0, Filled(inked: false));
         Assert.Equal(1, Filled(inked: true));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void A_notary_seal_is_embossed_without_ink(bool struck)
+    {
+        string seal = FormDrawing.Seal(StampShape.Notary, 104f, 104f, FormDrawing.StampBlue, struck);
+
+        Assert.DoesNotContain(FormDrawing.StampBlue.Hex, seal);
+        Assert.Contains(FormDrawing.EmbossShade.Hex, seal);
+        Assert.Contains(FormDrawing.EmbossLight.Hex, seal);
+    }
+
+    [Fact]
+    public void A_duplex_strikes_an_oval_of_killer_bars_longest_in_the_middle()
+    {
+        float[] bars = XElement.Parse(FormDrawing.Seal(StampShape.Duplex, 172f, 92f, FormDrawing.PostmarkInk, inked: false))
+            .Descendants(Svg + "rect")
+            .Where(r => r.Attribute("fill")?.Value == FormDrawing.PostmarkInk.Hex)
+            .Select(r => float.Parse(r.Attribute("width")!.Value, System.Globalization.CultureInfo.InvariantCulture))
+            .ToArray();
+
+        Assert.Equal(8, bars.Length);
+        Assert.True(bars[3] > bars[0] && bars[4] > bars[7], string.Join(", ", bars));
     }
 
     [Fact]
