@@ -81,7 +81,7 @@ Run ended with.
 | Allow Odd Player Count | Off | The extra player plays without a Pair. |
 | Campfire Shuffle | On | New Pairs at each campfire. |
 | Timed Shuffle, Interval | Off, 10 | New Pairs every few minutes (1–60). |
-| Hand Over Place, Items | On, On | A new Carrier takes the old body's place and items. |
+| Hand Over Place, Items | On, On | A new Carrier takes over the place and items of the Carrier before them. |
 | Rescue Carry | On | Off: Pairs carry no passed-out scout, and no one carries a passed-out Pair. |
 | Carry Weight | Off | Carriers feel the weight of a person. |
 | Verbose Log | Off | Turn on when reporting a bug, and send `BepInEx/LogOutput.log`. |

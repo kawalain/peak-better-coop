@@ -9,11 +9,11 @@
   "notice.cautionStamp": { "en": "Caution", "ko": "주의" },
 
   "notice.modDisabled": {
-    "en": "the mod is off because it does not match this game version.",
+    "en": "The mod is off because it does not match this game version.",
     "ko": "지금 게임 버전과 맞지 않아 모드를 껐습니다."
   },
   "notice.modDisabledByCoopMod": {
-    "en": "the mod is off because Co-op Mod is also installed. Remove Co-op Mod to play.",
+    "en": "The mod is off because Co-op Mod is also installed. Remove Co-op Mod to play.",
     "ko": "Co-op Mod와 함께 쓸 수 없어 모드를 껐습니다. Co-op Mod를 지워 주세요."
   },
   "notice.pairFormed": {
@@ -21,7 +21,7 @@
     "ko": "{carrier} 님이 {rider} 님을 업습니다. {carrier} 님은 키보드, {rider} 님은 마우스로 조작합니다."
   },
   "notice.preferenceOverridden": {
-    "en": "roles clashed, so {player} takes the other role.",
+    "en": "Roles clashed, so {player} takes the other role.",
     "ko": "원하는 역할이 겹쳐 {player} 님은 다른 역할을 맡습니다."
   },
   "notice.unpaired": {
@@ -29,81 +29,81 @@
     "ko": "{player} 님은 지금은 짝 없이 올라갑니다."
   },
   "notice.pairDissolved": {
-    "en": "the Pair of {carrier} and {rider} has ended.",
+    "en": "The Pair of {carrier} and {rider} has ended.",
     "ko": "{carrier} 님과 {rider} 님의 짝이 풀렸습니다."
   },
-  "notice.shuffleCountdown": { "en": "shuffling Pairs in {seconds}...", "ko": "{seconds}초 뒤 짝을 섞습니다." },
-  "notice.roleSwapCountdown": { "en": "swapping places in {seconds}...", "ko": "{seconds}초 뒤 자리를 바꿉니다." },
-  "notice.latePairingCountdown": { "en": "pairing you up in {seconds}...", "ko": "{seconds}초 뒤 짝을 이어 줍니다." },
+  "notice.shuffleCountdown": { "en": "Shuffling Pairs in {seconds}...", "ko": "{seconds}초 뒤 짝을 섞습니다." },
+  "notice.roleSwapCountdown": { "en": "Swapping places in {seconds}...", "ko": "{seconds}초 뒤 자리를 바꿉니다." },
+  "notice.latePairingCountdown": { "en": "Pairing you up in {seconds}...", "ko": "{seconds}초 뒤 짝을 이어 줍니다." },
   "notice.assignmentCountdown": {
-    "en": "the Troop Leader's Pairs take effect in {seconds}...",
+    "en": "The Troop Leader's Pairs take effect in {seconds}...",
     "ko": "{seconds}초 뒤 분대장이 정한 짝이 됩니다."
   },
   "notice.planAnnounced": {
-    "en": "the Troop Leader has planned the Pairs. See ESC → Roster.",
+    "en": "The Troop Leader has planned the Pairs. See ESC → Roster.",
     "ko": "분대장이 짝 계획을 통보했습니다. ESC → 편성표에서 확인할 수 있습니다."
   },
   "notice.reportArrived": {
-    "en": "the Run Report is in. See ESC → Roster.",
+    "en": "The Run Report is in. See ESC → Roster.",
     "ko": "원정 보고서가 도착했습니다. ESC → 편성표에서 볼 수 있습니다."
   },
   "notice.callOffUnavailable": {
-    "en": "there is no Pair Shuffle to call off now.",
+    "en": "There is no Pair Shuffle to call off now.",
     "ko": "지금은 취소할 짝 섞기가 없습니다."
   },
   "notice.shuffleCalledOff": {
-    "en": "the Troop Leader called off the coming Pair Shuffle.",
+    "en": "The Troop Leader called off the coming Pair Shuffle.",
     "ko": "분대장이 다가오는 짝 섞기를 취소했습니다."
   },
   "notice.shuffleCalledOffUntil": {
-    "en": "the Troop Leader called off the coming Pair Shuffle. The next one is in {clock}.",
+    "en": "The Troop Leader called off the coming Pair Shuffle. The next one is in {clock}.",
     "ko": "분대장이 다가오는 짝 섞기를 취소했습니다. 다음 짝 섞기는 {clock} 뒤입니다."
   },
   "notice.roleSwapCalledOffByRule": {
-    "en": "the Troop Leader stopped Role Swap requests, so the coming Role Swap is called off.",
+    "en": "The Troop Leader stopped Role Swap requests, so the coming Role Swap is called off.",
     "ko": "분대장이 자리 바꾸기 요청을 막아, 다가오던 자리 바꾸기를 취소했습니다."
   },
   "notice.latePairingCalledOffByRule": {
-    "en": "the Troop Leader turned Late Pairing off, so the coming Late Pairing is called off.",
+    "en": "The Troop Leader turned Late Pairing off, so the coming Late Pairing is called off.",
     "ko": "분대장이 짝 이어주기를 꺼서, 다가오던 짝 이어주기를 취소했습니다."
   },
   "notice.tooSoon": {
-    "en": "that was just done; try again in a moment.",
+    "en": "That was just done; try again in a moment.",
     "ko": "방금 한 일입니다. 잠시 뒤 다시 해 주세요."
   },
   "notice.shuffleQueued": {
-    "en": "the Pairs will be shuffled once the Pair change under way is done.",
+    "en": "The Pairs will be shuffled once the Pair change under way is done.",
     "ko": "진행 중인 짝 변경이 끝나면 짝을 섞습니다."
   },
   "notice.planUnavailable": {
-    "en": "the Pair Plan cannot be set now. It is set at the Airport, from scouts in the room.",
+    "en": "The Pair Plan cannot be set now. It is set at the Airport, from scouts in the room.",
     "ko": "지금은 짝 계획을 정할 수 없습니다. 짝 계획은 공항에서 방에 있는 대원으로만 정합니다."
   },
   "notice.busy": {
-    "en": "another Pair change is under way; try again in a moment.",
+    "en": "Another Pair change is under way; try again in a moment.",
     "ko": "다른 짝 변경이 진행 중이라 지금은 할 수 없습니다."
   },
   "notice.assignUnavailable": {
-    "en": "these Pairs cannot be set now. A new Carrier must be awake, a fallen Pair stays together, and everyone needs this version.",
+    "en": "These Pairs cannot be set now. A new Carrier must be awake, a fallen Pair stays together, and everyone needs this version.",
     "ko": "지금은 이대로 짝을 지을 수 없습니다. 새로 업는 사람은 깨어 있어야 하고, 쓰러진 짝은 함께 있어야 하며, 모두 같은 버전의 모드가 있어야 합니다."
   },
   "notice.rulesChanged": {
-    "en": "the Troop Leader changed the Run Rules. {changes}",
+    "en": "The Troop Leader changed the Run Rules. {changes}",
     "ko": "분대장이 원정 규칙을 바꿨습니다. {changes}"
   },
   "notice.ruleOn": { "en": "{rule} on", "ko": "{rule} 켬" },
   "notice.ruleOff": { "en": "{rule} off", "ko": "{rule} 끔" },
   "notice.ruleSetTo": { "en": "{rule} {value}", "ko": "{rule} {value}" },
   "notice.swapNotAllowed": {
-    "en": "the Troop Leader has not allowed swapping places.",
+    "en": "The Troop Leader has not allowed swapping places.",
     "ko": "분대장이 자리 바꾸기를 막아 두었습니다."
   },
   "notice.swapUnavailable": {
-    "en": "you can swap places only while you and your partner are alive on the island.",
+    "en": "You can swap places only while you and your partner are alive on the island.",
     "ko": "짝과 둘 다 섬에서 살아 있을 때만 자리를 바꿀 수 있습니다."
   },
   "notice.swapAsked": {
-    "en": "asked {partner} to swap places. It happens if they agree within 30 seconds.",
+    "en": "Asked {partner} to swap places. It happens if they agree within 30 seconds.",
     "ko": "{partner} 님에게 자리 바꾸기를 요청했습니다. 30초 안에 상대도 누르면 바꿉니다."
   },
   "notice.swapOffered": {
@@ -115,39 +115,39 @@
     "ko": "{partner} 님의 자리 바꾸기 요청이 취소되었습니다."
   },
   "notice.swapCancelled": {
-    "en": "your request to swap places is cancelled.",
+    "en": "Your request to swap places is cancelled.",
     "ko": "자리 바꾸기 요청을 취소했습니다."
   },
   "notice.swapExpired": {
-    "en": "no answer in 30 seconds, so your request to swap places lapsed.",
+    "en": "No answer in 30 seconds, so your request to swap places lapsed.",
     "ko": "30초 동안 답이 없어 자리 바꾸기 요청이 취소되었습니다."
   },
   "notice.swapCancelledByShuffle": {
-    "en": "a Pair Shuffle is starting, so your request to swap places is cancelled.",
+    "en": "A Pair Shuffle is starting, so your request to swap places is cancelled.",
     "ko": "짝 섞기가 시작되어 자리 바꾸기 요청을 취소했습니다."
   },
   "notice.riderHandEmptied": {
-    "en": "a Rider cannot hold items, so it was dropped.",
+    "en": "A Rider cannot hold items, so the item in hand was put down.",
     "ko": "업힌 사람은 아이템을 손에 들 수 없어 바닥에 내려놓았습니다."
   },
   "notice.riderBackEmptied": {
-    "en": "a Rider cannot wear a back item, so it was dropped.",
+    "en": "A Rider cannot wear a back item, so it was put down.",
     "ko": "업힌 사람은 등에 아이템을 멜 수 없어 바닥에 내려놓았습니다."
   },
   "notice.recovered": {
-    "en": "the Troop Leader re-carried every Pair and woke every Rider.",
+    "en": "The Troop Leader put every Pair back together and woke every Rider.",
     "ko": "분대장이 모든 짝을 다시 업히고 업힌 사람을 깨웠습니다."
   },
   "notice.oddPlayerCount": {
-    "en": "an even number of players who can pair is needed to depart. ({pairable})",
+    "en": "An even number of players who can pair is needed to depart. ({pairable})",
     "ko": "출발하려면 짝을 지을 인원이 짝수여야 합니다. (현재 {pairable}명)"
   },
   "notice.oddPlayerCountWithUnmodded": {
-    "en": "an even number of players who can pair is needed to depart. ({pairable}, not counting {unmodded} Unmodded)",
+    "en": "An even number of players who can pair is needed to depart. ({pairable}, not counting {unmodded} Unmodded)",
     "ko": "출발하려면 짝을 지을 인원이 짝수여야 합니다. (현재 {pairable}명, 모드 없는 대원 {unmodded}명 제외)"
   },
   "notice.overfull": {
-    "en": "more than {seats} scouts are here, so only the first {seats} to join are paired. The rest climb without a Pair until a place frees up.",
+    "en": "More than {seats} scouts are here, so only the first {seats} to join are paired. The rest climb without a Pair until a place frees up.",
     "ko": "대원이 {seats}명을 넘어, 먼저 온 {seats}명만 짝을 짓습니다. 나머지 대원은 자리가 날 때까지 짝 없이 올라갑니다."
   },
   "notice.unmoddedPlayer": {
@@ -159,11 +159,11 @@
     "ko": "{player} 님의 모드 {theirs}는 분대장의 {leaders}와 맞지 않아 짝 없이 함께 오릅니다."
   },
   "notice.resting": {
-    "en": "the Troop Leader {leader} does not have BetterCoop. The mod rests in this room; you climb without a Pair.",
+    "en": "The Troop Leader {leader} does not have BetterCoop. The mod rests in this room; you climb without a Pair.",
     "ko": "분대장 {leader} 님에게 모드가 없어 이 방에서는 모드를 쉽니다. 짝 없이 함께 오릅니다."
   },
   "notice.restingVersion": {
-    "en": "the Troop Leader {leader} runs BetterCoop {leaders}, you run {mine}. The mod rests in this room and you climb without a Pair; match their version in your mod manager to pair.",
+    "en": "The Troop Leader {leader} runs BetterCoop {leaders}, you run {mine}. The mod rests in this room and you climb without a Pair; match their version in your mod manager to pair.",
     "ko": "분대장 {leader} 님의 모드는 {leaders}, 내 모드는 {mine}입니다. 이 방에서는 모드를 쉬고 짝 없이 함께 오릅니다. 모드 매니저에서 같은 버전으로 맞추면 짝이 됩니다."
   },
 
@@ -183,7 +183,7 @@
   "roster.noPartner": { "en": "You have no partner for now", "ko": "지금은 짝이 없습니다" },
   "roster.aboutNoPartner": {
     "en": "You get a partner when another player is free or the Pairs shuffle.",
-    "ko": "다른 짝 없는 사람과 짝 이어주기가 되거나, 짝 섞기 때 짝이 생깁니다."
+    "ko": "짝 없는 대원이 또 생기거나 짝을 섞을 때 짝이 생깁니다."
   },
   "roster.rolePreference": { "en": "Role Preference", "ko": "원하는 역할" },
   "roster.aboutRolePreference": {
@@ -220,7 +220,7 @@
   "roster.pairsForm": { "en": "Pairs form on the island", "ko": "짝은 섬에 도착하면 편성됩니다" },
   "roster.pairs": { "en": "Pairs", "ko": "짝 명단" },
   "roster.pairNumber": { "en": "Pair {number}", "ko": "{number}조" },
-  "roster.unpaired": { "en": "Unpaired", "ko": "짝 없는 사람" },
+  "roster.unpaired": { "en": "Unpaired", "ko": "짝 없는 대원" },
   "roster.unmodded": { "en": "Unmodded", "ko": "모드 없는 대원" },
   "roster.aboutUnmodded": {
     "en": "Without the mod, or with a version that does not work with the Troop Leader's, they climb without a Pair and cannot be planned or assigned.",
@@ -229,7 +229,7 @@
   "roster.noMod": { "en": "No mod", "ko": "모드 없음" },
   "roster.modVersion": { "en": "Version {version}", "ko": "버전 {version}" },
   "roster.boardHelp": {
-    "en": "Drag a photo, or press it to pick it up and press where it goes. Dropped on a photo, the two trade places. A right click or Esc puts it back.",
+    "en": "Drag a photo, or press it to pick it up and press where it goes. Drop it on a photo to swap the two. A right click or Esc puts it back.",
     "ko": "사진을 끌어 옮기거나, 눌러서 든 다음 놓을 곳을 누릅니다. 사진 위에 놓으면 서로 자리를 바꿉니다. 오른쪽 클릭이나 ESC로 제자리에 둡니다."
   },
   "roster.newPair": { "en": "New", "ko": "새 짝" },
@@ -242,16 +242,16 @@
   },
   "roster.announce": { "en": "Announce the Pairs", "ko": "짝 명단 통보" },
   "roster.aboutAnnounce": {
-    "en": "Announced, everyone is told and the Pairs become as you laid them out three seconds later; anyone left Unpaired pairs up by Late Pairing.",
-    "ko": "통보하면 모두에게 알린 뒤 3초 뒤에 옮긴 그대로 짝이 됩니다. 짝 없는 사람은 짝 이어주기로 묶입니다."
+    "en": "Once announced, everyone is told and the Pairs become as you laid them out three seconds later; anyone left Unpaired pairs up by Late Pairing.",
+    "ko": "통보하면 모두에게 알린 뒤 3초 뒤에 옮긴 그대로 짝이 됩니다. 짝 없는 대원은 짝 이어주기로 묶입니다."
   },
-  "roster.discardDraft": { "en": "Throw the draft away?", "ko": "초안을 버리겠습니까?" },
+  "roster.discardDraft": { "en": "Discard the draft?", "ko": "초안을 지울까요?" },
   "roster.discardDraftNote": {
-    "en": "The Pairs you laid out have not been announced.\nThrown away, the list goes back to the Pairs as they are.",
-    "ko": "통보하지 않은 짝 명단 초안이 있습니다.\n버리면 지금의 짝 명단으로 돌아갑니다."
+    "en": "The Pairs you laid out have not been announced.\nIf you discard it, the list goes back to the current Pairs.",
+    "ko": "통보하지 않은 짝 명단 초안이 있습니다.\n지우면 지금의 짝 명단으로 돌아갑니다."
   },
 
-  "roster.pairPlan": { "en": "Pair Plan (after departure)", "ko": "짝 계획 (출발 후)" },
+  "roster.pairPlan": { "en": "Pair Plan (applies on arrival)", "ko": "짝 계획 (섬에 도착하면 적용)" },
   "roster.planHelp": {
     "en": "Set the Pairs before departure. On arrival the Pairs form as planned; anyone left out is paired by lot.",
     "ko": "출발 전에 짝을 미리 정해 둘 수 있습니다. 섬에 도착하면 이 계획대로 짝을 편성하고, 계획에 없는 대원은 제비뽑기로 짝을 짓습니다."
@@ -265,7 +265,7 @@
     "ko": "분대장이 아직 짝 계획을 세우지 않았습니다. 섬에 도착하면 제비뽑기로 짝을 짓습니다."
   },
   "roster.aboutPlan": {
-    "en": "Announced, everyone is told, and the Pairs form this way on arrival.",
+    "en": "Once announced, everyone is told, and the Pairs form this way on arrival.",
     "ko": "통보하면 모두에게 알리고, 섬에 도착할 때 이대로 짝을 편성합니다."
   },
 
@@ -283,23 +283,23 @@
     "en": "Calls off the Pair Shuffle that is coming; the Timed Shuffle counts again from the start.",
     "ko": "곧 있을 짝 섞기를 취소합니다. 시간마다 짝 섞기는 처음부터 다시 셉니다."
   },
-  "roster.recover": { "en": "Re-carry every Pair", "ko": "모든 짝 다시 업히기" },
+  "roster.recover": { "en": "Put every Pair back together", "ko": "모든 짝 다시 업히기" },
   "roster.aboutRecover": {
-    "en": "Re-attaches every Pair's carry and wakes every Rider.",
+    "en": "Puts every Rider back on their Carrier and wakes them.",
     "ko": "업기가 풀렸을 때 모든 짝을 다시 업히고 업힌 사람을 깨웁니다."
   },
 
   "roster.carryRecord": { "en": "Carry Record", "ko": "업기 기록" },
   "roster.aboutCarryRecord": {
     "en": "How long each scout carried and rode this Run, how high they climbed carrying, and how long they carried a rescued scout. Time unpaired or down counts only for rescues.",
-    "ko": "이번 원정에서 업고, 업히고, 업은 채 오르고, 쓰러진 대원을 구조해 업은 만큼입니다. 짝이 없거나 쓰러져 있던 시간은 구조 말고는 세지 않습니다."
+    "ko": "이번 원정에서 업고, 업히고, 업은 채 오르고, 기절한 대원을 구조해 업은 만큼입니다. 짝이 없거나 쓰러져 있던 시간은 구조 말고는 세지 않습니다."
   },
   "roster.carryRecordEmpty": { "en": "Nothing recorded yet.", "ko": "아직 적힌 기록이 없습니다." },
   "head.scout": { "en": "Scout", "ko": "대원" },
   "head.carried": { "en": "Carried", "ko": "업은 시간" },
   "head.ridden": { "en": "Rode", "ko": "업힌 시간" },
   "head.climbed": { "en": "Climbed", "ko": "오른 높이" },
-  "head.rescuing": { "en": "Rescued", "ko": "구조 시간" },
+  "head.rescuing": { "en": "Rescuing", "ko": "구조 시간" },
   "head.pair": { "en": "Carrier → Rider", "ko": "업은 사람 → 업힌 사람" },
   "head.together": { "en": "Together", "ko": "함께한 시간" },
 
@@ -318,7 +318,7 @@
   "roster.rulesLeaderOnly": { "en": "The Troop Leader sets the Run Rules.", "ko": "원정 규칙은 분대장이 정합니다." },
   "rules.group.pairs": { "en": "Pairs", "ko": "짝" },
   "rules.group.shuffles": { "en": "Shuffles", "ko": "짝 섞기" },
-  "rules.group.handover": { "en": "Body Handover", "ko": "몸 인계" },
+  "rules.group.handover": { "en": "Handover", "ko": "이어받기" },
   "rules.group.carrying": { "en": "Carrying", "ko": "업기" },
   "rule.followRolePreferences": { "en": "Honour Role Preferences", "ko": "원하는 역할 따르기" },
   "rule.followRolePreferences.about": {
@@ -338,7 +338,7 @@
   "rule.allowOddPlayerCount": { "en": "Allow Odd Player Count", "ko": "홀수 인원 출발 허용" },
   "rule.allowOddPlayerCount.about": {
     "en": "Lets a Run depart with an odd count; one player climbs without a Pair.",
-    "ko": "인원이 홀수여도 출발합니다. 남는 사람은 짝 없이 올라갑니다."
+    "ko": "인원이 홀수여도 출발합니다. 남는 대원은 짝 없이 올라갑니다."
   },
   "rule.campfireShuffle": { "en": "Campfire Shuffle", "ko": "모닥불에서 짝 섞기" },
   "rule.campfireShuffle.about": {
@@ -349,17 +349,17 @@
   "rule.timedShuffle.about": { "en": "Forms the Pairs anew at a fixed interval.", "ko": "정해진 간격마다 짝을 새로 정합니다." },
   "rule.timedShuffleInterval": { "en": "Timed Shuffle Interval", "ko": "짝 섞기 간격" },
   "rule.timedShuffleInterval.about": { "en": "How often a Timed Shuffle comes.", "ko": "시간마다 짝 섞기의 간격입니다." },
-  "rule.handOverPlace": { "en": "Hand Over Place", "ko": "몸 인계: 자리" },
+  "rule.handOverPlace": { "en": "Hand Over Place", "ko": "이어받기: 자리" },
   "rule.handOverPlace.about": {
-    "en": "A new Carrier moves to where the body they take over stood.",
-    "ko": "짝이 바뀌면 새 업는 사람이 넘겨받는 몸의 자리로 갑니다."
+    "en": "A new Carrier starts where the Carrier before them stood.",
+    "ko": "짝이 바뀌면 새로 업는 대원이 앞서 업던 대원의 자리에서 이어 오릅니다."
   },
-  "rule.handOverItems": { "en": "Hand Over Items", "ko": "몸 인계: 아이템" },
+  "rule.handOverItems": { "en": "Hand Over Items", "ko": "이어받기: 소지품" },
   "rule.handOverItems.about": {
-    "en": "A new Carrier takes the items of the body they take over.",
-    "ko": "짝이 바뀌면 새 업는 사람이 넘겨받는 몸의 아이템을 가집니다."
+    "en": "A new Carrier takes over the items of the Carrier before them.",
+    "ko": "짝이 바뀌면 새로 업는 대원이 앞서 업던 대원의 소지품을 이어받습니다."
   },
-  "rule.carryWeight": { "en": "Carry Weight", "ko": "업은 사람 무게" },
+  "rule.carryWeight": { "en": "Carry Weight", "ko": "업힌 사람 무게" },
   "rule.carryWeight.about": {
     "en": "Carriers feel the weight of the person they carry.",
     "ko": "업는 사람이 업힌 사람의 무게를 느낍니다."
@@ -382,7 +382,7 @@
   "stamp.really": { "en": "Really?", "ko": "정말로?" },
   "stamp.callOff": { "en": "Call off", "ko": "취소" },
   "stamp.notify": { "en": "Notified", "ko": "통보" },
-  "stamp.discard": { "en": "Discard", "ko": "버리기" },
+  "stamp.discard": { "en": "Discard", "ko": "지우기" },
   "stamp.keep": { "en": "Keep", "ko": "계속 쓰기" },
   "stamp.ask": { "en": "Request", "ko": "요청" },
   "stamp.asked": { "en": "Asked", "ko": "요청함" },
@@ -395,9 +395,9 @@
   "seal.inspected": { "en": "INSPECTED", "ko": "점검 필" },
   "postmark.office": { "en": "ISLAND TROOP P.O.", "ko": "섬 분대 우체국" },
   "postmark.date": { "en": "MMM dd yyyy", "ko": "yyyy. MM. dd." },
-  "postmark.time": { "en": "{hour}:{minute} {half}", "ko": "{hour}:{minute} {half}" },
-  "postmark.am": { "en": "AM", "ko": "AM" },
-  "postmark.pm": { "en": "PM", "ko": "PM" },
+  "postmark.time": { "en": "{hour}:{minute} {half}", "ko": "{half} {hour}:{minute}" },
+  "postmark.am": { "en": "AM", "ko": "오전" },
+  "postmark.pm": { "en": "PM", "ko": "오후" },
   "slip.query": { "en": "Query", "ko": "확인 요청" },
 
   "letter.heading.formation": { "en": "Pair orders", "ko": "짝 편성 통지" },
@@ -418,7 +418,7 @@
   "letter.arrived": { "en": "Arrived", "ko": "도착" },
   "letter.unknown": { "en": "Who?", "ko": "누구일까요?" },
   "letter.you": { "en": "You", "ko": "나" },
-  "letter.to": { "en": "To: Scout {player}", "ko": "받는 이: {player} 대원" },
+  "letter.to": { "en": "To: Scout {player}", "ko": "받는 이: {player} 님" },
   "letter.roleUnknown": { "en": "Role to come", "ko": "역할 미정" },
 
   "report.form": { "en": "BetterCoop Form No. 2", "ko": "BetterCoop 서식 제2호" },
@@ -430,8 +430,8 @@
     "en": "The next Run has departed, and the report with it.",
     "ko": "다음 원정이 출발해 보고서가 사라졌습니다."
   },
-  "report.result": { "en": "Result", "ko": "결과" },
-  "report.ending": { "en": "Outcome", "ko": "원정 결과" },
+  "report.result": { "en": "Summary", "ko": "요약" },
+  "report.ending": { "en": "Outcome", "ko": "결과" },
   "report.runTime": { "en": "Run time", "ko": "원정 시간" },
   "ending.summit": { "en": "Reached the Peak", "ko": "정상 도착" },
   "ending.lost": { "en": "Everyone was lost", "ko": "전원 조난" },

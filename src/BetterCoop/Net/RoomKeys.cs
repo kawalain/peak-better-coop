@@ -30,7 +30,7 @@ internal static class RoomKeys
     /// <summary>Room property: the Pairs a Pair Assignment sets, written with its announcement.</summary>
     public const string Assignment = "BetterCoop.Assignment";
 
-    /// <summary>Room property: the Body Handover of the latest operation, written with its Pairs.</summary>
+    /// <summary>Room property: the Handover of the latest operation, written with its Pairs.</summary>
     public const string Handover = "BetterCoop.Handover";
 
     /// <summary>Room property: Pairs that ended because a member left, by user id, for a Late Pairing to restore.</summary>

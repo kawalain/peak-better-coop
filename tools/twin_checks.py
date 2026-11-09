@@ -788,7 +788,7 @@ CHECKS = [
     ("setup", "Four Twins in the Airport"),
     ("roster_airport", "12 Roster at the Airport"),
     ("plan_and_formation", "E1/2/1 Mashed plan, Pair Plan, Formation"),
-    ("four_scouts_shuffle", "E1/4/15 Mashed shuffle, four scouts, Body Handover places"),
+    ("four_scouts_shuffle", "E1/4/15 Mashed shuffle, four scouts, Handover places"),
     ("call_off", "E1/5 Call off"),
     ("recovery", "E1/8 Recovery"),
     ("assignment", "6 Pair Assignment"),

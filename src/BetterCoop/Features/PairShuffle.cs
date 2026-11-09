@@ -17,7 +17,7 @@ namespace BetterCoop.Features;
 /// <summary>
 /// Pair Shuffles, Role Swaps, and Late Pairings (ADR 0004). The Troop Leader runs one
 /// operation at a time: announces it with a server time, refuses pickups
-/// from just before it, then writes the new Pairs and their Body Handover in
+/// from just before it, then writes the new Pairs and their Handover in
 /// one room property write. Every client counts down, empties the hands it
 /// owns, and applies its own part of the handover once per operation; the
 /// Troop Leader moves the bodies.
@@ -101,7 +101,7 @@ internal static class PairShuffle
     /// <summary>Whether an operation is announced and not yet done.</summary>
     internal static bool Busy => Current is { Done: false };
 
-    /// <summary>Whether an operation on this player ran in the last few seconds, so its Body Handover may still be arriving.</summary>
+    /// <summary>Whether an operation on this player ran in the last few seconds, so its Handover may still be arriving.</summary>
     internal static bool HandingOver(int actor) =>
         Current is { Done: true, CalledOff: false } op && op.Involves(actor) && ServerClock.Since(PhotonNetwork.Time, op.At) < LockTimeoutSeconds;
 

@@ -4,7 +4,7 @@ using System.Linq;
 namespace BetterCoop.Core;
 
 /// <summary>
-/// Body Handover: when Pairs change, each new Shared Body takes over one
+/// Handover: when Pairs change, each new Shared Body takes over one
 /// former Shared Body, and the items of the bodies move round so that
 /// nothing is lost or copied.
 /// </summary>

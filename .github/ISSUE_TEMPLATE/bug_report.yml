@@ -22,7 +22,7 @@ body:
       options:
         - Carrier / 업는 사람
         - Rider / 업힌 사람
-        - Unpaired Player / 짝 없는 사람
+        - Unpaired Player / 짝 없는 대원
         - Troop Leader (host) / 분대장
     validations:
       required: true

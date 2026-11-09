@@ -103,7 +103,7 @@ internal static class RiderEffects
 
         // The Rider's client learns of the Carrier's statuses as gains, also of
         // those the Carrier's game set without an effect: Weight, which the
-        // effect would otherwise show as an injury, and a Body Handover.
+        // effect would otherwise show as an injury, and a Handover.
         float gained = __instance.GetCurrentStatus(statusType) - __state;
         if (gained > 0f && statusType != CharacterAfflictions.STATUSTYPE.Weight && !PairShuffle.HandingOver(PairRoster.ActorOf(character)))
         {

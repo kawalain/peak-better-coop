@@ -146,7 +146,7 @@ internal sealed class CarryKeeper : MonoBehaviourPunCallbacks, IOnEventCallback
 
     /// <summary>
     /// Moves the Rider's back item onto the Carrier's empty back, the way a
-    /// Body Handover moves inventories: a forced sync of both players to every
+    /// Handover moves inventories: a forced sync of both players to every
     /// client. Whatever put it there (a revival, another mod's carry), the
     /// Shared Body keeps it and nothing lands on the ground.
     /// </summary>

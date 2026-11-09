@@ -38,7 +38,7 @@ internal sealed class HandoverEntry
 }
 
 /// <summary>
-/// The Body Handover of one operation, published with the new Pairs in one
+/// The Handover of one operation, published with the new Pairs in one
 /// room property write, so every client sees both at once. Each client
 /// applies its own part once per <see cref="Id"/>.
 /// </summary>

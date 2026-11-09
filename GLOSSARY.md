@@ -129,15 +129,15 @@ A Pair Shuffle when a campfire is lit and the Run moves on to the next segment.
 **Timed Shuffle** (시간마다 짝 섞기):
 A Pair Shuffle at a fixed interval set by the Troop Leader.
 
-**Body Handover** (몸 인계):
+**Handover** (이어받기):
 When Pairs change, each new Shared Body takes over one former Shared Body:
 its statuses always, and its place and items as the Troop Leader sets. Nothing
 is lost or copied: the items swap between the two bodies.
-_Avoid_: body swap, inheritance
+_Avoid_: Body Handover, body swap, inheritance, 몸 인계
 
 **Role Swap** (자리 바꾸기):
 The Carrier and Rider of a Pair trading roles when both ask for it, if the
-Run Rules allow asking, or when the Troop Leader orders it, with a Body
+Run Rules allow asking, or when the Troop Leader orders it, with a
 Handover to the new Carrier.
 _Avoid_: role switch, flip
 
@@ -163,13 +163,13 @@ The passed-out scout in a Rescue Carry: an Unpaired Player, or a Shared Body
 with its Rider.
 _Avoid_: passenger, carried player
 
-**Unpaired Player** (짝 없는 사람):
+**Unpaired Player** (짝 없는 대원):
 A player in the room who is not in any Pair and plays as in unmodded PEAK,
 until a Late Pairing or a Pair Shuffle gives them a partner. A player joining
 during a Run starts as one. When more players are in the room than the mod
 pairs at once, those who joined last stay Unpaired Players until a place
 frees up.
-_Avoid_: solo player, odd player
+_Avoid_: solo player, odd player, 짝 없는 사람
 
 **Unmodded Player** (모드 없는 대원):
 A player in the room whose game does not run the mod, or runs a version that
@@ -189,7 +189,7 @@ _Avoid_: Coop Menu, 코옵 메뉴, coop panel, admin menu
 **Run Rules** (원정 규칙):
 The Troop Leader's settings that hold for everyone in the room: whether Role
 Preferences are followed, whether Role Swaps may be asked for, whether Late
-Pairing happens, odd player counts, shuffles, Body Handover, carry weight,
+Pairing happens, odd player counts, shuffles, Handover, carry weight,
 Rescue Carry, and who picks from the backpack wheel. Every rule that changes
 play is one; each
 starts out leaving players free. A new Troop Leader keeps the rules the room

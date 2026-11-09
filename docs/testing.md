@@ -113,7 +113,7 @@ Then, in four Twins (`--guests 3`):
 
 15. **Four scouts.** Plan two Pairs, `depart`, then `order {what: shuffle}`.
     Every copy shows the same Pairs, and every scout has a new partner. With
-    the Pairs far apart and the Body Handover moving places, each new Carrier,
+    the Pairs far apart and the Handover moving places, each new Carrier,
     a guest's too, stands where its former Shared Body stood (the game takes
     warps only from the Troop Leader).
 16. **Troop Leader leaves with Pairs under way.** With the host in one Pair,
@@ -217,13 +217,13 @@ Runs) are the unit tests on `WireLimits`, `PairSeats`, `RelayedButton`,
 ### Carrying (two people)
 
 - Climbing, jumping and falling with a Rider never pushes either body apart.
-- A Body Handover moves the Carrier to the place and items as the rules say.
+- A Handover moves the Carrier to the place and items as the rules say.
 - Carry weight, when on, slows the Carrier as the rules say.
 
 ### Rescue Carry
 
 In four Twins with two Pairs. `console {name: CharacterAfflictions.Starve}` on
-a Carrier's copy passes that Shared Body out (a Body Handover passes on the
+a Carrier's copy passes that Shared Body out (a Handover passes on the
 hunger; `CharacterAfflictions.ClearAll` wakes it).
 
 - The other Carrier `interact {actor}` with it: the Rider's log says `Picking
