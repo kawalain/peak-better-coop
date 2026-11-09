@@ -307,6 +307,45 @@ internal sealed class PaperList
         Add(row);
     }
 
+    /// <summary>
+    /// The makers' names pencilled small in the form's bottom-left corner, as
+    /// a doodle in the margin, with a silly sea anemone beside them. Pressed,
+    /// a name opens its maker's page; pointed at, it is underlined.
+    /// </summary>
+    public void Credits(IReadOnlyList<(string Name, Action Open)> makers)
+    {
+        PaperRow row = NewRow("Credits", 0f);
+        row.Root.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(16, 12, 0, 6);
+        RectTransform line = Line(row.Root.transform);
+        line.GetComponent<HorizontalLayoutGroup>().spacing = 4f;
+        line.localRotation = Quaternion.Euler(0f, 0f, 1.5f);
+        Color lead = ToColor(FormDrawing.Lead);
+        for (int i = 0; i < makers.Count; i++)
+        {
+            if (i > 0)
+            {
+                TMP_Text dot = AddText(line, "Dot", PaperText.Note, TextAlignmentOptions.BottomLeft, flexible: false);
+                dot.color = lead;
+                PaperText.Set(dot, "·");
+            }
+
+            TMP_Text name = AddText(line, makers[i].Name, PaperText.Note, TextAlignmentOptions.BottomLeft, flexible: false);
+            name.fontStyle = FontStyles.Italic;
+            name.color = lead;
+            name.raycastTarget = true;
+            PaperText.Set(name, makers[i].Name);
+            LinkControl link = PaperControl.Add<LinkControl>(name.gameObject, makers[i].Open);
+            link.Text = name;
+            row.First ??= link;
+        }
+
+        RectTransform doodle = Fixed(line, "Anemone", 64f, 56f);
+        VectorView.Add(doodle, size => FormDrawing.Anemone(size.x, size.y), Color.clear);
+        RectTransform spare = NewRect("Spare", line);
+        spare.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
+        Add(row);
+    }
+
     /// <summary>A whole piece of form the caller lays out itself, such as a board of cards.</summary>
     public RectTransform Custom(string name, Action refresh, Func<Selectable?>? first = null, Func<bool>? visible = null)
     {

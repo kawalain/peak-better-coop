@@ -21,6 +21,7 @@ public class FormDrawingTests
             FormDrawing.PhotoEdge(116f, 145f),
             FormDrawing.Postmark(220f, 104f, 104f),
             FormDrawing.Doodle(132f, 112f, "Alder"),
+            FormDrawing.Anemone(64f, 56f),
             FormDrawing.Card(200f, 140f, lifted: false),
             FormDrawing.Slot(200f, 140f, marked: true),
             FormDrawing.Silhouette(90f, 110f, new Ink(0.9f, 0.7f, 0.5f)),
@@ -57,6 +58,7 @@ public class FormDrawingTests
     public void Each_signer_gets_the_same_doodle_every_time()
     {
         Assert.Equal(FormDrawing.Doodle(132f, 112f, "Alder"), FormDrawing.Doodle(132f, 112f, "Alder"));
+        Assert.Equal(FormDrawing.Anemone(64f, 56f), FormDrawing.Anemone(64f, 56f));
         Assert.Equal(FormDrawing.DoodleFor("Alder"), FormDrawing.DoodleFor("Alder"));
         Assert.Equal(3, new[] { "Alder", "Birch", "Cedar", "Dahlia", "Elm", "Fern", "Gorse" }.Select(FormDrawing.DoodleFor).Distinct().Count());
     }

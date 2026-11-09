@@ -170,6 +170,7 @@ internal sealed class RosterPage : PaperPage
         }
 
         PlayerRows.Sign(list, room);
+        Makers.Add(list);
     }
 
     protected override void Tick() => room.Tick(Time.unscaledDeltaTime);

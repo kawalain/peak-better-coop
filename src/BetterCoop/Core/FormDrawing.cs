@@ -25,6 +25,9 @@ internal static class FormDrawing
     /// <summary>The black of a post office's cancelling ink, a little blue.</summary>
     public static readonly Ink PostmarkInk = new(0.120f, 0.125f, 0.180f);
 
+    /// <summary>The grey of a pencil's lead.</summary>
+    public static readonly Ink Lead = new(0.360f, 0.360f, 0.400f);
+
     private static Ink Paper => PaperDrawing.Paper;
 
     /// <summary>A printed check box; the tick in it is written by hand, see <see cref="PenPaths.Tick"/>.</summary>
@@ -407,6 +410,91 @@ internal static class FormDrawing
         }
 
         return Close(svg);
+    }
+
+    /// <summary>
+    /// A silly sea anemone pencilled in a margin: a squat body on a wavy foot,
+    /// tentacles waving every way, crossed eyes of two sizes, and a goofy
+    /// grin with its tongue out.
+    /// </summary>
+    public static string Anemone(float width, float height)
+    {
+        var svg = Open(width, height);
+        var hand = new Random(7);
+        float w = width;
+        float h = height;
+        float left = w * 0.32f;
+        float right = w * 0.68f;
+        float rim = h * 0.50f;
+        float foot = h * 0.93f;
+
+        // The body: a squat cup, its rim an ellipse, standing on a wavy foot.
+        Pencil(svg, hand, [(left + w * 0.03f, foot), (left - w * 0.02f, h * 0.72f), (left, rim)], Lead);
+        Pencil(svg, hand, [(right - w * 0.03f, foot), (right + w * 0.02f, h * 0.72f), (right, rim)], Lead);
+        Pencil(svg, hand, Round((w * 0.5f, rim), (right - left) / 2f, h * 0.05f, 0.0, 2.0, 20), Lead);
+        var sole = new List<(float X, float Y)>();
+        for (int i = 0; i <= 12; i++)
+        {
+            float t = i / 12f;
+            sole.Add((left - w * 0.06f + (right - left + w * 0.12f) * t, foot + (float)Math.Sin(t * Math.PI * 4) * h * 0.02f));
+        }
+
+        Pencil(svg, hand, sole, Lead);
+
+        // Tentacles, each waving its own way, with a knob at the tip.
+        for (int i = 0; i < 7; i++)
+        {
+            float t = i / 6f;
+            (float X, float Y) from = (left + (right - left) * t, rim - h * 0.02f);
+            double angle = Math.PI * (1.22 + 0.56 * t);
+            float length = h * Next(hand, 0.30f, 0.40f);
+            double phase = Next(hand, 0f, 6.3f);
+            var tentacle = new List<(float X, float Y)>();
+            for (int s = 0; s <= 8; s++)
+            {
+                float along = length * s / 8f;
+                float sway = (float)Math.Sin(phase + s * 0.9) * h * 0.04f * s / 8f;
+                tentacle.Add((
+                    from.X + (float)Math.Cos(angle) * along - (float)Math.Sin(angle) * sway,
+                    from.Y + (float)Math.Sin(angle) * along + (float)Math.Cos(angle) * sway));
+            }
+
+            Pencil(svg, hand, tentacle, Lead);
+            Pencil(svg, hand, Round(tentacle[tentacle.Count - 1], h * 0.025f, h * 0.025f, 0.0, 2.0, 8), Lead);
+        }
+
+        // Crossed eyes of two sizes, looking at each other.
+        (float X, float Y) leftEye = (w * 0.43f, h * 0.63f);
+        (float X, float Y) rightEye = (w * 0.575f, h * 0.62f);
+        Pencil(svg, hand, Round(leftEye, h * 0.045f, h * 0.045f, 0.0, 2.0, 12), Lead);
+        Pencil(svg, hand, Round(rightEye, h * 0.065f, h * 0.065f, 0.0, 2.0, 14), Lead);
+        string lead = Lead.Hex;
+        svg.Append(F($"<circle cx=\"{leftEye.X + h * 0.02f}\" cy=\"{leftEye.Y + h * 0.01f}\" r=\"{h * 0.02f}\" fill=\"{lead}\"/>"));
+        svg.Append(F($"<circle cx=\"{rightEye.X - h * 0.03f}\" cy=\"{rightEye.Y + h * 0.02f}\" r=\"{h * 0.022f}\" fill=\"{lead}\"/>"));
+
+        // A goofy grin, its tongue out to one side.
+        Pencil(svg, hand, Round((w * 0.5f, h * 0.73f), w * 0.09f, h * 0.06f, 0.05, 0.9, 10), Lead);
+        Pencil(svg, hand, Round((w * 0.53f, h * 0.80f), w * 0.025f, h * 0.03f, 0.0, 1.0, 6), Lead);
+        return Close(svg);
+    }
+
+    /// <summary>One pencil line along <paramref name="points"/>, gone over twice by a light hand.</summary>
+    private static void Pencil(StringBuilder svg, Random hand, IReadOnlyList<(float X, float Y)> points, Ink colour)
+    {
+        const float width = 1.7f;
+        float[] passes = [1f, 0.6f];
+        float[] shades = [0.1f, 0.35f];
+        for (int pass = 0; pass < passes.Length; pass++)
+        {
+            var path = new StringBuilder();
+            for (int i = 0; i < points.Count; i++)
+            {
+                float jitter = width * 0.4f;
+                path.Append(F($"{(i == 0 ? 'M' : 'L')}{points[i].X + Next(hand, -jitter, jitter)} {points[i].Y + Next(hand, -jitter, jitter)}"));
+            }
+
+            svg.Append(F($"<path d=\"{path}\" fill=\"none\" stroke=\"{colour.Mix(Paper, shades[pass]).Hex}\" stroke-width=\"{width * passes[pass]}\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>"));
+        }
     }
 
     /// <summary>

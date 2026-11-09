@@ -129,6 +129,7 @@ internal sealed class ZooPage : PaperPage
             () => HandIn(() => presses++),
             about: () => T("짝 명단을 통보할 때처럼 스카우트 지도자의 손이 종이를 가져갑니다.", "The Scoutmaster's hand takes the paper, as when the Pairs are announced."));
         list.Signature(() => T("서명", "Signed"), () => "Alder");
+        Makers.Add(list);
 
         list.Header(() => T("알림", "Notices"));
         list.Note(() => T(
