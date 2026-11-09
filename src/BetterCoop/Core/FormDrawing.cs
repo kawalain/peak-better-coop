@@ -187,6 +187,69 @@ internal static partial class FormDrawing
         return Close(svg);
     }
 
+    /// <summary>The white of correction tape: brighter than the paper it covers.</summary>
+    public static Ink TapeWhite => Paper.Mix(new Ink(1f, 1f, 1f), 0.86f);
+
+    /// <summary>
+    /// A stroke of correction tape across a typed line: a white band a little
+    /// uneven along its edges where it was pressed down, its own shadow just
+    /// under it, faint streaks where it was drawn along, and a torn end.
+    /// </summary>
+    public static string CorrectionTape(float width, float height, int seed = 0)
+    {
+        var svg = Open(width, height);
+        var hand = new Random(seed * 31 + 7);
+        float top = height * 0.14f;
+        float bottom = height * 0.86f;
+        float tear = Math.Min(7f, width * 0.1f);
+        int steps = Math.Max(4, (int)(width / 9f));
+        string Edge(float y, float shift, int salt, bool back)
+        {
+            var path = new StringBuilder();
+            for (int i = 0; i <= steps; i++)
+            {
+                int n = back ? steps - i : i;
+                float x = 1.5f + (width - 1.5f - tear) * n / steps;
+                float wobble = (InkDrying.Noise(x / 14f, salt, seed + salt) - 0.5f) * 1.6f;
+                path.Append(F($"L{x} {y + wobble + shift} "));
+            }
+
+            return path.ToString();
+        }
+
+        string Band(float shift)
+        {
+            var d = new StringBuilder();
+            d.Append(F($"M1.5 {top + shift} "));
+            d.Append(Edge(top, shift, 1, back: false));
+            // The torn end, in a few short teeth.
+            int teeth = 4;
+            for (int i = 1; i < teeth; i++)
+            {
+                float y = top + (bottom - top) * i / teeth;
+                float x = width - tear + (i % 2 == 1 ? tear * Next(hand, 0.55f, 1f) : tear * Next(hand, 0f, 0.35f));
+                d.Append(F($"L{x} {y + shift} "));
+            }
+
+            d.Append(Edge(bottom, shift, 2, back: true));
+            d.Append(F($"L1.5 {bottom + shift} Z"));
+            return d.ToString();
+        }
+
+        svg.Append(F($"<path d=\"{Band(1.2f)}\" fill=\"#000000\" fill-opacity=\"0.10\"/>"));
+        svg.Append(F($"<path d=\"{Band(0f)}\" fill=\"{TapeWhite.Hex}\"/>"));
+        string streak = TapeWhite.Mix(PaperDrawing.InkBlack, 0.07f).Hex;
+        for (int i = 0; i < 3; i++)
+        {
+            float y = top + (bottom - top) * Next(hand, 0.15f, 0.85f);
+            float from = Next(hand, 2f, width * 0.3f);
+            float to = Next(hand, width * 0.55f, width - tear - 2f);
+            svg.Append(F($"<path d=\"M{from} {y}L{to} {y + Next(hand, -0.6f, 0.6f)}\" stroke=\"{streak}\" stroke-width=\"0.6\" fill=\"none\"/>"));
+        }
+
+        return Close(svg);
+    }
+
     /// <summary>The thin printed edge round a yearbook photo.</summary>
     public static string PhotoEdge(float width, float height)
     {

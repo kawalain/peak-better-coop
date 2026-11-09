@@ -29,6 +29,7 @@ public class FormDrawingTests
             FormDrawing.TagHole(30f),
             FormDrawing.Hand(160f, 320f, new Ink(0.9f, 0.7f, 0.5f)),
             FormDrawing.Airmail(300f, 10f),
+            FormDrawing.CorrectionTape(420f, 36f, seed: 2),
         ];
 
         foreach (string drawing in drawings)
@@ -118,6 +119,17 @@ public class FormDrawingTests
         Assert.Contains(FormDrawing.StampBlue.Hex, blots);
         Assert.Contains(PaperDrawing.Paper.Hex, blots);
         Assert.Equal(FormDrawing.Seal(StampShape.DateRing, 104f, 104f, FormDrawing.StampBlue, inked), FormDrawing.Seal(StampShape.DateRing, 104f, 104f, FormDrawing.StampBlue, inked));
+    }
+
+    [Fact]
+    public void Correction_tape_covers_a_line_in_white_brighter_than_the_paper_the_same_way_each_time()
+    {
+        string tape = FormDrawing.CorrectionTape(420f, 36f, seed: 5);
+
+        Assert.Equal(tape, FormDrawing.CorrectionTape(420f, 36f, seed: 5));
+        Assert.NotEqual(tape, FormDrawing.CorrectionTape(420f, 36f, seed: 6));
+        Assert.Contains(XElement.Parse(tape).Descendants(Svg + "path"), p => p.Attribute("fill")?.Value == FormDrawing.TapeWhite.Hex);
+        Assert.True(FormDrawing.TapeWhite.R > PaperDrawing.Paper.R && FormDrawing.TapeWhite.B > PaperDrawing.Paper.B);
     }
 
     [Fact]

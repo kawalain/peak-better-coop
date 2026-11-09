@@ -44,6 +44,13 @@ internal sealed class Typewritten : MonoBehaviour
         return typewritten;
     }
 
+    /// <summary>Types its words in again from the first letter, as on a line put back on the form.</summary>
+    public void TypeAgain()
+    {
+        typed = string.Empty;
+        shown = 0;
+    }
+
     private void Awake() => text = GetComponent<TMP_Text>();
 
     private void OnEnable() => text.OnPreRenderText += Strike;

@@ -500,7 +500,7 @@ internal sealed class PaperList
             none.color = Faded(PaperText.Ink, 0.75f);
         }
 
-        var lines = new List<(GameObject Root, CanvasGroup Faint, TMP_Text[] Cells)>();
+        var lines = new List<(GameObject Root, CanvasGroup Faint, TMP_Text[] Cells, CorrectionTape Tape)>();
         bool opening = fills <= 1;
         bool firstLines = true;
         row.Refreshers.Add(() =>
@@ -537,7 +537,7 @@ internal sealed class PaperList
                     Typewritten.Add(cells[i], typeIn: !firstLines || opening, delay: firstLines ? TypeInDelay + lines.Count * each : 0f);
                 }
 
-                lines.Add((line.gameObject, faint, cells));
+                lines.Add((line.gameObject, faint, cells, CorrectionTape.Add(line, faint, lines.Count)));
             }
 
             firstLines = false;
@@ -545,14 +545,26 @@ internal sealed class PaperList
             for (int n = 0; n < lines.Count; n++)
             {
                 bool shown = n < now.Count;
-                if (lines[n].Root.activeSelf != shown)
-                {
-                    lines[n].Root.SetActive(shown);
-                }
-
                 if (!shown)
                 {
+                    // A line taken off is covered with correction tape before it goes.
+                    if (lines[n].Root.activeSelf)
+                    {
+                        lines[n].Tape.Strike();
+                    }
+
                     continue;
+                }
+
+                if (!lines[n].Root.activeSelf || lines[n].Tape.Striking)
+                {
+                    // A line put back on is typed in again.
+                    lines[n].Tape.Lift();
+                    lines[n].Root.SetActive(true);
+                    foreach (TMP_Text cell in lines[n].Cells)
+                    {
+                        cell.GetComponent<Typewritten>().TypeAgain();
+                    }
                 }
 
                 lines[n].Faint.alpha = now[n].Faint ? 0.45f : 1f;
