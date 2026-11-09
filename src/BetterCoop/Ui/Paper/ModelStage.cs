@@ -19,6 +19,13 @@ internal static class ModelStage
     /// <summary>Far below the world, where nothing else stands.</summary>
     private static readonly Vector3 Place = new(0f, -6000f, 0f);
 
+    /// <summary>The island's fog, which covers all outside a sphere around the party and so the stage too; off for a draw, as the game turns it off.</summary>
+    private static readonly int FogEnabled = Shader.PropertyToID("FogEnabled");
+
+    private static readonly int FogSphereSize = Shader.PropertyToID("_FogSphereSize");
+
+    private const float NoFogSphere = 9999999f;
+
     private static GameObject? root;
 
     private static Camera? camera;
@@ -113,16 +120,22 @@ internal static class ModelStage
         description.msaaSamples = Mathf.Clamp(SystemInfo.GetRenderTextureSupportedMSAASampleCount(description), 1, Samples);
         RenderTexture sampled = RenderTexture.GetTemporary(description);
         Light? sun = RenderSettings.sun;
+        float fog = Shader.GetGlobalFloat(FogEnabled);
+        float fogSphere = Shader.GetGlobalFloat(FogSphereSize);
         try
         {
             lens.targetTexture = sampled;
             light.enabled = true;
             RenderSettings.sun = light;
+            Shader.SetGlobalFloat(FogEnabled, 0f);
+            Shader.SetGlobalFloat(FogSphereSize, NoFogSphere);
             lens.Render();
             Graphics.Blit(sampled, target);
         }
         finally
         {
+            Shader.SetGlobalFloat(FogEnabled, fog);
+            Shader.SetGlobalFloat(FogSphereSize, fogSphere);
             RenderSettings.sun = sun;
             light.enabled = false;
             lens.targetTexture = null;
