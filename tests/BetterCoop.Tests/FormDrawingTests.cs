@@ -41,6 +41,32 @@ public class FormDrawingTests
     }
 
     [Fact]
+    public void Every_stamp_shape_is_drawn_for_its_own_size_outlined_and_struck()
+    {
+        foreach (StampShape shape in System.Enum.GetValues<StampShape>())
+        {
+            StampLayout layout = FormDrawing.LayoutOf(shape);
+            float width = shape == StampShape.Rubber ? 150f : layout.Width;
+            foreach (bool inked in new[] { false, true })
+            {
+                XElement svg = XElement.Parse(FormDrawing.Seal(shape, width, layout.Height, FormDrawing.StampBlue, inked));
+                Assert.Equal($"0 0 {svg.Attribute("width")!.Value} {svg.Attribute("height")!.Value}", svg.Attribute("viewBox")!.Value);
+            }
+        }
+    }
+
+    [Fact]
+    public void A_struck_stamp_fills_with_ink_where_its_outline_does_not()
+    {
+        static int Filled(bool inked) => XElement.Parse(FormDrawing.Seal(StampShape.DateRing, 92f, 92f, FormDrawing.StampBlue, inked))
+            .Descendants(Svg + "circle")
+            .Count(c => c.Attribute("fill")?.Value == FormDrawing.StampBlue.Hex);
+
+        Assert.Equal(0, Filled(inked: false));
+        Assert.Equal(1, Filled(inked: true));
+    }
+
+    [Fact]
     public void A_check_box_is_only_printed_its_tick_is_written_by_hand() =>
         Assert.Empty(XElement.Parse(FormDrawing.CheckBox(46f)).Descendants(Svg + "path"));
 

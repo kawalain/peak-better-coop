@@ -40,6 +40,11 @@ internal sealed class ZooPage : PaperPage
 
     private bool swapped;
 
+    /// <summary>Whether the specimen stamps show struck.</summary>
+    private bool struck;
+
+    private static readonly bool[] StruckChoices = [false, true];
+
     private string choice = Choices[0];
 
     private int presses;
@@ -63,6 +68,9 @@ internal sealed class ZooPage : PaperPage
         zoo.reportExample = Create<RunReportPage>(handler, controls, template, zoo, () => $"{Strings.MenuRunReport} (Zoo)");
         return zoo;
     }
+
+    private void Specimen(PaperList list, string label, string word, StampFace face) =>
+        list.Stamp(() => label, () => word, () => presses++, face: face, stamped: () => struck);
 
     protected override string Shape() => "zoo";
 
@@ -169,6 +177,36 @@ internal sealed class ZooPage : PaperPage
         ]);
         list.Signature(() => T("서명", "Signed"), () => "Alder");
         Makers.Add(list);
+
+        list.Header(() => T("도장 견본", "Stamp specimens"));
+        list.Note(() => T(
+            "20세기 중반 미국 사무실과 우체국의 손도장 모양입니다. 누르면 잉크로 채워졌다가 마르듯 돌아옵니다.",
+            "Hand stamps after mid-century American offices and post offices. Pressed, each strikes solid and dries back."));
+        list.Choice(
+            () => T("도장 상태", "Stamps show"),
+            () => struck,
+            on => struck = on,
+            () => StruckChoices,
+            on => on ? T("찍은 뒤", "Struck") : T("찍기 전", "Before striking"));
+        Specimen(list, T("1. 사무용 고무 도장", "1. Office rubber stamp"), T("취소", "Void"), new RubberFace());
+        Specimen(list, T("2. 원형 일부인", "2. Circular date stamp"), T("통보", "Notify"),
+            new SealFace(StampShape.DateRing, FormDrawing.StampBlue, () => "BETTERCOOP P.O.", () => Strings.PostmarkDate(DateTime.Now), seed: 6));
+        Specimen(list, T("3. 이중 원 일부인", "3. Double-ring date stamp"), T("섞기", "Shuffle"),
+            new SealFace(StampShape.DoubleRing, FormDrawing.PostmarkInk, () => "BETTERCOOP TROOP", () => "★ ORDERS ★", seed: 7));
+        Specimen(list, T("4. 듀플렉스 + 킬러 바", "4. Duplex with killer bars"), T("취소", "Cancel"),
+            new SealFace(StampShape.Duplex, FormDrawing.PostmarkInk, () => "BETTERCOOP P.O.", () => Strings.PostmarkDate(DateTime.Now), seed: 8));
+        Specimen(list, T("5. 뮤트 오벌", "5. Mute oval"), T("열람", "Read"),
+            new SealFace(StampShape.MuteOval, FormDrawing.StampViolet, seed: 9));
+        Specimen(list, T("6. 타깃", "6. Target"), T("섞기", "Shuffle"),
+            new SealFace(StampShape.Target, FormDrawing.PostmarkInk, seed: 10));
+        Specimen(list, T("7. 팬시 소인 (별)", "7. Fancy cancel (star)"), T("요청", "Ask"),
+            new SealFace(StampShape.Star, FormDrawing.StampBlue, seed: 11));
+        Specimen(list, T("8. USDA 검사인", "8. Inspection mark"), T("복구", "Restore"),
+            new SealFace(StampShape.Inspection, FormDrawing.StampViolet, () => "U.S. INSPECTED", () => "AND PASSED", seed: 12));
+        Specimen(list, T("9. 공증 인장", "9. Notary seal"), T("요청", "Ask"),
+            new SealFace(StampShape.Notary, FormDrawing.StampBlue, () => "TROOP NOTARY", () => "BETTERCOOP", seed: 14));
+        Specimen(list, T("10. 우편 소인 (지금 통보)", "10. Postmark (Notify now)"), T("통보", "Notify"),
+            new PostmarkFace(() => T("ZOO 우체국", "ZOO P.O."), () => Strings.PostmarkDate(DateTime.Now)));
 
         list.Header(() => T("알림", "Notices"));
         list.Note(() => T(

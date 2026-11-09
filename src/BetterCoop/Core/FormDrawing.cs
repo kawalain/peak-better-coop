@@ -14,7 +14,7 @@ namespace BetterCoop.Core;
 /// colour is mixed with the paper beforehand and drawn opaque, so a mark
 /// looks the same over the paper whatever its edges.
 /// </summary>
-internal static class FormDrawing
+internal static partial class FormDrawing
 {
     /// <summary>The blue of an answer written by pen.</summary>
     public static readonly Ink Pen = new(0.110f, 0.200f, 0.580f);
@@ -94,9 +94,10 @@ internal static class FormDrawing
     /// <summary>
     /// A postmark's impression: a double ring <paramref name="ring"/> across
     /// at the left, and wavy cancelling lines running from it to the right
-    /// edge, unevenly inked. Its words are set over it as text.
+    /// edge, unevenly inked. <paramref name="inked"/>, the ring is struck
+    /// solid so its words show in the paper's colour. Its words are set over it as text.
     /// </summary>
-    public static string Postmark(float width, float height, float ring, int seed = 11, Ink? colour = null)
+    public static string Postmark(float width, float height, float ring, int seed = 11, Ink? colour = null, bool inked = false)
     {
         var svg = Open(width, height);
         var hand = new Random(seed);
@@ -104,8 +105,16 @@ internal static class FormDrawing
         float r = ring / 2f - 2f;
         float cx = ring / 2f;
         float cy = height / 2f;
-        svg.Append(F($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{r}\" fill=\"none\" stroke=\"{ink}\" stroke-width=\"2.6\"/>"));
-        svg.Append(F($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{r - 5f}\" fill=\"none\" stroke=\"{ink}\" stroke-width=\"1.2\"/>"));
+        if (inked)
+        {
+            svg.Append(F($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{r + 1.3f}\" fill=\"{ink}\"/>"));
+            svg.Append(F($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{r - 5f}\" fill=\"none\" stroke=\"{Paper.Hex}\" stroke-width=\"1.2\"/>"));
+        }
+        else
+        {
+            svg.Append(F($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{r}\" fill=\"none\" stroke=\"{ink}\" stroke-width=\"2.6\"/>"));
+            svg.Append(F($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{r - 5f}\" fill=\"none\" stroke=\"{ink}\" stroke-width=\"1.2\"/>"));
+        }
 
         // The cancelling lines: five waves in step, from the ring's edge to the right.
         const int lines = 5;
