@@ -129,9 +129,11 @@ internal static class PhotoStudio
         }
     }
 
-    public const int HandWidth = 160;
+    /// <summary>How wide the hand's picture is taken, before it is trimmed to the arm.</summary>
+    public const int HandWidth = 256;
 
-    public const int HandHeight = 320;
+    /// <summary>How many of the hand picture's pixels a forearm's length takes, at first try.</summary>
+    public const float HandForearmPixels = HandWidth / 2.2f;
 
     /// <summary>The colour behind a hand while it is taken, keyed out after.</summary>
     private static readonly Color HandKey = new(1f, 0f, 1f, 1f);
@@ -167,6 +169,8 @@ internal static class PhotoStudio
         RenderTexture? shot = null;
         RenderTexture? active = RenderTexture.active;
         Texture2D? hand = null;
+        Transform? raised = null;
+        Quaternion raisedTurn = Quaternion.identity;
         try
         {
             model.gameObject.SetActive(true);
@@ -179,67 +183,106 @@ internal static class PhotoStudio
 
             // The game names a scout's bones after their body parts.
             Transform? palm = HelperFunctions.FindChildRecursive(nameof(BodypartType.Hand_R), model.transform);
-            Transform? elbow = HelperFunctions.FindChildRecursive(nameof(BodypartType.Elbow_R), model.transform)
-                ?? HelperFunctions.FindChildRecursive(nameof(BodypartType.Arm_R), model.transform);
-            if (palm == null || elbow == null)
+            Transform? elbow = HelperFunctions.FindChildRecursive(nameof(BodypartType.Elbow_R), model.transform);
+            Transform? upper = HelperFunctions.FindChildRecursive(nameof(BodypartType.Arm_R), model.transform)
+                ?? HelperFunctions.FindChildRecursive(nameof(BodypartType.Shoulder_R), model.transform);
+            if (palm == null || elbow == null || upper == null)
             {
-                Plugin.Verbose("The model has no right hand and elbow bones to photograph.");
+                Plugin.Verbose("The model has no right hand, elbow, and arm bones to photograph.");
                 Hands[look] = null;
                 return null;
             }
 
-            Vector3 tip = palm.position;
-            float length = Vector3.Distance(tip, elbow.position);
-            if (length < 1e-3f)
+            float forearm = Vector3.Distance(palm.position, elbow.position);
+            if (forearm < 1e-3f)
             {
                 Hands[look] = null;
                 return null;
             }
 
-            Vector3 down = (tip - elbow.position) / length;
-            // From the body's middle out through the hand, square to the forearm.
-            Vector3 middle = model.transform.position + Vector3.Project(tip - model.transform.position, model.transform.up);
-            Vector3 outward = Vector3.ProjectOnPlane(tip - middle, down);
-            if (outward.sqrMagnitude < 1e-6f)
+            // Facing the passport's camera, as the model stands.
+            Vector3 front = Vector3.ProjectOnPlane(lensPlace - model.transform.position, model.transform.up);
+            front = front.sqrMagnitude > 1e-6f ? front.normalized : model.transform.forward;
+
+            // The arm swung out from the body, the way that takes the hand farther off,
+            // so nothing but the arm is in the picture.
+            raised = upper;
+            raisedTurn = upper.localRotation;
+            Quaternion hanging = upper.rotation;
+            Quaternion outward = hanging;
+            float farthest = -1f;
+            foreach (float swing in new[] { -70f, 70f })
             {
-                outward = Vector3.ProjectOnPlane(model.transform.right, down);
+                upper.rotation = Quaternion.AngleAxis(swing, front) * hanging;
+                float away = Vector3.ProjectOnPlane(palm.position - model.transform.position, model.transform.up).magnitude;
+                if (away > farthest)
+                {
+                    farthest = away;
+                    outward = upper.rotation;
+                }
             }
 
-            outward.Normalize();
-            // From past the fingertips to above the elbow, the hand at the foot of the picture.
-            Vector3 bottom = tip + (down * length * 0.55f);
-            Vector3 top = elbow.position - (down * length * 0.75f);
-            const float distance = 3f;
-            lens.position = ((bottom + top) / 2f) + (outward * distance);
-            lens.rotation = Quaternion.LookRotation(-outward, -down);
-            camera.orthographicSize = Vector3.Distance(bottom, top) / 2f;
-            camera.nearClipPlane = distance - (length * 0.45f);
-            camera.farClipPlane = distance + (length * 0.45f);
-            camera.backgroundColor = HandKey;
-            camera.aspect = HandWidth / (float)HandHeight;
-            if (lamp != null)
+            upper.rotation = outward;
+
+            // Seen from the front, turned so the forearm stands upright with the hand at the foot.
+            Vector3 up = Vector3.ProjectOnPlane(elbow.position - palm.position, front).normalized;
+            Texture2D? taken = null;
+            for (float room = 1f; room <= 2.3f && taken == null; room *= 1.5f)
             {
-                lamp.transform.position = lens.position + (lens.up * length);
-                lamp.enabled = true;
+                float below = forearm * 1.5f * room;
+                float above = forearm * 0.8f;
+                float tall = below + forearm + above;
+                float wide = forearm * 2.2f * room;
+                Vector3 middle = palm.position - (up * below) + (up * (tall / 2f));
+                lens.position = middle + (front * 3f);
+                lens.rotation = Quaternion.LookRotation(-front, up);
+                camera.orthographicSize = tall / 2f;
+                camera.nearClipPlane = 0.05f;
+                camera.farClipPlane = 6f;
+                camera.backgroundColor = HandKey;
+                int width = HandWidth;
+                int height = Mathf.RoundToInt(HandWidth * tall / wide);
+                camera.aspect = width / (float)height;
+                if (lamp != null)
+                {
+                    lamp.transform.position = lens.position + (up * forearm);
+                    lamp.enabled = true;
+                }
+
+                if (shot != null)
+                {
+                    RenderTexture.ReleaseTemporary(shot);
+                }
+
+                shot = RenderTexture.GetTemporary(width, height, 24, RenderTextureFormat.ARGB32);
+                camera.targetTexture = shot;
+                camera.Render();
+                RenderTexture.active = shot;
+                var whole = new Texture2D(width, height, TextureFormat.RGBA32, false);
+                whole.ReadPixels(new Rect(0, 0, width, height), 0, 0);
+                taken = Crop(whole, out bool cut);
+                Object.Destroy(whole);
+                if (cut && taken != null && room * 1.5f <= 2.3f)
+                {
+                    // The hand ran off the picture: take it again with more room.
+                    Object.Destroy(taken);
+                    taken = null;
+                }
             }
 
-            shot = RenderTexture.GetTemporary(HandWidth, HandHeight, 24, RenderTextureFormat.ARGB32);
-            camera.targetTexture = shot;
-            camera.Render();
-            RenderTexture.active = shot;
-            hand = new Texture2D(HandWidth, HandHeight, TextureFormat.RGBA32, false)
-            {
-                name = "BetterCoop.Hand",
-                wrapMode = TextureWrapMode.Clamp,
-                hideFlags = HideFlags.HideAndDontSave,
-            };
-            hand.ReadPixels(new Rect(0, 0, HandWidth, HandHeight), 0, 0);
-            if (!KeyOut(hand))
+            hand = taken;
+            if (hand == null)
             {
                 Plugin.Verbose("The hand was not in its picture.");
-                Object.Destroy(hand);
-                hand = null;
             }
+#if DEBUG
+            else
+            {
+                string file = System.IO.Path.Combine(BepInEx.Paths.CachePath, "BetterCoop-hand.png");
+                System.IO.File.WriteAllBytes(file, hand.EncodeToPNG());
+                Plugin.Verbose($"Saved the hand's picture to {file}.");
+            }
+#endif
 
             Hands[look] = hand;
             return hand;
@@ -264,6 +307,11 @@ internal static class PhotoStudio
                 RenderTexture.ReleaseTemporary(shot);
             }
 
+            if (raised != null)
+            {
+                raised.localRotation = raisedTurn;
+            }
+
             lens.position = lensPlace;
             lens.rotation = lensTurn;
             camera.orthographicSize = size;
@@ -278,6 +326,68 @@ internal static class PhotoStudio
 
             model.gameObject.SetActive(false);
         }
+    }
+
+    /// <summary>
+    /// The arm cut out of <paramref name="picture"/>: the key made clear and
+    /// the picture trimmed to the arm at its sides and foot, its top kept,
+    /// where the arm runs on. Null when hardly any arm is there;
+    /// <paramref name="cut"/> says whether the arm ran off a side or the foot.
+    /// </summary>
+    private static Texture2D? Crop(Texture2D picture, out bool cut)
+    {
+        cut = false;
+        if (!KeyOut(picture))
+        {
+            return null;
+        }
+
+        Color32[] pixels = picture.GetPixels32();
+        int width = picture.width;
+        int height = picture.height;
+        int left = width;
+        int right = -1;
+        int foot = height;
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                if (pixels[(y * width) + x].a > 24)
+                {
+                    left = Mathf.Min(left, x);
+                    right = Mathf.Max(right, x);
+                    foot = Mathf.Min(foot, y);
+                }
+            }
+        }
+
+        if (right < 0)
+        {
+            return null;
+        }
+
+        cut = left == 0 || right == width - 1 || foot == 0;
+        const int margin = 3;
+        left = Mathf.Max(0, left - margin);
+        right = Mathf.Min(width - 1, right + margin);
+        foot = Mathf.Max(0, foot - margin);
+        int keptWidth = right - left + 1;
+        int keptHeight = height - foot;
+        var kept = new Color32[keptWidth * keptHeight];
+        for (int y = 0; y < keptHeight; y++)
+        {
+            Array.Copy(pixels, ((y + foot) * width) + left, kept, y * keptWidth, keptWidth);
+        }
+
+        var trimmed = new Texture2D(keptWidth, keptHeight, TextureFormat.RGBA32, false)
+        {
+            name = "BetterCoop.Hand",
+            wrapMode = TextureWrapMode.Clamp,
+            hideFlags = HideFlags.HideAndDontSave,
+        };
+        trimmed.SetPixels32(kept);
+        trimmed.Apply(false);
+        return trimmed;
     }
 
     /// <summary>Makes the key colour clear, edges half clear; false when hardly anything but the key was there.</summary>

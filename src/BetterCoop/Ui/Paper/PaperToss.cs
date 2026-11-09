@@ -356,11 +356,14 @@ internal sealed class PaperHandIn : MonoBehaviour
 
     private const float LiftSeconds = 0.55f;
 
-    /// <summary>The hand's width on the page, in canvas units; the picture keeps its own proportions.</summary>
-    private const float HandWidth = 210f;
+    /// <summary>How long a forearm is beside the page, in canvas units.</summary>
+    private const float Forearm = 150f;
 
-    /// <summary>How far the hand comes down over the paper's top edge, as a share of its height.</summary>
-    private const float Grip = 0.2f;
+    /// <summary>A drawn arm's width beside the page, in canvas units.</summary>
+    private const float DrawnWidth = 210f;
+
+    /// <summary>How far the fingers come down over the paper's top edge, in canvas units.</summary>
+    private const float Grip = 34f;
 
     private RectTransform paper = null!;
 
@@ -395,12 +398,15 @@ internal sealed class PaperHandIn : MonoBehaviour
         page.texture = picture;
         page.raycastTarget = false;
 
-        handHeight = HandWidth * PhotoStudio.HandHeight / PhotoStudio.HandWidth;
+        // A taken picture shows at a forearm's length beside the page; a drawn arm is twice as tall as wide.
+        float scale = Forearm / PhotoStudio.HandForearmPixels;
+        float handWidth = arm != null ? arm.width * scale : DrawnWidth;
+        handHeight = arm != null ? arm.height * scale : DrawnWidth * 2f;
         handX = UnityEngine.Random.Range(-0.18f, 0.18f) * size.x;
         hand = PaperList.NewRect("Hand", holder);
         hand.anchorMin = hand.anchorMax = new Vector2(0.5f, 1f);
         hand.pivot = new Vector2(0.5f, 0f);
-        hand.sizeDelta = new Vector2(HandWidth, handHeight);
+        hand.sizeDelta = new Vector2(handWidth, handHeight);
         if (arm != null)
         {
             RawImage image = hand.gameObject.AddComponent<RawImage>();
@@ -449,7 +455,7 @@ internal sealed class PaperHandIn : MonoBehaviour
     private void Pose()
     {
         // The hand's foot, where its fingers are, measured down from the paper's top edge.
-        float gripped = -handHeight * Grip;
+        float gripped = -Grip;
         float handFoot;
         float lift = 0f;
         float squeeze = 1f;
