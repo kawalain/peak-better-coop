@@ -1,6 +1,7 @@
 using System;
 using BetterCoop.Core;
 using Photon.Pun;
+using UnityEngine;
 using PhotonHashtable = ExitGames.Client.Photon.Hashtable;
 using PhotonPlayer = Photon.Realtime.Player;
 
@@ -8,7 +9,9 @@ namespace BetterCoop.Net;
 
 /// <summary>
 /// Publishes the local mod version, protocol, and Role Preference as player
-/// custom properties, so the Troop Leader can tell who it pairs (ADR 0009).
+/// custom properties, so the Troop Leader can tell who it pairs (ADR 0009),
+/// and the player's Climb Input, which the Control Split follows on the
+/// Carrier's client.
 /// </summary>
 internal sealed class ModPresence : MonoBehaviourPunCallbacks
 {
@@ -23,6 +26,10 @@ internal sealed class ModPresence : MonoBehaviourPunCallbacks
         && System.Enum.IsDefined(typeof(RolePreference), role)
             ? (RolePreference)role
             : RolePreference.Random;
+
+    /// <summary>Whether <paramref name="player"/> climbs by Toggle, as their own game's Climb Input setting says.</summary>
+    public static bool ClimbTogglesOf(PhotonPlayer player) =>
+        player.CustomProperties.TryGetValue(RoomKeys.ClimbToggle, out object value) && value is bool toggles && toggles;
 
     /// <summary>The role a player is paired by: their Role Preference, unless the Run Rules draw roles at random.</summary>
     public static RolePreference PairingRoleOf(PhotonPlayer player) =>
@@ -45,6 +52,31 @@ internal sealed class ModPresence : MonoBehaviourPunCallbacks
         }
     }
 
+    private const float SettingCheckSeconds = 1f;
+
+    private static bool? publishedClimbToggle;
+
+    private static float nextSettingCheck;
+
+    /// <summary>The game tells no one when a setting changes, so the Climb Input is looked at now and then.</summary>
+    private void Update()
+    {
+        if (Time.unscaledTime < nextSettingCheck)
+        {
+            return;
+        }
+
+        nextSettingCheck = Time.unscaledTime + SettingCheckSeconds;
+        if (PhotonNetwork.InRoom && LocalClimbToggles() != publishedClimbToggle)
+        {
+            Publish();
+        }
+    }
+
+    private static bool LocalClimbToggles() =>
+        GameHandler.Instance?.SettingsHandler?.GetSetting<ClimbInputSetting>() is ClimbInputSetting setting
+        && setting.Value == ClimbInputSetting.InputMode.SettingToggle;
+
     public override void OnEnable()
     {
         base.OnEnable();
@@ -63,7 +95,9 @@ internal sealed class ModPresence : MonoBehaviourPunCallbacks
             [RoomKeys.Version] = MyPluginInfo.PLUGIN_VERSION,
             [RoomKeys.Protocol] = RoomProtocol.Current,
             [RoomKeys.Role] = (byte)CoopConfig.RolePreference.Value,
+            [RoomKeys.ClimbToggle] = LocalClimbToggles(),
         };
+        publishedClimbToggle = (bool)properties[RoomKeys.ClimbToggle];
         PhotonNetwork.LocalPlayer.SetCustomProperties(properties);
     }
 }

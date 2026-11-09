@@ -141,6 +141,8 @@ started so the Unmodded guest joins second):
 - The Rider sees the Carrier's crosshair, throw charge, rope length, item
   sounds, and the backpack wheel, and picks from it.
 - The Rider's binoculars and previews follow the Carrier.
+- Grabbing and letting go of a wall follows the Rider's own Climb Input
+  (Hold or Toggle), whatever the Carrier's is.
 
 ### Carrying (two people)
 

@@ -12,6 +12,9 @@ internal static class RoomKeys
     /// <summary>Player property: the player's <see cref="Core.RolePreference"/>.</summary>
     public const string Role = "BetterCoop.Role";
 
+    /// <summary>Player property: whether the player climbs by Toggle in the game's Climb Input setting.</summary>
+    public const string ClimbToggle = "BetterCoop.ClimbToggle";
+
     /// <summary>Room property: the host's Run rules.</summary>
     public const string Rules = "BetterCoop.Rules";
 

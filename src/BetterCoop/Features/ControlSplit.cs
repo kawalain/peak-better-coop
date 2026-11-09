@@ -273,6 +273,25 @@ internal static class ControlSplit
         }
     }
 
+    /// <summary>
+    /// The Rider's use button grabs and lets go of the wall, so the Rider's
+    /// own Climb Input (Hold or Toggle) decides how, not the Carrier's: a
+    /// climb the Rider's grab just started keeps its toggle only if the
+    /// Rider climbs by Toggle.
+    /// </summary>
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(CharacterClimbing), nameof(CharacterClimbing.TryToStartWallClimb))]
+    private static void FollowRiderClimbInput(CharacterClimbing __instance)
+    {
+        if (__instance.sinceLastClimbStarted == 0f
+            && __instance.character.IsLocal
+            && LocalCarrier(out Character rider)
+            && rider.photonView.Owner is Photon.Realtime.Player owner)
+        {
+            __instance.climbToggledOn = ModPresence.ClimbTogglesOf(owner);
+        }
+    }
+
     private static RopeSpool? latchedSpool;
 
     private static float latchedScroll;
