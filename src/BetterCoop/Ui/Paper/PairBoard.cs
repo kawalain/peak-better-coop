@@ -208,7 +208,14 @@ internal sealed class PairBoard : MonoBehaviour
         {
             if (draft.At(view.Slot) is int actor)
             {
-                Glide.Start((RectTransform)view.Content.transform, before.TryGetValue(actor, out Vector3 at) ? at : null);
+                Vector3? from = before.TryGetValue(actor, out Vector3 at) ? at : null;
+                Glide.Start((RectTransform)view.Content.transform, from);
+
+                // The corners travel with their print, so it never slides out of them.
+                if (view.Mount != null)
+                {
+                    Glide.Start(view.Mount, from);
+                }
             }
         }
     }
@@ -443,8 +450,15 @@ internal sealed class PairBoard : MonoBehaviour
         if (actor is int who)
         {
             Portrait(content, who, slot.Kind);
+
             // The album's corners hold the print to the page, and stay there when it is taken out.
-            ScoutPhoto.Corners(rect, who);
+            // They sit on a layer the size of the print's, so they grow and glide with it.
+            RectTransform mount = PaperList.NewRect("Mount", rect);
+            mount.anchorMin = Vector2.zero;
+            mount.anchorMax = Vector2.one;
+            mount.offsetMin = mount.offsetMax = Vector2.zero;
+            ScoutPhoto.Corners(mount, who);
+            view.Mount = mount;
         }
         else
         {
@@ -467,6 +481,7 @@ internal sealed class PairBoard : MonoBehaviour
             control.Board = this;
             control.View = view;
             control.Visual = content;
+            control.Companion = view.Mount;
             control.Pressed = () => Press(view);
             control.Back = () => PutBack();
             view.Control = control;
@@ -507,6 +522,9 @@ internal sealed class SlotView
     public RectTransform Rect { get; }
 
     public CanvasGroup Content { get; set; } = null!;
+
+    /// <summary>The album corners' layer, when a photo is mounted here.</summary>
+    public RectTransform? Mount { get; set; }
 
     public RawImage Mark { get; set; } = null!;
 

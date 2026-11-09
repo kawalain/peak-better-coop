@@ -90,50 +90,38 @@ internal sealed class SlidingText : MonoBehaviour
 }
 
 /// <summary>
-/// Carries a thing from where it was to where the layout put it: it starts
-/// at its old place and settles into the new one, fading in when it had none.
+/// Carries a thing from where it was to where the layout put it: it eases
+/// out of its old place and settles into the new one, as a print slid
+/// across the page by hand, fading in when it had none.
 /// </summary>
 internal sealed class Glide : MonoBehaviour
 {
-    private const float Seconds = 0.32f;
+    private const float Seconds = 0.42f;
 
-    private Vector2 offset;
+    private Vector2 start;
+
+    private float progress = 1f;
 
     private CanvasGroup? fade;
-
-    private float shown = 1f;
 
     /// <summary>Starts <paramref name="rect"/> as far from its place as <paramref name="from"/>, in world space; null to fade in where it is.</summary>
     public static void Start(RectTransform rect, Vector3? from)
     {
         Glide glide = rect.GetComponent<Glide>() ?? rect.gameObject.AddComponent<Glide>();
-        if (from is Vector3 old && rect.parent is RectTransform parent)
-        {
-            glide.offset = (Vector2)(parent.InverseTransformPoint(old) - parent.InverseTransformPoint(rect.position));
-        }
-        else
-        {
-            glide.fade = rect.GetComponent<CanvasGroup>() ?? rect.gameObject.AddComponent<CanvasGroup>();
-            glide.shown = 0f;
-        }
+        glide.start = from is Vector3 old && rect.parent is RectTransform parent
+            ? (Vector2)(parent.InverseTransformPoint(old) - parent.InverseTransformPoint(rect.position))
+            : Vector2.zero;
+        glide.fade = from == null ? rect.GetComponent<CanvasGroup>() ?? rect.gameObject.AddComponent<CanvasGroup>() : null;
 
+        glide.progress = 0f;
         glide.Pose();
     }
 
     private void LateUpdate()
     {
-        float elapsed = Time.unscaledDeltaTime;
-        offset = new Vector2(
-            Easing.Towards(offset.x, 0f, Seconds, elapsed),
-            Easing.Towards(offset.y, 0f, Seconds, elapsed));
-        if (offset.sqrMagnitude < 0.01f)
-        {
-            offset = Vector2.zero;
-        }
-
-        shown = Mathf.Min(1f, shown + elapsed / Seconds);
+        progress = Mathf.Min(1f, progress + Time.unscaledDeltaTime / Seconds);
         Pose();
-        if (offset == Vector2.zero && shown >= 1f)
+        if (progress >= 1f)
         {
             enabled = false;
         }
@@ -141,12 +129,13 @@ internal sealed class Glide : MonoBehaviour
 
     private void Pose()
     {
-        ((RectTransform)transform).anchoredPosition = offset;
+        ((RectTransform)transform).anchoredPosition = start * (1f - Easing.InOut(progress));
         if (fade != null)
         {
-            fade.alpha = Easing.Out(shown);
+            fade.alpha = Easing.Out(progress);
         }
 
-        enabled = true;
+        enabled = progress < 1f;
     }
 }
+

@@ -41,6 +41,9 @@ internal class PaperControl : Selectable, IPointerClickHandler, ISubmitHandler
     /// <summary>What grows and sinks; the control itself when unset.</summary>
     public Transform? Visual { get; set; }
 
+    /// <summary>Something that grows and sinks with <see cref="Visual"/>, as the album corners holding a photo.</summary>
+    public Transform? Companion { get; set; }
+
     /// <summary>Takes the menu sounds from the game's menu button, for every control.</summary>
     public static void UseSoundsOf(Button template)
     {
@@ -163,7 +166,14 @@ internal class PaperControl : Selectable, IPointerClickHandler, ISubmitHandler
         Apply();
     }
 
-    private void Apply() => (Visual ?? transform).localScale = Vector3.one * scale;
+    private void Apply()
+    {
+        (Visual ?? transform).localScale = Vector3.one * scale;
+        if (Companion != null)
+        {
+            Companion.localScale = Vector3.one * scale;
+        }
+    }
 
     private void Play(bool click)
     {
