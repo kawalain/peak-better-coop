@@ -60,6 +60,7 @@ internal static partial class ControlCommands
         ["interact"] = new("{actor}: acts on that player's scout as the interact key does when aimed at it, such as picking them up; answers with what the game offered.", Interact),
         ["menu"] = new("{action: pause|back}: opens the pause menu, or goes back as the pause key does.", Menu),
         ["scroll"] = new("{to}: scrolls the open paper form to the first text containing 'to'.", Scroll),
+        ["room"] = new("{action: leave|join}, in a Twin: leave leaves the room as a player closing the game would and keeps this Twin out; join lets it join the room on the room card again.", TwinRoom),
         ["depart"] = new("At the Airport: boards for the Run as the boarding pass does, through the mod's own checks.", _ => Depart()),
         ["order"] = new("{what, ...}: a Roster order, under the Roster's rules; without what, lists them.", Order),
         ["perf"] = new("{seconds?}: for that long (default 5), times every Update of the mod's own components and every patch it adds to the game; answers with the mod's milliseconds and bytes per frame and the costliest methods.", ControlPerf.Measure),
@@ -67,7 +68,7 @@ internal static partial class ControlCommands
         ["language"] = new("{name?}: shows the game in that language (English, Korean, ...) until it closes, as the settings would but saving nothing; without a name, answers with the current one.", Language),
         ["window"] = new("{width, height}: sizes this copy's window, for seeing the paper at another shape.", Window),
         ["sounds"] = new("{contains?, play?}: the game's loaded audio clips whose name contains 'contains', with their length and the sound effects that use them; play {clip name} plays one flat, as a menu sound.", Sounds),
-        ["drill"] = new("{what, ...}: forge {key, actor?, value?} writes a made-up value to a mod key of the room, or of player 'actor', as a player who may not write it would (Pairs, without a value, swaps every Pair's roles), and the other copies should drop it; letter {case} plays the Zoo's Pair letter case (0 to 5); end {ending: summit|lost}, in a Twin only, ends the real Run for the whole room; flood {kind: rider|revive|wheel|sound|recovery|swap|pairs, count?} sends that many of the mod's own messages at once, as a misbehaving modded client would; leave {atOperation?, delay?} leaves the room now, or that long after the operation counting down, or the next one announced, runs; kill {actor, how: die|sync|consent, allow?, to?} sends a death of player 'actor''s scout that this copy may not send, or that scout's leave to be eaten, to player 'to' or every other copy.", Drill),
+        ["drill"] = new("{what, ...}: forge {key, actor?, value?} writes a made-up value to a mod key of the room, or of player 'actor', as a player who may not write it would (Pairs, without a value, swaps every Pair's roles), and the other copies should drop it; letter {case} plays the Zoo's Pair letter case (0 to 5); end {ending: summit|lost|airport}, in a Twin only, ends the real Run for the whole room, or after it takes the room back to the Airport; flood {kind: rider|revive|wheel|sound|recovery|swap|pairs, count?} sends that many of the mod's own messages at once, as a misbehaving modded client would; leave {atOperation?, delay?, hold?} leaves the room now, or that long after the operation counting down, or the next one announced, runs, and with hold the Twin stays out until 'room join'; kill {actor, how: die|sync|consent, allow?, to?} sends a death of player 'actor''s scout that this copy may not send, or that scout's leave to be eaten, to player 'to' or every other copy.", Drill),
     };
 
     private static JToken Commands() =>
@@ -143,6 +144,8 @@ internal static partial class ControlCommands
             ["position"] = new JArray(Math.Round(at.x, 2), Math.Round(at.y, 2), Math.Round(at.z, 2)),
             ["dead"] = character.data.dead,
             ["passedOut"] = character.data.passedOut,
+            ["skeleton"] = character.data.isSkeleton,
+            ["eatable"] = character.data._cannibalismPermitted,
             ["carried"] = character.data.isCarried,
             ["carrying"] = character.data.carriedPlayer != null ? character.data.carriedPlayer.photonView?.Owner?.ActorNumber : null,
         };
@@ -542,8 +545,13 @@ internal static partial class ControlCommands
                 }
 
                 return "the party is lost";
+            case "airport":
+                // The game's own way back once every player has closed the end
+                // screen; a Twin's summit can stall in the closing cutscene.
+                Zorro.Core.Singleton<GameOverHandler>.Instance.LoadAirport();
+                return "the room goes back to the Airport";
             default:
-                throw new ArgumentException("ending: summit or lost");
+                throw new ArgumentException("ending: summit, lost or airport");
         }
     }
 
@@ -582,6 +590,31 @@ internal static partial class ControlCommands
         }
 
         return $"wrote {key}";
+    }
+
+    private static JToken TwinRoom(JObject args)
+    {
+        if (!Twin.Active)
+        {
+            throw new InvalidOperationException("only a Twin leaves and joins on order");
+        }
+
+        switch ((string?)args["action"])
+        {
+            case "leave":
+                Twin.Held = true;
+                if (PhotonNetwork.InRoom)
+                {
+                    PhotonNetwork.LeaveRoom();
+                }
+
+                return "left the room; staying out";
+            case "join":
+                Twin.Held = false;
+                return PhotonNetwork.InRoom ? "already in the room" : "joining the room on the card";
+            default:
+                throw new ArgumentException("action: leave or join");
+        }
     }
 
     private static JToken Depart()

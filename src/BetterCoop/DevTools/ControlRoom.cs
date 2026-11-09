@@ -34,6 +34,7 @@ internal static partial class ControlCommands
             ["unpaired"] = published == null ? null : new JArray(published.Unpaired),
             ["plan"] = PairsJson(Live.Plan),
             ["myRole"] = PairRoster.RoleOf(Character.localCharacter).ToString(),
+            ["myPartner"] = PairRoster.TryGetPartner(Character.localCharacter, out Character partner) ? PairRoster.ActorOf(partner) : null,
             ["preference"] = Live.Preference.ToString(),
             ["swapPending"] = Live.SwapPending,
             ["pairChange"] = change == null ? null : new JObject

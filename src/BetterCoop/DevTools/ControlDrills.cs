@@ -206,6 +206,8 @@ internal static partial class ControlCommands
 
         double delay = Math.Max(0, Math.Min(5, (double?)args["delay"] ?? 0.05));
         bool atOperation = (bool?)args["atOperation"] ?? false;
+        // A Twin left to itself joins again a few seconds later; held, it waits for 'room join'.
+        Twin.Held = (bool?)args["hold"] ?? false;
         var timer = new GameObject("BetterCoop.LeaveDrill");
         UnityEngine.Object.DontDestroyOnLoad(timer);
         LeaveTimer leave = timer.AddComponent<LeaveTimer>();

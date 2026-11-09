@@ -33,13 +33,14 @@ then each guest with `--only` in the order wanted. The commands used below:
 | `menu {action}`, `controls`, `press {id}`, `scroll {to}` | the pause menu, the Roster, and any button on screen |
 | `order {what, ...}` | a Roster order, under the Roster's rules |
 | `depart` | boards for the Run from the Airport |
+| `room {action}` | in a Twin, `leave` leaves the room as a player closing the game would and keeps it out; `join` lets it join again |
 | `warp {to}` | moves this copy's scout, as the game's warp |
 | `interact {actor}` | acts on that scout as the interact key does when aimed at them, e.g. a Rescue Carry |
 | `console {name}` | the game's console, e.g. `Character.Die`; none that change what the account keeps |
 | `photo {actor}` | takes a passport photo again and saves it as a PNG |
 | `drill {what: forge, key, actor?}` | writes a made-up mod value as a player who may not |
 | `drill {what: letter, case}` | plays one of the Zoo's Pair letter cases (0 to 5) |
-| `drill {what: end, ending}` | in a Twin, ends the real Run at the summit or with the party lost |
+| `drill {what: end, ending}` | in a Twin, ends the real Run at the summit or with the party lost; `airport` then takes the room back, as once everyone has closed the end screen |
 | `drill {what: flood, kind, count?}` | sends many of one kind of the mod's own messages at once, as a misbehaving modded client would: `rider`, `revive`, `wheel`, `sound`, `recovery`, `swap`, `pairs` |
 | `drill {what: leave, atOperation?, delay?}` | leaves the room now, or just after the next operation runs |
 | `drill {what: kill, actor, how, allow?, to?}` | sends a death of that scout this copy may not send: `die` (the death RPC) or `sync` (a join sync marking it dead); `consent` sends its leave to be eaten (rightful from its own copy); to player `to` or every other copy |
