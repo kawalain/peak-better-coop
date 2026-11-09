@@ -6,6 +6,8 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using BepInEx;
+using BetterCoop.Core;
+using BetterCoop.Features;
 using BetterCoop.Net;
 using Newtonsoft.Json.Linq;
 using Photon.Pun;
@@ -56,6 +58,7 @@ internal static partial class ControlCommands
         ["scroll"] = new("{to}: scrolls the open paper form to the first text containing 'to'.", Scroll),
         ["depart"] = new("At the Airport: boards for the Run as the boarding pass does, through the mod's own checks.", _ => Depart()),
         ["order"] = new("{what, ...}: a Roster order, under the Roster's rules; without what, lists them.", Order),
+        ["drill"] = new("{what: forge, key, actor?, value?}: from this copy, writes a made-up value to a mod key of the room, or of player 'actor', as a player who may not write it would; Pairs, without a value, swaps every Pair's roles. The other copies should drop it.", Drill),
     };
 
     private static JToken Commands() =>
@@ -354,6 +357,48 @@ internal static partial class ControlCommands
         }
 
         throw new ArgumentException($"no open paper shows '{to}'");
+    }
+
+    private static JToken Drill(JObject args)
+    {
+        string what = (string?)args["what"] ?? throw new ArgumentException("what: forge");
+        if (what != "forge")
+        {
+            throw new ArgumentException($"no drill '{what}'; drills: forge");
+        }
+
+        if (!PhotonNetwork.InRoom)
+        {
+            throw new InvalidOperationException("not in a room");
+        }
+
+        string key = (string?)args["key"] ?? throw new ArgumentException("key: a mod key, such as Pairs or SwapRequest");
+        if (!key.StartsWith("BetterCoop.", StringComparison.Ordinal))
+        {
+            key = "BetterCoop." + key;
+        }
+
+        object? value = args["value"] switch
+        {
+            JArray list => list.Select(item => (int)item).ToArray(),
+            JValue { Type: JTokenType.Integer } number => (int)number,
+            JValue { Type: JTokenType.String } text => (string)text!,
+            _ when key == RoomKeys.Pairs && PairRoster.Read() is PairingResult current => PairRoster.Encode(new PairingResult(
+                current.Pairs.Select(p => new Pair(p.Rider, p.Carrier)).ToList(), current.Unpaired, current.PreferenceOverridden)),
+            _ => "forged",
+        };
+        var forged = new ExitGames.Client.Photon.Hashtable { [key] = value };
+        if (args["actor"] is JToken actor)
+        {
+            Photon.Realtime.Player player = PhotonNetwork.CurrentRoom.GetPlayer((int)actor) ?? throw new ArgumentException($"no player {actor}");
+            player.SetCustomProperties(forged);
+        }
+        else
+        {
+            PhotonNetwork.CurrentRoom.SetCustomProperties(forged);
+        }
+
+        return $"wrote {key}";
     }
 
     private static JToken Depart()
