@@ -36,6 +36,20 @@ internal static partial class DevHooks
         }
     }
 
+    /// <summary>
+    /// Whether this copy stands in for an Unmodded Player: a development
+    /// build's Twin asked to. The plugin then starts only the tools.
+    /// </summary>
+    public static bool ActsUnmodded
+    {
+        get
+        {
+            bool on = false;
+            UnmoddedWanted(ref on);
+            return on;
+        }
+    }
+
     /// <summary>How long Solo Pair holds the Rider's actions back, in seconds.</summary>
     public static float SoloPairDelay
     {
@@ -66,6 +80,8 @@ internal static partial class DevHooks
     static partial void OnPauseMenu(PauseMenuMainPage menu, UIPageHandler handler, PauseMenuControlsPage controls, Button after, Func<string, Action, Button, Button> add);
 
     static partial void SoloPairWanted(ref bool on);
+
+    static partial void UnmoddedWanted(ref bool on);
 
     static partial void SoloPairLatency(ref float seconds);
 

@@ -38,6 +38,8 @@ internal static partial class DevHooks
 
     static partial void SoloPairWanted(ref bool on) => on = DevTools.SoloPair.Wanted;
 
+    static partial void UnmoddedWanted(ref bool on) => on = DevTools.Twin.Unmodded;
+
     static partial void SoloPairLatency(ref float seconds) => seconds = DevTools.SoloPair.Latency.Value / 1000f;
 
     static partial void ScoutIdOf(Photon.Realtime.Player player, ref string id) => id = DevTools.Twin.ScoutId(player, id);

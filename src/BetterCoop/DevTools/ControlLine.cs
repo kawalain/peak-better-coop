@@ -158,7 +158,7 @@ internal sealed class ControlLine : MonoBehaviour
             ["pid"] = pid,
             ["port"] = port,
             ["token"] = token,
-            ["role"] = Twin.Active ? (Twin.Hosts ? "host" : "guest") : "player",
+            ["role"] = Twin.Role,
             ["profile"] = Paths.BepInExRootPath,
             ["log"] = Path.Combine(Paths.BepInExRootPath, "LogOutput.log"),
         };

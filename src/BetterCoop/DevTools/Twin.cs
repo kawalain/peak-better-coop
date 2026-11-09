@@ -36,6 +36,29 @@ internal static class Twin
     /// <summary>The launch argument that names this Twin, after the player's own name.</summary>
     public const string NameArgument = "--bettercoop-twin-name=";
 
+    /// <summary>The launch argument that gives this Twin its role on the Control Line, as host, guest, or guest2.</summary>
+    public const string RoleArgument = "--bettercoop-twin-role=";
+
+    /// <summary>The launch argument that makes this Twin stand in for an Unmodded Player.</summary>
+    public const string UnmoddedArgument = "--bettercoop-twin-unmodded";
+
+    /// <summary>
+    /// Whether this copy is a Twin standing in for an Unmodded Player: only
+    /// the development tools run, and nothing of the mod reaches the room.
+    /// Read from the launch arguments before the plugin patches anything.
+    /// </summary>
+    public static bool Unmodded
+    {
+        get
+        {
+            string[] arguments = Environment.GetCommandLineArgs();
+            return arguments.Contains(UnmoddedArgument) && arguments.Any(a => a.StartsWith(Argument, StringComparison.Ordinal));
+        }
+    }
+
+    /// <summary>This copy's role on the Control Line: the Twin's own, or player for a copy that is not one.</summary>
+    public static string Role { get; private set; } = "player";
+
     /// <summary>
     /// Twin scout ids start here: far above any Steam id, so no real player
     /// is ever taken for a Twin.
@@ -71,6 +94,8 @@ internal static class Twin
         Hosts = arguments.Contains(HostArgument);
         string? named = arguments.FirstOrDefault(a => a.StartsWith(NameArgument, StringComparison.Ordinal))?.Substring(NameArgument.Length).Trim('"');
         label = string.IsNullOrWhiteSpace(named) ? "Twin" : named!;
+        string? role = arguments.FirstOrDefault(a => a.StartsWith(RoleArgument, StringComparison.Ordinal))?.Substring(RoleArgument.Length).Trim('"');
+        Role = string.IsNullOrWhiteSpace(role) ? (Hosts ? "host" : "guest") : role!;
         Id = OwnId();
         var harmony = new Harmony(MyPluginInfo.PLUGIN_GUID + ".twin");
         LeaveAccountAlone(harmony);
@@ -88,7 +113,7 @@ internal static class Twin
             runtime.AddComponent<TwinJoiner>();
         }
 
-        Plugin.Log.LogWarning($"Twin: this copy is {label}, scout id {Id}; it {(Hosts ? "opens" : "joins")} the room on {RoomCard}.");
+        Plugin.Log.LogWarning($"Twin: this copy is {label} ({Role}{(Unmodded ? ", Unmodded" : string.Empty)}), scout id {Id}; it {(Hosts ? "opens" : "joins")} the room on {RoomCard}.");
     }
 
     /// <summary>The id the mod knows a player by: a Twin's own scout id, or the one Photon gave.</summary>

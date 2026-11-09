@@ -71,7 +71,8 @@ internal static partial class ControlCommands
 
     private static JToken Hello() => new JObject
     {
-        ["role"] = Twin.Active ? (Twin.Hosts ? "host" : "guest") : "player",
+        ["role"] = Twin.Role,
+        ["unmodded"] = Twin.Unmodded,
         ["pid"] = System.Diagnostics.Process.GetCurrentProcess().Id,
         ["version"] = MyPluginInfo.PLUGIN_VERSION,
         ["scene"] = SceneManager.GetActiveScene().name,

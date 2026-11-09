@@ -105,7 +105,7 @@ def call(target: str, command: str, **args: Any) -> Any:
 
 @mcp.tool()
 def peak_instances() -> list[dict[str, Any]]:
-    """List the running copies of the game with the Control Line on: role (host, guest, or player for a copy that is not a Twin), pid, profile."""
+    """List the running copies of the game with the Control Line on: role (host, guest, guest2, guest3, or player for a copy that is not a Twin), pid, profile."""
     return [{k: c[k] for k in ("role", "pid", "profile")} for c in instances()]
 
 

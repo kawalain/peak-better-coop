@@ -78,11 +78,14 @@ project file).
   config, the room, or the network. Add a new paper component to the Zoo along
   with it.
 - Twins: `python -I tools/dev_profile.py twins <profile_dir> <PeakGameDir>
-  [--plugin <BetterCoop.dll>] [--only host|guest] [--control]` copies the
-  profile to `~/BetterCoopTwins/host` and `guest` and starts two copies of the
-  game in small windows, apart from the player's own game: the host Twin opens
-  a room without a Steam lobby and the guest Twin joins it by the room card
-  `~/BetterCoopTwins/room.txt`. Test in Twins, never in the player's own game.
+  [--plugin <BetterCoop.dll>] [--guests 1-3] [--unmodded <guest>] [--only
+  <role>] [--control]` copies the profile to `~/BetterCoopTwins/host`, `guest`,
+  `guest2`, and `guest3` as asked and starts each in a small window, apart from
+  the player's own game: the host Twin opens a room without a Steam lobby and
+  the guests join it by the room card `~/BetterCoopTwins/room.txt`. An
+  `--unmodded` guest loads the mod without patching or publishing anything, so
+  it stands in for an Unmodded Player (only its tools run). Test in Twins,
+  never in the player's own game.
   Photon takes only Steam sign-in, so every copy shares one Steam account: the
   host Twin's room lets one account join more than once, and each Twin shows a
   scout id and name of its own. The mod knows players by `KnownPlayers.IdOf`,
@@ -97,8 +100,8 @@ project file).
   launch` or `twins`, `BETTERCOOP_CONTROL=1`, or `[Debug] Control Line`. A copy
   with it on listens on 127.0.0.1 with a token made at every start, announced
   in `~/.bettercoop/control/<pid>.json`. `tools/peak_mcp.py`, registered in
-  `.mcp.json`, reads those files and exposes each copy (`host` or `guest` for
-  a Twin, `player` otherwise) as MCP tools. A new command goes in
+  `.mcp.json`, reads those files and exposes each copy (its role for a Twin:
+  `host`, `guest`, `guest2`, `guest3`; `player` otherwise) as MCP tools. A new command goes in
   `DevTools/ControlCommands.cs` (or `ControlRoom.cs` for the mod's own state),
   never anything that runs code or feeds raw input.
 

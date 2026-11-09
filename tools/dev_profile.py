@@ -7,7 +7,7 @@ the game started by Steam sees the real one.
 Usage:
   python -I tools/dev_profile.py install <profile_dir> <cache_dir> <Owner-Package>...
   python -I tools/dev_profile.py launch <profile_dir> <game_dir> [--control]
-  python -I tools/dev_profile.py twins <profile_dir> <game_dir> [--plugin <BetterCoop.dll>] [--only host|guest] [--control]
+  python -I tools/dev_profile.py twins <profile_dir> <game_dir> [--plugin <BetterCoop.dll>] [--guests 1-3] [--unmodded <role>] [--only <role>] [--control]
 
 install resolves dependencies to their latest versions, downloads each
 package from Thunderstore into <cache_dir>, and lays it out like Gale does:
@@ -15,14 +15,17 @@ BepInExPack at the profile root, other packages under BepInEx/<subdir>/<name>/.
 launch copies the doorstop proxy into the game folder and starts the game
 through Steam with the profile's preloader.
 
-twins starts two Twins, copies of the game for testing apart from the player's
-own (development builds only; see GLOSSARY.md): the host Twin opens a room and
-the guest Twin joins it, by the room card ~/BetterCoopTwins/room.txt. Each runs
-from its own copy of <profile_dir> under ~/BetterCoopTwins (host, guest), with
-its own config (Verbose Log on) and logs, started from PEAK.exe directly in a
-small window.
+twins starts Twins, copies of the game for testing apart from the player's own
+(development builds only; see GLOSSARY.md): the host Twin opens a room and the
+guest Twins join it, by the room card ~/BetterCoopTwins/room.txt. Each runs from
+its own copy of <profile_dir> under ~/BetterCoopTwins (host, guest, guest2,
+guest3), with its own config (Verbose Log on) and logs, started from PEAK.exe
+directly in a small window. Roles are named the same on the Control Line.
 Steam must be running. --plugin puts that BetterCoop.dll, such as one just
-built, in both copies; --only starts one of them again, as after a test closed it.
+built, in every copy; --guests starts that many guests (1 by default, up to 3);
+--unmodded makes that guest stand in for an Unmodded Player, with the mod
+loaded but not patched and publishing nothing; --only starts one role again, as
+after a test closed it (give --unmodded again for an Unmodded one).
 
 --control turns on the Control Line in the copies it starts (development builds
 only), for tools/peak_mcp.py to watch and steer them.
@@ -126,7 +129,11 @@ def launch(profile: Path, game: Path, control: bool) -> None:
     subprocess.Popen(command)
 
 
-def twin(profile: Path, game: Path, role: str, plugin: Path | None, control: bool) -> None:
+GUESTS = ["guest", "guest2", "guest3"]
+LABELS = {"host": "TwinA", "guest": "TwinB", "guest2": "TwinC", "guest3": "TwinD"}
+
+
+def twin(profile: Path, game: Path, role: str, plugin: Path | None, control: bool, unmodded: bool) -> None:
     twin_dir = TWINS / role
     card = TWINS / "room.txt"
 
@@ -159,8 +166,11 @@ def twin(profile: Path, game: Path, role: str, plugin: Path | None, control: boo
         "-screen-fullscreen", "0", "-screen-width", "960", "-screen-height", "540",
         "-logFile", str(twin_dir / "Player.log"),
         f"--bettercoop-twin={card}",
-        f"--bettercoop-twin-name=Twin{'A' if role == 'host' else 'B'}",
+        f"--bettercoop-twin-name={LABELS[role]}",
+        f"--bettercoop-twin-role={role}",
     ]
+    if unmodded:
+        command.append("--bettercoop-twin-unmodded")
     if role == "host":
         card.unlink(missing_ok=True)
         command.append("--bettercoop-twin-host")
@@ -183,12 +193,14 @@ def main(argv: list[str]) -> None:
     elif len(argv) >= 4 and argv[1] == "twins":
         rest = argv[4:]
         plugin = Path(rest[rest.index("--plugin") + 1]) if "--plugin" in rest else None
-        roles = [rest[rest.index("--only") + 1]] if "--only" in rest else ["host", "guest"]
-        if not set(roles) <= {"host", "guest"}:
+        guests = int(rest[rest.index("--guests") + 1]) if "--guests" in rest else 1
+        unmodded = rest[rest.index("--unmodded") + 1] if "--unmodded" in rest else None
+        roles = [rest[rest.index("--only") + 1]] if "--only" in rest else ["host", *GUESTS[:guests]]
+        if not 1 <= guests <= len(GUESTS) or not set(roles) <= set(LABELS) or unmodded not in (None, *GUESTS):
             sys.exit(__doc__)
         TWINS.mkdir(parents=True, exist_ok=True)
         for role in roles:
-            twin(Path(argv[2]), Path(argv[3]), role, plugin, control)
+            twin(Path(argv[2]), Path(argv[3]), role, plugin, control, role == unmodded)
     else:
         sys.exit(__doc__)
 

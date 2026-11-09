@@ -42,6 +42,14 @@ public sealed class Plugin : BaseUnityPlugin
         runtime.hideFlags = HideFlags.HideAndDontSave;
         DontDestroyOnLoad(runtime);
 
+        if (DevHooks.ActsUnmodded)
+        {
+            // A Twin standing in for a player without the mod: its tools run, the mod does not.
+            DevHooks.Started(this, runtime);
+            Log.LogWarning("This copy stands in for an Unmodded Player: the mod is not patched and publishes nothing.");
+            return;
+        }
+
         // ADR 0003: two mods patching the same carry is a half-working mod too.
         if (Chainloader.PluginInfos.ContainsKey(CoopModGuid))
         {
