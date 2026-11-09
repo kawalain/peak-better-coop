@@ -16,7 +16,7 @@ named checks (with the setup they need); --keep leaves the Twins running
 afterwards. Exits 1 when a check failed.
 
 The Twins show the game in Korean, so the notices the checks read are the
-Korean ones in src/BetterCoop/Ui/Strings.cs.
+Korean ones in src/BetterCoop/Ui/Locale/strings.json.
 """
 
 import json
