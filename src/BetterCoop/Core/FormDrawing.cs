@@ -604,8 +604,8 @@ internal static partial class FormDrawing
     /// <summary>
     /// A Merit Badge as a round scout patch pencilled in a margin: a double
     /// ring with running stitches between, and a picture of what it is for:
-    /// a scout carrying a friend on their back, a scout asleep in a
-    /// nightcap, a life ring, or a heart.
+    /// a scout's rucksack, a scout asleep in a nightcap, a life ring, or
+    /// a heart.
     /// </summary>
     /// <param name="frame">Which of the doodle's hand-drawn frames: the lines wobble from one to the next.</param>
     public static string Badge(float width, float height, MeritBadgeKind kind, int frame = 0)
@@ -633,29 +633,34 @@ internal static partial class FormDrawing
         {
             case MeritBadgeKind.SteadyBack:
             {
-                // Seen from the side: a scout striding uphill, bent under a
-                // friend on their back whose arms hug the neck, the friend's
-                // knees held in the carrier's hands.
-                Pencil(svg, hand, Round(At(0.70f, 0.42f), s * 0.062f, s * 0.062f, 0.0, 2.04, 16), Lead, h);
-                Dot(At(0.73f, 0.41f), s * 0.011f);
-                Pencil(svg, hand, Round(At(0.72f, 0.445f), s * 0.018f, s * 0.012f, 0.0, 1.0, 4), Lead, h);
-                Pencil(svg, hand, Curve(At(0.65f, 0.47f), At(0.58f, 0.51f), At(0.49f, 0.60f)), Lead, h);
-                Pencil(svg, hand, [At(0.49f, 0.60f), At(0.58f, 0.68f), At(0.59f, 0.79f), At(0.64f, 0.79f)], Lead, h);
-                Pencil(svg, hand, [At(0.49f, 0.60f), At(0.45f, 0.70f), At(0.38f, 0.77f), At(0.41f, 0.79f)], Lead, h);
-                Pencil(svg, hand, [At(0.62f, 0.50f), At(0.55f, 0.59f), At(0.44f, 0.58f)], Lead, h);
+                // A scout's rucksack: a rounded pack with its top loop, a
+                // buckled flap, a front pocket with a heart sewn on, and the
+                // shoulder straps showing at its sides.
+                Pencil(svg, hand,
+                [
+                    At(0.37f, 0.42f), At(0.36f, 0.56f), At(0.36f, 0.68f), At(0.39f, 0.72f), At(0.61f, 0.72f), At(0.64f, 0.68f),
+                    At(0.64f, 0.56f), At(0.63f, 0.42f),
+                ], Lead, h);
+                Pencil(svg, hand, Curve(At(0.63f, 0.42f), At(0.50f, 0.25f), At(0.37f, 0.42f)), Lead, h);
+                Pencil(svg, hand, Curve(At(0.47f, 0.34f), At(0.50f, 0.255f), At(0.53f, 0.34f), 8), Lead, h);
+                Pencil(svg, hand, [At(0.375f, 0.43f), At(0.385f, 0.52f)], Lead, h);
+                Pencil(svg, hand, Curve(At(0.385f, 0.52f), At(0.50f, 0.56f), At(0.615f, 0.52f)), Lead, h);
+                Pencil(svg, hand, [At(0.615f, 0.52f), At(0.625f, 0.43f)], Lead, h);
+                foreach (float x in new[] { 0.45f, 0.55f })
+                {
+                    Pencil(svg, hand, [At(x - 0.012f, 0.36f), At(x - 0.012f, 0.585f), At(x + 0.012f, 0.585f), At(x + 0.012f, 0.36f)], Lead, h);
+                    Pencil(svg, hand, [At(x - 0.02f, 0.565f), At(x - 0.02f, 0.6f), At(x + 0.02f, 0.6f), At(x + 0.02f, 0.565f), At(x - 0.02f, 0.565f)], Lead, h);
+                    Dot(At(x, 0.5825f), s * 0.007f);
+                }
 
-                // The friend lying along the carrier's back, hugging the neck.
-                Pencil(svg, hand, Round(At(0.58f, 0.34f), s * 0.056f, s * 0.056f, 0.0, 2.04, 14), Lead, h);
-                Pencil(svg, hand, Round(At(0.605f, 0.33f), s * 0.012f, s * 0.008f, 1.0, 1.0, 4), Lead, h);
-                Pencil(svg, hand, Curve(At(0.54f, 0.385f), At(0.48f, 0.43f), At(0.42f, 0.51f)), Lead, h);
-                Pencil(svg, hand, Curve(At(0.55f, 0.40f), At(0.62f, 0.42f), At(0.66f, 0.48f)), Lead, h);
-                Pencil(svg, hand, [At(0.42f, 0.51f), At(0.44f, 0.58f), At(0.48f, 0.65f)], Lead, h);
-                Pencil(svg, hand, [At(0.42f, 0.51f), At(0.39f, 0.59f), At(0.42f, 0.66f)], Lead, h);
-
-                // The slope underfoot, and a drop of honest sweat.
-                Pencil(svg, hand, [At(0.27f, 0.83f), At(0.76f, 0.75f)], Lead, h);
-                Pencil(svg, hand, Curve(At(0.79f, 0.34f), At(0.77f, 0.39f), At(0.79f, 0.40f)), Lead, h);
-                Pencil(svg, hand, Curve(At(0.79f, 0.34f), At(0.81f, 0.39f), At(0.79f, 0.40f)), Lead, h);
+                Pencil(svg, hand, [At(0.41f, 0.61f), At(0.41f, 0.685f), At(0.59f, 0.685f), At(0.59f, 0.61f), At(0.41f, 0.61f)], Lead, h);
+                Pencil(svg, hand,
+                [
+                    At(0.50f, 0.675f), At(0.475f, 0.65f), At(0.472f, 0.635f), At(0.483f, 0.625f), At(0.50f, 0.635f),
+                    At(0.517f, 0.625f), At(0.528f, 0.635f), At(0.525f, 0.65f), At(0.50f, 0.675f),
+                ], Lead, h);
+                Pencil(svg, hand, Curve(At(0.365f, 0.45f), At(0.30f, 0.56f), At(0.36f, 0.67f)), Lead, h);
+                Pencil(svg, hand, Curve(At(0.635f, 0.45f), At(0.70f, 0.56f), At(0.64f, 0.67f)), Lead, h);
                 break;
             }
 
