@@ -28,6 +28,8 @@ internal sealed class RoomWrites : MonoBehaviourPunCallbacks
         RoomKeys.Handover,
         RoomKeys.Parted,
         RoomKeys.ShuffleClock,
+        RoomKeys.Record,
+        RoomKeys.Report,
     ];
 
     private static readonly RoomWard Ward = new();

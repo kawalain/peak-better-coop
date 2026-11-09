@@ -33,6 +33,12 @@ internal static class RoomKeys
     /// <summary>Room property: server time the Timed Shuffle interval counts from.</summary>
     public const string ShuffleClock = "BetterCoop.ShuffleClock";
 
+    /// <summary>Room property: the Carry Record of the current Run.</summary>
+    public const string Record = "BetterCoop.Record";
+
+    /// <summary>Room property: the Run Report of the last Run, kept until the next departs.</summary>
+    public const string Report = "BetterCoop.Report";
+
     /// <summary>Player property: the partner a player asks to swap places with, and when.</summary>
     public const string SwapRequest = "BetterCoop.SwapRequest";
 

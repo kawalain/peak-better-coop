@@ -15,7 +15,7 @@ public class PhotonWireTests
     [
         typeof(byte), typeof(bool), typeof(short), typeof(int), typeof(long),
         typeof(float), typeof(double), typeof(string),
-        typeof(byte[]), typeof(int[]), typeof(float[]),
+        typeof(byte[]), typeof(int[]), typeof(float[]), typeof(double[]), typeof(string[]),
     ];
 
     private static void AssertSendable(object payload)
@@ -72,4 +72,12 @@ public class PhotonWireTests
     [Fact]
     public void An_sbyte_would_be_caught() =>
         Assert.DoesNotContain(typeof(sbyte), Sendable.AsEnumerable());
+
+    [Fact]
+    public void A_Run_Report_is_sendable()
+    {
+        var record = new CarryRecord();
+        record.Count([new PairSample("a", "Alder", "b", "Birch", true, 3)], 1, 0, "SHORE");
+        AssertSendable(new RunReport(RunEnding.Summit, 600, record).Encode());
+    }
 }

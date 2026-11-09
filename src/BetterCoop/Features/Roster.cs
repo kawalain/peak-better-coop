@@ -165,6 +165,11 @@ internal sealed class RosterPage : PaperPage
             pairsHeading = heading;
         }
 
+        if (room.Formed)
+        {
+            RecordRows.Add(list, () => room.Record, room.Present);
+        }
+
         if (leads)
         {
             TroopLeaderRows.Add(list, room, DrawPlan, ShowPairs);
@@ -429,6 +434,47 @@ internal static class PlayerRows
     }
 }
 
+/// <summary>The Carry Record as a table, the most time carrying first, scouts who left greyed.</summary>
+internal static class RecordRows
+{
+    public static void Add(PaperList list, Func<CarryRecord?> record, Func<string, bool> present)
+    {
+        list.Header(() => Strings.MenuCarryRecord);
+        list.Note(() => Strings.AboutCarryRecord);
+        Table(list, record, present);
+    }
+
+    /// <summary>The record's table alone, for a page that heads it itself.</summary>
+    public static void Table(PaperList list, Func<CarryRecord?> record, Func<string, bool> present)
+    {
+        CarryRecord? ranked = null;
+        IReadOnlyList<TableEntry> entries = [];
+        list.Table(
+            () => [Strings.HeadScout, Strings.HeadCarried, Strings.HeadRidden, Strings.HeadClimbed],
+            () =>
+            {
+                // Ranked again only when the room shares a new record.
+                if (record() is not CarryRecord now)
+                {
+                    return [];
+                }
+
+                if (!ReferenceEquals(now, ranked))
+                {
+                    ranked = now;
+                    entries = now.Ranked()
+                        .Select(s => new TableEntry(
+                            [present(s.Id) ? s.Name : Strings.Left(s.Name), Strings.Duration(s.Carried), Strings.Duration(s.Ridden), Strings.Metres(s.Climbed)],
+                            faint: !present(s.Id)))
+                        .ToList();
+                }
+
+                return entries;
+            },
+            empty: () => Strings.CarryRecordEmpty);
+    }
+}
+
 /// <summary>The Troop Leader's orders for the Pairs on the Roster.</summary>
 internal static class TroopLeaderRows
 {
@@ -559,6 +605,12 @@ internal sealed class LiveRoom : ICoopRoom
     public IReadOnlyList<Pair> Plan => PairPlans.Read();
 
     public IReadOnlyList<Pair> LastRunPairs => PairPlans.LastRun();
+
+    public CarryRecord? Record => CarryRecords.Shared;
+
+    /// <summary>A player is known by user id, or by actor number when Photon gives none.</summary>
+    public bool Present(string id) =>
+        PhotonNetwork.InRoom && PhotonNetwork.PlayerList.Any(p => !p.IsInactive && (p.UserId == id || $"#{p.ActorNumber}" == id));
 
     public int Me => Character.localCharacter is Character local
         ? PairRoster.ActorOf(local)

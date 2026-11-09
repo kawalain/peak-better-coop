@@ -61,6 +61,9 @@ internal sealed class PaperList
 
     private const float RingStroke = 2.8f;
 
+    /// <summary>How wide a table's columns after the first are.</summary>
+    private const float TableColumnWidth = 170f;
+
     private readonly List<PaperRow> rows = new();
 
     private readonly List<Func<bool>> backs = new();
@@ -408,6 +411,121 @@ internal sealed class PaperList
         VectorView.Add(rect, drawing, Color.clear, boil: true);
     }
 
+    /// <summary>
+    /// A table ruled under its column heads, one line per entry, as many as
+    /// the entries are now: lines come and go as they change. The first
+    /// column takes the room the others leave; the others are printed to the
+    /// right. A faint entry is greyed, as for a scout who has left. With no
+    /// entries, the table says <paramref name="empty"/> instead.
+    /// </summary>
+    public void Table(Func<IReadOnlyList<string>> heads, Func<IReadOnlyList<TableEntry>> entries, Func<string>? empty = null, Func<bool>? visible = null)
+    {
+        int columns = heads().Count;
+        PaperRow row = NewRow("Table", 0f, visible);
+        row.Root.GetComponent<VerticalLayoutGroup>().spacing = 2f;
+        RectTransform headLine = Line(row.Root.transform);
+        var headTexts = new List<TMP_Text>();
+        for (int i = 0; i < columns; i++)
+        {
+            TMP_Text head = Cell(headLine, i, PaperText.Note);
+            head.fontStyle = FontStyles.Bold | FontStyles.SmallCaps;
+            head.characterSpacing = 2f;
+            head.color = Faded(PaperText.Blue, 0.85f);
+            headTexts.Add(head);
+        }
+
+        AddDrawing(row.Root.transform, "Rule", RuleHeight, size => PaperDrawing.DashedRule(size.x, size.y));
+        RectTransform body = NewRect("Body", row.Root.transform);
+        VerticalLayoutGroup stack = body.gameObject.AddComponent<VerticalLayoutGroup>();
+        stack.childControlWidth = stack.childControlHeight = true;
+        stack.childForceExpandWidth = true;
+        stack.childForceExpandHeight = false;
+        stack.spacing = 2f;
+        TMP_Text? none = null;
+        if (empty != null)
+        {
+            none = AddText(row.Root.transform, "Empty", PaperText.Note, TextAlignmentOptions.Left, flexible: true);
+            none.fontStyle = FontStyles.Italic;
+            none.color = Faded(PaperText.Ink, 0.75f);
+        }
+
+        var lines = new List<(GameObject Root, CanvasGroup Faint, TMP_Text[] Cells)>();
+        row.Refreshers.Add(() =>
+        {
+            IReadOnlyList<string> printed = heads();
+            for (int i = 0; i < columns; i++)
+            {
+                PaperText.Set(headTexts[i], i < printed.Count ? printed[i] : string.Empty);
+            }
+
+            IReadOnlyList<TableEntry> now = entries();
+            while (lines.Count < now.Count)
+            {
+                RectTransform line = Line(body);
+                line.gameObject.AddComponent<LayoutElement>().minHeight = 36f;
+                CanvasGroup faint = line.gameObject.AddComponent<CanvasGroup>();
+                var cells = new TMP_Text[columns];
+                for (int i = 0; i < columns; i++)
+                {
+                    cells[i] = Cell(line, i, PaperText.Value);
+                    cells[i].color = i == 0 ? PaperText.Ink : Pen;
+                }
+
+                lines.Add((line.gameObject, faint, cells));
+            }
+
+            for (int n = 0; n < lines.Count; n++)
+            {
+                bool shown = n < now.Count;
+                if (lines[n].Root.activeSelf != shown)
+                {
+                    lines[n].Root.SetActive(shown);
+                }
+
+                if (!shown)
+                {
+                    continue;
+                }
+
+                lines[n].Faint.alpha = now[n].Faint ? 0.45f : 1f;
+                for (int i = 0; i < columns; i++)
+                {
+                    PaperText.Set(lines[n].Cells[i], i < now[n].Cells.Count ? now[n].Cells[i] : string.Empty);
+                }
+            }
+
+            if (none != null)
+            {
+                bool nothing = now.Count == 0;
+                if (none.gameObject.activeSelf != nothing)
+                {
+                    none.gameObject.SetActive(nothing);
+                }
+
+                PaperText.Set(none, empty!());
+            }
+        });
+        Add(row);
+    }
+
+    /// <summary>A table's cell: the first takes the spare width, every other a set width printed to the right.</summary>
+    private TMP_Text Cell(RectTransform line, int column, float size)
+    {
+        if (column == 0)
+        {
+            TMP_Text first = AddText(line, "Cell", size, TextAlignmentOptions.BottomLeft, flexible: true);
+            first.overflowMode = TextOverflowModes.Ellipsis;
+            return first;
+        }
+
+        RectTransform rect = Fixed(line, "Cell", TableColumnWidth, 0f);
+        rect.GetComponent<LayoutElement>().minHeight = -1f;
+        rect.GetComponent<LayoutElement>().preferredHeight = -1f;
+        TMP_Text text = PaperText.Make(rect.gameObject, template, size, TextAlignmentOptions.BottomRight);
+        PaperText.Fit(text, size * 0.7f);
+        return text;
+    }
+
     /// <summary>A whole piece of form the caller lays out itself, such as a board of cards.</summary>
     public RectTransform Custom(string name, Action refresh, Func<Selectable?>? first = null, Func<bool>? visible = null)
     {
@@ -666,6 +784,20 @@ internal sealed class PaperList
         rows.Add(row);
         row.Refresh();
     }
+}
+
+/// <summary>One line of a table: its cells, and whether it shows greyed.</summary>
+internal sealed class TableEntry
+{
+    public TableEntry(IReadOnlyList<string> cells, bool faint = false)
+    {
+        Cells = cells;
+        Faint = faint;
+    }
+
+    public IReadOnlyList<string> Cells { get; }
+
+    public bool Faint { get; }
 }
 
 /// <summary>One entry of a paper form, and what keeps it up to date.</summary>

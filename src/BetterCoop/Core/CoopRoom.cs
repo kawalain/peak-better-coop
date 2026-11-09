@@ -44,6 +44,12 @@ internal interface ICoopRoom
     /// <summary>The Pairs the last Run ended with whose two members are both here now.</summary>
     IReadOnlyList<Pair> LastRunPairs { get; }
 
+    /// <summary>The Carry Record of the Run under way, or null before one is shared.</summary>
+    CarryRecord? Record { get; }
+
+    /// <summary>Whether the player of a user id in the Carry Record is in the room now.</summary>
+    bool Present(string id);
+
     /// <summary>The local player.</summary>
     int Me { get; }
 
@@ -122,6 +128,6 @@ internal static class CoopRooms
         string pairs = string.Join(",", room.Pairs.Select(p => $"{p.Carrier}>{p.Rider}"));
         string plan = string.Join(",", room.Plan.Select(p => $"{p.Carrier}>{p.Rider}"));
         string players = string.Join(",", room.Players);
-        return $"{room.IsTroopLeader}|{room.Formed}|{room.Planning}|{pairs}|{plan}|{players}";
+        return $"{room.IsTroopLeader}|{room.Formed}|{room.Planning}|{pairs}|{plan}|{players}|{room.Record != null}";
     }
 }

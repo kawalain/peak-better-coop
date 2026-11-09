@@ -25,7 +25,9 @@ and come back together.
   nothing is lost.
 - **Roster** in the ESC menu is a paper form: the Pairs as a yearbook page
   of the scouts' passport photos, the time to the next shuffle, and where you
-  swap places and set the role you would like.
+  swap places and set the role you would like. Its Carry Record tallies how
+  long each scout carried and rode this Run, and how high they climbed
+  carrying.
 - News comes in on paper from the left: a telegram, a scout's memo, a
   baggage tag for your things, or a red-stamped caution. When your own Pair
   or role is about to change, a little airmail letter pops out with your

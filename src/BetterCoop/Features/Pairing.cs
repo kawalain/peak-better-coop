@@ -297,6 +297,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
             Api.RaisePairsChanged();
             FormerPairs.Forget();
             KnownPlayers.Clear();
+            CarryRecords.OnLeftRoom();
         }
         catch (Exception exception)
         {
@@ -320,6 +321,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
     {
         try
         {
+            CarryRecords.OnRoomPropertiesChanged(changed);
             RoomPropertiesChanged(changed);
         }
         catch (Exception exception)
@@ -420,6 +422,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
     {
         try
         {
+            CarryRecords.Tick();
             Tick();
         }
         catch (Exception exception)
@@ -456,14 +459,16 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
                 || room.ContainsKey(RoomKeys.Parted))
             {
                 Plugin.Verbose("Back at the Airport; clearing Pairs.");
-                RoomWrites.Set(new PhotonHashtable
+                var cleared = new PhotonHashtable
                 {
                     [RoomKeys.Pairs] = null,
                     [RoomKeys.ShuffleClock] = null,
                     [RoomKeys.Handover] = null,
                     [RoomKeys.Parted] = null,
                     [RoomKeys.Plan] = null,
-                });
+                };
+                CarryRecords.EndIfUnreported(cleared);
+                RoomWrites.Set(cleared);
             }
 
             return;
@@ -471,6 +476,8 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
 
         if (PairRoster.Read() is PairingResult current)
         {
+            CarryRecords.Sample(current);
+
             // Also covers leaves this client missed as master, such as the old host's.
             DissolveAbsent(current);
             return;
@@ -515,12 +522,14 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
             $"Formed {result.Pairs.Count} Pairs: "
             + string.Join(", ", result.Pairs.Select(p => $"{p.Carrier}>{p.Rider}"))
             + $"; unpaired [{string.Join(", ", result.Unpaired)}].");
-        RoomWrites.Set(new PhotonHashtable
+        var properties = new PhotonHashtable
         {
             [RoomKeys.Pairs] = PairRoster.Encode(result),
             [RoomKeys.ShuffleClock] = PhotonNetwork.Time,
             [RoomKeys.Plan] = null,
-        });
+        };
+        CarryRecords.Begin(properties);
+        RoomWrites.Set(properties);
     }
 
     private static void Announce(PairingResult? previous, PairingResult? current)

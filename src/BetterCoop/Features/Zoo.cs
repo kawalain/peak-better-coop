@@ -40,6 +40,10 @@ internal sealed class ZooPage : PaperPage
 
     private int presses;
 
+    private static readonly int[] TableCounts = Enumerable.Range(0, 13).ToArray();
+
+    private int tableLines = 5;
+
     private int players = 8;
 
     private bool leader = true;
@@ -136,6 +140,21 @@ internal sealed class ZooPage : PaperPage
             () => T("재생", "Play"),
             () => HandIn(() => presses++),
             about: () => T("짝 명단을 통보할 때처럼 스카우트 지도자의 손이 종이를 가져갑니다.", "The Scoutmaster's hand takes the paper, as when the Pairs are announced."));
+        list.Choice(
+            () => T("표의 줄 수", "Table lines"),
+            () => tableLines,
+            count => tableLines = count,
+            () => TableCounts,
+            count => count.ToString(),
+            about: () => T("아래 표의 줄 수입니다. 줄은 바뀌는 대로 생기고 사라집니다.", "Lines in the table below; they come and go as the count changes."));
+        list.Table(
+            () => [T("대원", "Scout"), T("업은 시간", "Carried"), T("오른 높이", "Climbed")],
+            () => Enumerable.Range(1, tableLines)
+                .Select(i => new TableEntry(
+                    [i % 4 == 0 ? Strings.Left($"Scout {i}") : i == 1 ? "A scout with a very long name indeed, to see it cut" : $"Scout {i}", Strings.Duration(i * 437), Strings.Metres(i * 61.5)],
+                    faint: i % 4 == 0))
+                .ToList(),
+            empty: () => T("줄이 없으면 이렇게 안내합니다.", "With no lines, the table says so."));
         list.Signature(() => T("서명", "Signed"), () => "Alder");
         Makers.Add(list);
 

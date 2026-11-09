@@ -48,12 +48,23 @@ internal sealed class FakeRoom : ICoopRoom
 
     private int shuffleMinutes = 10;
 
+    /// <summary>The segments a made-up Run climbs, by the game's text keys for their names.</summary>
+    private static readonly string[] Titles = ["SHORE", "TROPICS", "ALPINE", "CALDERA", "THE KILN", "PEAK"];
+
+    /// <summary>A scout who climbed the first segment and left the room.</summary>
+    private const string Leaver = "zoo:left";
+
+    private readonly int seed;
+
+    private CarryRecord? record;
+
     /// <param name="count">Players in the room, the local player first.</param>
     /// <param name="troopLeader">Whether the local player leads.</param>
     /// <param name="formed">Whether the Run's Pair Formation has happened.</param>
     public FakeRoom(int count, bool troopLeader, bool formed, int seed = 1)
     {
         random = new Random(seed);
+        this.seed = seed;
         players = Enumerable.Range(1, Math.Max(1, count)).ToList();
         IsTroopLeader = troopLeader;
         var wishes = new[] { RolePreference.Random, RolePreference.Random, RolePreference.Carrier, RolePreference.Rider };
@@ -89,6 +100,15 @@ internal sealed class FakeRoom : ICoopRoom
     public IReadOnlyList<Pair> LastRunPairs => Formed
         ? []
         : Enumerable.Range(0, players.Count / 2).Select(i => new Pair(players[2 * i + 1], players[2 * i])).ToList();
+
+    /// <summary>On the island, a made-up record of the Run so far: two segments, Pairs drawn anew for each.</summary>
+    public CarryRecord? Record => Formed ? record ??= MakeRecord(2, pairs) : null;
+
+    public bool Present(string id) =>
+        id.StartsWith("zoo:", StringComparison.Ordinal) && int.TryParse(id.Substring(4), out int actor) && players.Contains(actor);
+
+    /// <summary>The user id a made-up scout has in a record.</summary>
+    public static string IdOf(int actor) => $"zoo:{actor}";
 
     public int Me => 1;
 
@@ -134,6 +154,7 @@ internal sealed class FakeRoom : ICoopRoom
         Apply(PairingRules.FormWithPlan(Candidates(), plan, random));
         plan = new List<Pair>();
         Formed = true;
+        record = null;
     }
 
     public bool SetPlan(IReadOnlyList<Pair> wanted)
@@ -248,6 +269,49 @@ internal sealed class FakeRoom : ICoopRoom
             Shuffle();
         }
     }
+
+    /// <summary>
+    /// A record of <paramref name="segments"/> segments climbed, the last by
+    /// <paramref name="last"/> and every other by Pairs drawn at random, the
+    /// same for the same seed. In the first, a scout since gone carried in
+    /// place of the first Pair's Carrier. Each Pair climbs a little most
+    /// samples, and now and then its Shared Body is dead for one.
+    /// </summary>
+    private CarryRecord MakeRecord(int segments, IReadOnlyList<Pair> last)
+    {
+        var made = new CarryRecord();
+        var draw = new Random((seed * 31) + segments);
+        for (int segment = 0; segment < segments; segment++)
+        {
+            List<(string Carrier, string Rider)> climbing =
+                (segment == segments - 1 && last.Count > 0 ? last : PairingRules.Form(Candidates(), draw).Pairs)
+                .Select(p => (IdOf(p.Carrier), IdOf(p.Rider)))
+                .ToList();
+            if (segment == 0 && climbing.Count > 0)
+            {
+                climbing[0] = (Leaver, climbing[0].Rider);
+            }
+
+            var heights = climbing.ToDictionary(p => p, _ => segment * 250.0);
+            int samples = 80 + draw.Next(160);
+            for (int i = 0; i < samples; i++)
+            {
+                var taken = new List<PairSample>();
+                foreach ((string carrier, string rider) in climbing)
+                {
+                    heights[(carrier, rider)] += draw.NextDouble() * 1.6;
+                    taken.Add(new PairSample(carrier, ScoutName(carrier), rider, ScoutName(rider), draw.Next(30) != 0, heights[(carrier, rider)]));
+                }
+
+                made.Count(taken, 2, segment, Titles[segment % Titles.Length]);
+            }
+        }
+
+        return made;
+    }
+
+    private string ScoutName(string id) =>
+        id == Leaver ? "Quill" : int.TryParse(id.Substring(4), out int actor) ? NameOf(actor) : id;
 
     private void Apply(PairingResult result)
     {

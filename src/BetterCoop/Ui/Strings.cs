@@ -87,6 +87,36 @@ internal static class Strings
         return $"{whole / 60}:{whole % 60:00}";
     }
 
+    /// <summary>A length of time as hours, minutes, and seconds, the hours left out while there are none.</summary>
+    public static string Duration(double seconds)
+    {
+        int whole = (int)System.Math.Floor(System.Math.Max(0, seconds));
+        return whole >= 3600
+            ? $"{whole / 3600}:{whole / 60 % 60:00}:{whole % 60:00}"
+            : $"{whole / 60}:{whole % 60:00}";
+    }
+
+    public static string Metres(double metres) => $"{System.Math.Floor(metres):0} m";
+
+    public static string MenuCarryRecord => Korean ? "업기 기록" : "Carry Record";
+
+    public static string AboutCarryRecord => Korean
+        ? "이번 원정에서 업고, 업히고, 업은 채 오른 만큼입니다. 짝이 없거나 쓰러져 있던 시간은 세지 않습니다."
+        : "How long each scout carried and rode this Run, and how high they climbed carrying. Time unpaired or down does not count.";
+
+    public static string CarryRecordEmpty => Korean ? "아직 적힌 기록이 없습니다." : "Nothing recorded yet.";
+
+    public static string HeadScout => Korean ? "대원" : "Scout";
+
+    public static string HeadCarried => Korean ? "업은 시간" : "Carried";
+
+    public static string HeadRidden => Korean ? "업힌 시간" : "Rode";
+
+    public static string HeadClimbed => Korean ? "오른 높이" : "Climbed";
+
+    /// <summary>A scout in a record who is no longer in the room.</summary>
+    public static string Left(string name) => Korean ? $"{name} (떠남)" : $"{name} (left)";
+
     public static string MenuPairsForm => Korean ? "짝은 섬에 도착하면 편성됩니다" : "Pairs form on the island";
 
     public static string MenuPairs => Korean ? "짝 명단" : "Pairs";
@@ -134,6 +164,10 @@ internal static class Strings
     public static string StampRestore => Korean ? "복구" : "Restore";
 
     public static string StampReally => Korean ? "정말로?" : "Really?";
+
+    public static string ReportArrived => Korean
+        ? "코옵: 원정 보고서가 도착했습니다. ESC → 편성표에서 볼 수 있습니다."
+        : "Coop: the Run Report is in. See ESC → Roster.";
 
     public static string StampCallOff => Korean ? "취소" : "Call off";
 

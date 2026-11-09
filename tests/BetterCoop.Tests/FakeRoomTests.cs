@@ -163,4 +163,26 @@ public class FakeRoomTests
 
         Assert.NotEqual(before, room.Shape());
     }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(5)]
+    [InlineData(12)]
+    public void A_formed_room_of_any_size_keeps_a_record_with_one_scout_since_gone(int count)
+    {
+        var room = new FakeRoom(count, troopLeader: true, formed: true);
+
+        CarryRecord record = Assert.IsType<CarryRecord>(room.Record);
+        Assert.All(room.Pairs.SelectMany(p => new[] { p.Carrier, p.Rider }), actor => Assert.NotNull(record.Find(FakeRoom.IdOf(actor))));
+        Assert.Single(record.Scouts, s => !room.Present(s.Id));
+        Assert.All(room.Players, actor => Assert.True(room.Present(FakeRoom.IdOf(actor))));
+        Assert.Equal([0, 1], record.Stretches.Select(s => s.Segment).Distinct().OrderBy(s => s));
+    }
+
+    [Fact]
+    public void A_room_at_the_Airport_or_alone_records_nothing()
+    {
+        Assert.Null(new FakeRoom(4, troopLeader: true, formed: false).Record);
+        Assert.True(new FakeRoom(1, troopLeader: true, formed: true).Record!.IsEmpty);
+    }
 }
