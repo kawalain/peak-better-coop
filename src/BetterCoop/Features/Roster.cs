@@ -299,8 +299,7 @@ internal static class PlayerRows
     public static void Sign(PaperList list, ICoopRoom room) =>
         list.Signature(
             () => Strings.MenuTroopLeaderSign,
-            () => room.TroopLeader >= 0 ? room.NameOf(room.TroopLeader) : string.Empty,
-            motto: () => Strings.Motto);
+            () => room.TroopLeader >= 0 ? room.NameOf(room.TroopLeader) : string.Empty);
 
     private static string PartnerName(ICoopRoom room) =>
         room.PairOf(room.Me) is Pair pair ? room.NameOf(pair.PartnerOf(room.Me)) : string.Empty;

@@ -103,9 +103,6 @@ internal static class Strings
 
     public static string StampRestore => Korean ? "복구" : "Restore";
 
-    /// <summary>The scouting motto, printed at the foot of the Roster.</summary>
-    public static string Motto => Korean ? "“준비”" : "“Be Prepared”";
-
     public static string Serial(int number) => $"No. {number:D7}";
 
     /// <summary>A notice's words without the "Coop:" the game's log needs to tell them from its own.</summary>

@@ -215,25 +215,13 @@ internal sealed class PaperList
     /// with the signer's name written on it in pen, and a crayon doodle
     /// someone left over it.
     /// </summary>
-    public void Signature(Func<string> label, Func<string> signer, Func<string>? motto = null, Func<bool>? visible = null)
+    public void Signature(Func<string> label, Func<string> signer, Func<bool>? visible = null)
     {
         PaperRow row = NewRow("Signature", 0f, visible);
         row.Root.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(12, 12, 96, 10);
         RectTransform line = Line(row.Root.transform);
         RectTransform spare = NewRect("Spare", line);
         spare.gameObject.AddComponent<LayoutElement>().flexibleWidth = 1f;
-        TMP_Text? saying = null;
-        if (motto != null)
-        {
-            RectTransform words = NewRect("Motto", spare);
-            words.anchorMin = Vector2.zero;
-            words.anchorMax = Vector2.one;
-            words.offsetMin = words.offsetMax = Vector2.zero;
-            saying = PaperText.Make(words.gameObject, template, PaperText.Value, TextAlignmentOptions.BottomLeft);
-            saying.fontStyle = FontStyles.Bold | FontStyles.Italic | FontStyles.SmallCaps;
-            saying.characterSpacing = 3f;
-            saying.color = Faded(PaperText.Blue, 0.75f);
-        }
         TMP_Text printed = AddText(line, "Label", PaperText.Label, TextAlignmentOptions.BottomRight, flexible: false);
         RectTransform blank = Fixed(line, "Blank", SignatureWidth, 48f);
         RectTransform rule = NewRect("Line", blank);
@@ -265,11 +253,6 @@ internal sealed class PaperList
         row.Refreshers.Add(() =>
         {
             PaperText.Set(printed, label());
-            if (saying != null)
-            {
-                PaperText.Set(saying, motto!());
-            }
-
             string who = signer();
             PaperText.Set(name, who);
             if (who != drawn)
