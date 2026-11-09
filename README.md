@@ -1,9 +1,8 @@
 # BetterCoop
 
-Climb PEAK in Pairs. One player carries the other for the whole Run, and the
-two steer that one body together: the **Carrier** on the keyboard, the
-**Rider** on the mouse. They share stamina and statuses, and they live, die,
-and come back together.
+Two scouts, one body: the **Carrier** has the keyboard, the **Rider** has the
+mouse, and they live and die together. Pray for a partner who knows the way,
+and not one who eats every mushroom.
 
 [한국어](https://github.com/kawalain/peak-better-coop/blob/main/README.ko.md)
 
@@ -17,12 +16,12 @@ and come back together.
 | Interact, pick up, drop, throw | Use the held item |
 | Hotbar, emotes, open the backpack wheel | Scroll, ping, pick from the backpack wheel |
 
-- The **Roster** in the ESC menu shows the Pairs, your role, and the Run
-  Report with its Merit Badges.
-- Only the Troop Leader (host) needs the mod; players without it climb along
-  without a Pair.
-- BetterCoop works beside other mods, and while you are in a Pair its rules
-  win. It turns itself off beside Co-op Mod, or after a game update it does
+- The **Roster** in the ESC menu shows who carries whom, and the Run Report
+  hands out Merit Badges to the steadiest back and the comfiest passenger.
+- Only the Troop Leader (host) needs the mod. Anyone without it climbs on
+  their own two feet.
+- BetterCoop gets along with other mods, though its rules win while you are
+  in a Pair. It steps aside for Co-op Mod, and sits out game updates it does
   not fit yet.
 
 | Roster at the Airport | Roster during a Run | Run Report |
@@ -35,8 +34,9 @@ The Troop Leader sets the Run Rules on the Roster, where each one is
 explained: Honour Role Preferences, Allow Role Swaps, Late Pairing, Allow Odd
 Player Count, Campfire Shuffle, Timed Shuffle, Hand Over Place and Items,
 Rescue Carry, Carry Weight, and Rider Picks From Backpack. Each player sets
-their own Role Preference there. When reporting a bug, turn on **Verbose Log**
-in your mod manager's config and send `BepInEx/LogOutput.log`.
+their own Role Preference there. If your Pair falls apart for reasons other
+than your partner, turn on **Verbose Log** in your mod manager's config and
+send `BepInEx/LogOutput.log` with your bug report.
 
 ![The Run Rules on the Roster, each with what it does](https://raw.githubusercontent.com/kawalain/peak-better-coop/main/docs/images/en-rules.webp)
 
