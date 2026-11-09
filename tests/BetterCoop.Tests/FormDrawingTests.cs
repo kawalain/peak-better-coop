@@ -60,6 +60,9 @@ public class FormDrawingTests
         Assert.Equal(FormDrawing.Doodle(132f, 112f, "Alder"), FormDrawing.Doodle(132f, 112f, "Alder"));
         Assert.Equal(FormDrawing.Anemone(64f, 56f), FormDrawing.Anemone(64f, 56f));
         Assert.Equal(FormDrawing.Pony(80f, 62f), FormDrawing.Pony(80f, 62f));
+        Assert.Equal(FormDrawing.Pony(80f, 62f, frame: 2), FormDrawing.Pony(80f, 62f, frame: 2));
+        Assert.NotEqual(FormDrawing.Pony(80f, 62f, frame: 0), FormDrawing.Pony(80f, 62f, frame: 1));
+        Assert.NotEqual(FormDrawing.Doodle(132f, 112f, "Alder", frame: 0), FormDrawing.Doodle(132f, 112f, "Alder", frame: 1));
         Assert.Equal(FormDrawing.DoodleFor("Alder"), FormDrawing.DoodleFor("Alder"));
         Assert.Equal(3, new[] { "Alder", "Birch", "Cedar", "Dahlia", "Elm", "Fern", "Gorse" }.Select(FormDrawing.DoodleFor).Distinct().Count());
     }
