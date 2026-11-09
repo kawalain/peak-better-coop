@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using ExitGames.Client.Photon;
 using HarmonyLib;
 using BetterCoop.Core;
@@ -22,6 +23,13 @@ internal static class SharedLife
     private static float riderRevivedAt = float.NegativeInfinity;
 
     private static float nextAttempt;
+
+    /// <summary>
+    /// The scouts whose leave to be eaten this client has not been told: a
+    /// join sync sent while the scout was a skeleton says no whatever their
+    /// setting, and only their own consent says it again.
+    /// </summary>
+    private static readonly HashSet<int> consentUnknown = new();
 
     /// <summary>Called every frame; acts only for a local Rider.</summary>
     internal static void Keep()
@@ -104,6 +112,26 @@ internal static class SharedLife
     private static bool CarrierSyncsOnlyFromRightfulSender(CharacterData __instance) =>
         !IsForgedForRider(__instance.character, RpcSender.Current, "join sync", canEat: false);
 
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(CharacterData), nameof(CharacterData.RPC_SyncOnJoin))]
+    private static void NoteConsentFromSync(CharacterData __instance, bool cannibalismPermitted, bool isSkeleton, bool __runOriginal)
+    {
+        if (!__runOriginal)
+        {
+            return;
+        }
+
+        int view = __instance.photonView.ViewID;
+        if (isSkeleton && !cannibalismPermitted)
+        {
+            consentUnknown.Add(view);
+        }
+        else
+        {
+            consentUnknown.Remove(view);
+        }
+    }
+
     /// <summary>
     /// The Carrier's leave to be eaten counts only from the Carrier or the
     /// Troop Leader; another client's could open the cannibal's way above.
@@ -112,6 +140,16 @@ internal static class SharedLife
     [HarmonyPatch(typeof(CharacterData), nameof(CharacterData.RPCA_SyncCanBeCannibalized))]
     private static bool CarrierConsentsOnlyForThemselves(CharacterData __instance) =>
         !IsForgedForRider(__instance.character, RpcSender.Current, "cannibalism consent", canEat: false);
+
+    [HarmonyPostfix]
+    [HarmonyPatch(typeof(CharacterData), nameof(CharacterData.RPCA_SyncCanBeCannibalized))]
+    private static void NoteConsent(CharacterData __instance, bool __runOriginal)
+    {
+        if (__runOriginal)
+        {
+            consentUnknown.Remove(__instance.photonView.ViewID);
+        }
+    }
 
     private static bool IsForgedForRider(Character target, Photon.Realtime.Player? sender, string what, bool canEat)
     {
@@ -140,10 +178,12 @@ internal static class SharedLife
     /// answers it: the Carrier's setting allows being eaten (shared as their
     /// raw consent) and the eater allows cannibalism. The Rider's own setting
     /// has no say, or a Carrier eaten rightfully would leave the Rider alive.
-    /// A skeleton shares no consent, so its setting is taken to allow it.
+    /// A skeleton shares no consent, so while it is one, or until it says
+    /// again after a join sync sent while it was one, its setting is taken to
+    /// allow it.
     /// </summary>
     private static bool CouldEat(Photon.Realtime.Player sender, Character carrier) =>
-        (carrier.data._cannibalismPermitted || carrier.data.isSkeleton)
+        (carrier.data._cannibalismPermitted || carrier.data.isSkeleton || consentUnknown.Contains(carrier.photonView.ViewID))
         && PlayerHandler.TryGetCharacter(sender.ActorNumber, out Character eater)
         && eater.data.cannibalismPermitted;
 
