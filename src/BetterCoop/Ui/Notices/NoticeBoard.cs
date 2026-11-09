@@ -180,10 +180,14 @@ internal sealed class NoticeBoard : MonoBehaviour
     {
         slips.RemoveAll(slip => slip == null);
         float y = Top;
-        foreach (NoticeSlip slip in slips.Where(s => !s.Leaving))
+        for (int i = 0; i < slips.Count; i++)
         {
-            slip.Target = y;
-            y += slip.Height + Gap;
+            NoticeSlip slip = slips[i];
+            if (!slip.Leaving)
+            {
+                slip.Target = y;
+                y += slip.Height + Gap;
+            }
         }
     }
 }

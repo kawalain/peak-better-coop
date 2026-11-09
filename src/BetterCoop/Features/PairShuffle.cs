@@ -70,10 +70,22 @@ internal static class PairShuffle
         }
     }
 
-    private static Operation? RoomOperation() =>
-        PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Operation, out object value)
-            ? Operation.Decode(value)
-            : null;
+    /// <summary>The room's operation, decoded once for each value the room holds: it is read several times a frame.</summary>
+    private static Operation? RoomOperation()
+    {
+        object? value = PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Operation, out object found) ? found : null;
+        if (!ReferenceEquals(value, decodedOperationFrom))
+        {
+            decodedOperationFrom = value;
+            decodedOperation = value == null ? null : Operation.Decode(value);
+        }
+
+        return decodedOperation;
+    }
+
+    private static object? decodedOperationFrom;
+
+    private static Operation? decodedOperation;
 
     /// <summary>
     /// Whether the room shows the operation this host last wrote, and with it
@@ -701,10 +713,22 @@ internal static class PairShuffle
             && slot.data.guid == held.data.guid;
     }
 
-    private static HandoverPlan? ReadHandover() =>
-        PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Handover, out object value)
-            ? HandoverPlan.Decode(value)
-            : null;
+    /// <summary>The room's latest handover, decoded once for each value the room holds: it is looked at every frame.</summary>
+    private static HandoverPlan? ReadHandover()
+    {
+        object? value = PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Handover, out object found) ? found : null;
+        if (!ReferenceEquals(value, decodedHandoverFrom))
+        {
+            decodedHandoverFrom = value;
+            decodedHandover = value == null ? null : HandoverPlan.Decode(value);
+        }
+
+        return decodedHandover;
+    }
+
+    private static object? decodedHandoverFrom;
+
+    private static HandoverPlan? decodedHandover;
 
     /// <summary>
     /// When the Timed Shuffle interval started: the room's clock, or the
