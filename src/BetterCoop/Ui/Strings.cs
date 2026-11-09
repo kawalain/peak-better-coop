@@ -89,6 +89,24 @@ internal static class Strings
 
     public static string MenuPairs => Korean ? "짝 명단" : "Pairs";
 
+    public static string MenuPairPlan => Korean ? "짝 계획 (출발 후)" : "Pair Plan (after departure)";
+
+    public static string MenuPlanHelp => Korean
+        ? "출발 전에 짝을 미리 정해 둘 수 있습니다. 섬에 도착하면 이 계획대로 짝을 편성하고, 계획에 없는 대원은 제비뽑기로 짝을 짓습니다."
+        : "Set the Pairs before departure. On arrival the Pairs form as planned; anyone left out is paired by lot.";
+
+    public static string MenuPlanNone => Korean
+        ? "분대장이 아직 짝 계획을 세우지 않았습니다. 섬에 도착하면 제비뽑기로 짝을 짓습니다."
+        : "The Troop Leader has not planned the Pairs yet; on arrival they are drawn by lot.";
+
+    public static string AboutPlan => Korean
+        ? "통보하면 모두에게 알리고, 섬에 도착할 때 이대로 짝을 편성합니다."
+        : "Announced, everyone is told, and the Pairs form this way on arrival.";
+
+    public static string PlanAnnounced => Korean
+        ? "코옵: 분대장이 짝 계획을 통보했습니다. ESC → 편성표에서 확인할 수 있습니다."
+        : "Coop: the Troop Leader has planned the Pairs. See ESC → Roster.";
+
     public static string MenuPairNumber(int number) => Korean ? $"{number}조" : $"Pair {number}";
 
     public static string MenuTroopLeader => Korean ? "분대장 지시" : "Troop Leader's orders";
@@ -96,6 +114,12 @@ internal static class Strings
     public static string MenuTroopLeaderSign => Korean ? "분대장 확인" : "Troop Leader";
 
     public static string MenuShuffleNowLabel => Korean ? "지금 짝 섞기" : "Shuffle Pairs now";
+
+    public static string MenuShufflePlanLabel => Korean ? "제비뽑기로 짝 계획" : "Draw a plan by lot";
+
+    public static string AboutShufflePlan => Korean
+        ? "짝 계획 초안을 제비뽑기로 채웁니다. 통보해야 계획이 됩니다."
+        : "Fills the draft with Pairs drawn by lot; announce it to make it the plan.";
 
     public static string MenuRecover => Korean ? "모든 짝 다시 업히기" : "Re-carry every Pair";
 

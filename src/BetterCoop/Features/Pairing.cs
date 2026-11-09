@@ -135,6 +135,56 @@ internal static class PairRoster
 }
 
 /// <summary>
+/// The Pair Plan as every client sees it: the room property the Troop Leader
+/// writes at the Airport, used and cleared by the Pair Formation.
+/// </summary>
+internal static class PairPlans
+{
+    public static IReadOnlyList<Pair> Read()
+    {
+        if (!PhotonNetwork.InRoom
+            || !PhotonNetwork.CurrentRoom.CustomProperties.TryGetValue(RoomKeys.Plan, out object value)
+            || value is not int[] flat)
+        {
+            return [];
+        }
+
+        var plan = new List<Pair>();
+        for (int i = 0; i + 1 < flat.Length; i += 2)
+        {
+            plan.Add(new Pair(flat[i], flat[i + 1]));
+        }
+
+        return plan;
+    }
+
+    /// <summary>As the Troop Leader at the Airport, announces the plan to the room; false when it cannot be set now.</summary>
+    public static bool Announce(IReadOnlyList<Pair> plan)
+    {
+        if (!PhotonNetwork.InRoom
+            || !PhotonNetwork.IsMasterClient
+            || GameHandler.IsOnIsland
+            || !PairingRules.IsPlan(plan, PhotonNetwork.PlayerList.Select(p => p.ActorNumber)))
+        {
+            return false;
+        }
+
+        object? flat = plan.Count == 0 ? null : plan.SelectMany(p => new[] { p.Carrier, p.Rider }).ToArray();
+        PhotonNetwork.CurrentRoom.SetCustomProperties(new PhotonHashtable { [RoomKeys.Plan] = flat });
+        Plugin.Verbose($"Announced a Pair Plan: {string.Join(", ", plan.Select(p => $"{p.Carrier}>{p.Rider}"))}.");
+        return true;
+    }
+
+    /// <summary>A plan drawn at random from the players who run this version, as the Pair Formation would form them.</summary>
+    public static IReadOnlyList<Pair> Draw() => PairingRules.Form(
+        PhotonNetwork.PlayerList
+            .Where(p => !p.IsInactive && ModPresence.VersionOf(p) == MyPluginInfo.PLUGIN_VERSION)
+            .Select(p => new PairCandidate(p.ActorNumber, ModPresence.PairingRoleOf(p)))
+            .ToList(),
+        new System.Random()).Pairs;
+}
+
+/// <summary>
 /// Pairs that ended because a member left (<see cref="PartedPairs"/>), as
 /// the Troop Leader keeps them: its own copy is ahead of the room's echo,
 /// so two Pairs parting in quick succession are both kept.
@@ -235,6 +285,11 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
 
     private static void RoomPropertiesChanged(PhotonHashtable changed)
     {
+        if (changed.ContainsKey(RoomKeys.Plan) && changed[RoomKeys.Plan] != null && !GameHandler.IsOnIsland && !PhotonNetwork.IsMasterClient)
+        {
+            CoopNotice.Show(NoticeKind.Telegram, Strings.PlanAnnounced);
+        }
+
         if (!changed.ContainsKey(RoomKeys.Pairs))
         {
             return;
@@ -346,6 +401,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
                     [RoomKeys.ShuffleClock] = null,
                     [RoomKeys.Handover] = null,
                     [RoomKeys.Parted] = null,
+                    [RoomKeys.Plan] = null,
                 });
             }
 
@@ -383,7 +439,8 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
             .Where(p => ModPresence.VersionOf(p) == MyPluginInfo.PLUGIN_VERSION)
             .Select(p => new PairCandidate(p.ActorNumber, ModPresence.PairingRoleOf(p)))
             .ToList();
-        PairingResult formed = PairingRules.Form(candidates, new System.Random());
+        // The Troop Leader's Pair Plan, set at the Airport, comes first.
+        PairingResult formed = PairingRules.FormWithPlan(candidates, PairPlans.Read(), new System.Random());
 
         var lateOrUnmodded = players
             .Select(p => p.ActorNumber)
@@ -401,6 +458,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
         {
             [RoomKeys.Pairs] = PairRoster.Encode(result),
             [RoomKeys.ShuffleClock] = PhotonNetwork.Time,
+            [RoomKeys.Plan] = null,
         });
     }
 

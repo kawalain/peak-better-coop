@@ -103,7 +103,7 @@ internal sealed class RosterPage : PaperPage
 
     private IPortraits portraits = new LivePortraits();
 
-    /// <summary>The Troop Leader's draft of a Pair Assignment, kept while the room's Pairs hold.</summary>
+    /// <summary>The Troop Leader's draft of a Pair Assignment or a Pair Plan, kept while what it started from holds.</summary>
     private PairDraft? draft;
 
     private PairBoard? board;
@@ -139,18 +139,18 @@ internal sealed class RosterPage : PaperPage
         bool leads = room.InRoom && room.IsTroopLeader;
         PlayerRows.Add(list, room);
         board = null;
-        if (room.Formed)
+        if (room.Formed || room.Planning)
         {
             PairDraft shown;
             if (leads)
             {
-                draft ??= new PairDraft(room.Pairs, room.Players);
-                draft.Follow(room.Pairs, room.Players);
+                draft ??= new PairDraft(Basis(), room.Players);
+                draft.Follow(Basis(), room.Players);
                 shown = draft;
             }
             else
             {
-                shown = new PairDraft(room.Pairs, room.Players);
+                shown = new PairDraft(Basis(), room.Players);
             }
 
             board = PairRows.Add(list, room, shown, portraits, leads, Moved, StartOver, HandIn);
@@ -158,7 +158,7 @@ internal sealed class RosterPage : PaperPage
 
         if (leads)
         {
-            TroopLeaderRows.Add(list, room);
+            TroopLeaderRows.Add(list, room, DrawPlan);
         }
 
         PlayerRows.Sign(list, room);
@@ -176,7 +176,22 @@ internal sealed class RosterPage : PaperPage
         }
     }
 
-    protected override void DropDraft() => draft?.Reset(room.Pairs, room.Players);
+    protected override void DropDraft() => draft?.Reset(Basis(), room.Players);
+
+    /// <summary>What the draft starts from: the Pairs on the island, the Pair Plan at the Airport.</summary>
+    private IReadOnlyList<Pair> Basis() => room.Formed ? room.Pairs : room.Plan;
+
+    /// <summary>Draws a plan at random into the draft, to be announced or changed further.</summary>
+    private void DrawPlan()
+    {
+        if (draft == null)
+        {
+            return;
+        }
+
+        draft.Lay(room.DrawPlan(), room.Players);
+        board?.Redraw();
+    }
 
     protected override void BeforeRefill() => places = board != null ? board.Places() : null;
 
@@ -192,7 +207,7 @@ internal sealed class RosterPage : PaperPage
 
     private void StartOver()
     {
-        draft?.Reset(room.Pairs, room.Players);
+        draft?.Reset(Basis(), room.Players);
         board?.Redraw();
     }
 }
@@ -210,7 +225,13 @@ internal static class PairRows
         Action startOver,
         Action<Action> handIn)
     {
-        list.Header(() => Strings.MenuPairs);
+        bool planning = !room.Formed;
+        list.Header(() => planning ? Strings.MenuPairPlan : Strings.MenuPairs);
+        if (planning)
+        {
+            list.Note(() => leads ? Strings.MenuPlanHelp : Strings.MenuPlanNone, visible: () => leads || room.Plan.Count == 0);
+        }
+
         if (leads)
         {
             list.Note(() => Strings.MenuBoardHelp);
@@ -226,9 +247,19 @@ internal static class PairRows
             list.Stamp(
                 () => Strings.MenuAssign,
                 () => Strings.StampNotify,
-                () => Approve(room, draft, handIn),
-                available: () => draft.Changed && !room.Busy && room.CanArrange(draft.Pairs),
-                about: () => Strings.AboutAssign,
+                () =>
+                {
+                    if (planning)
+                    {
+                        Plan(room, draft, handIn);
+                    }
+                    else
+                    {
+                        Approve(room, draft, handIn);
+                    }
+                },
+                available: () => draft.Changed && (planning ? PairingRules.IsPlan(draft.Pairs, room.Players) : !room.Busy && room.CanArrange(draft.Pairs)),
+                about: () => planning ? Strings.AboutPlan : Strings.AboutAssign,
                 face: new PostmarkFace(() => Strings.PostmarkOffice, () => Strings.PostmarkDate(System.DateTime.Now)));
             list.Stamp(
                 () => Strings.MenuAssignReset,
@@ -238,6 +269,23 @@ internal static class PairRows
         }
 
         return board;
+    }
+
+    /// <summary>Announces the draft as the Troop Leader's Pair Plan, the paper handed in as it goes.</summary>
+    private static void Plan(ICoopRoom room, PairDraft draft, Action<Action> handIn)
+    {
+        if (!draft.Changed)
+        {
+            return;
+        }
+
+        if (!PairingRules.IsPlan(draft.Pairs, room.Players))
+        {
+            CoopNotice.Info(Strings.MenuAssignUnavailable);
+            return;
+        }
+
+        handIn(() => TroopLeaderRows.Order(room.SetPlan(draft.Pairs)));
     }
 
     /// <summary>Sends the draft as the Troop Leader's Pair Assignment, the paper handed in as it goes.</summary>
@@ -326,16 +374,27 @@ internal static class TroopLeaderRows
     /// <summary>Timed Shuffle intervals the form steps through, in minutes.</summary>
     private static readonly int[] Intervals = [1, 2, 3, 5, 10, 15, 20, 30, 45, 60];
 
-    public static void Add(PaperList list, ICoopRoom room)
+    /// <param name="drawPlan">At the Airport, draws a plan at random into the Troop Leader's draft.</param>
+    public static void Add(PaperList list, ICoopRoom room, Action drawPlan)
     {
         list.Header(() => Strings.MenuTroopLeader);
         list.Stamp(
-            () => Strings.MenuShuffleNowLabel,
+            () => room.Formed ? Strings.MenuShuffleNowLabel : Strings.MenuShufflePlanLabel,
             () => Strings.StampShuffle,
-            () => Order(room.Shuffle()),
+            () =>
+            {
+                if (room.Formed)
+                {
+                    Order(room.Shuffle());
+                }
+                else
+                {
+                    drawPlan();
+                }
+            },
             available: () => !room.Busy,
-            about: () => Strings.AboutShuffleNow,
-            visible: () => room.Formed);
+            about: () => room.Formed ? Strings.AboutShuffleNow : Strings.AboutShufflePlan,
+            visible: () => room.Formed || room.Planning);
         list.Stamp(
             () => Strings.MenuRecover,
             () => Strings.StampRestore,
@@ -396,6 +455,10 @@ internal sealed class LiveRoom : ICoopRoom
 
     public bool Formed => PairRoster.Formed;
 
+    public bool Planning => PhotonNetwork.InRoom && !GameHandler.IsOnIsland;
+
+    public IReadOnlyList<Pair> Plan => PairPlans.Read();
+
     public int Me => Character.localCharacter is Character local
         ? PairRoster.ActorOf(local)
         : PhotonNetwork.LocalPlayer?.ActorNumber ?? -1;
@@ -436,6 +499,10 @@ internal sealed class LiveRoom : ICoopRoom
     public bool CanArrange(IReadOnlyList<Pair> pairs) => PairShuffle.CanArrange(pairs);
 
     public bool Arrange(IReadOnlyList<Pair> pairs) => PairShuffle.RequestAssignment(pairs);
+
+    public bool SetPlan(IReadOnlyList<Pair> plan) => PairPlans.Announce(plan);
+
+    public IReadOnlyList<Pair> DrawPlan() => PairPlans.Draw();
 
     public bool Rule(RunRule rule) => IsTroopLeader ? RunRules.Entry(rule).Value : RunRules.Is(rule);
 

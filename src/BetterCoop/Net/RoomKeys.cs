@@ -15,6 +15,9 @@ internal static class RoomKeys
     /// <summary>Room property: the Pairs of the current Run.</summary>
     public const string Pairs = "BetterCoop.Pairs";
 
+    /// <summary>Room property: the Pair Plan the Troop Leader set at the Airport, Carrier and Rider in turn.</summary>
+    public const string Plan = "BetterCoop.Plan";
+
     /// <summary>Room property: the latest Pair Shuffle or Role Swap the host announced.</summary>
     public const string Operation = "BetterCoop.Operation";
 

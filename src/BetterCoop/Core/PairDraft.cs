@@ -74,6 +74,12 @@ internal sealed class PairDraft
     public void Reset(IReadOnlyList<Pair> pairs, IReadOnlyList<int> players)
     {
         basis = pairs.ToList();
+        Lay(pairs, players);
+    }
+
+    /// <summary>Lays <paramref name="pairs"/> out on the board as an unsent change, as a shuffle drawn into the draft.</summary>
+    public void Lay(IReadOnlyList<Pair> pairs, IReadOnlyList<int> players)
+    {
         rows.Clear();
         rows.AddRange(pairs.Select(p => ((int?)p.Carrier, (int?)p.Rider)));
         unpaired.Clear();

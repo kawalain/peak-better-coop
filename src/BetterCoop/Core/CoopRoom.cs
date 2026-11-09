@@ -35,6 +35,12 @@ internal interface ICoopRoom
     /// <summary>Whether the Run's Pair Formation has happened.</summary>
     bool Formed { get; }
 
+    /// <summary>Whether the party is at the Airport, where the Troop Leader sets the Pair Plan.</summary>
+    bool Planning { get; }
+
+    /// <summary>The Pair Plan the Troop Leader announced; empty when there is none.</summary>
+    IReadOnlyList<Pair> Plan { get; }
+
     /// <summary>The local player.</summary>
     int Me { get; }
 
@@ -74,6 +80,12 @@ internal interface ICoopRoom
     /// <summary>Orders a Pair Assignment setting these Pairs; false when it cannot start now.</summary>
     bool Arrange(IReadOnlyList<Pair> pairs);
 
+    /// <summary>Announces a Pair Plan; false when it cannot be set now.</summary>
+    bool SetPlan(IReadOnlyList<Pair> plan);
+
+    /// <summary>A plan drawn at random, as the Pair Formation would form the Pairs now.</summary>
+    IReadOnlyList<Pair> DrawPlan();
+
     bool Rule(RunRule rule);
 
     void SetRule(RunRule rule, bool on);
@@ -99,7 +111,8 @@ internal static class CoopRooms
         }
 
         string pairs = string.Join(",", room.Pairs.Select(p => $"{p.Carrier}>{p.Rider}"));
+        string plan = string.Join(",", room.Plan.Select(p => $"{p.Carrier}>{p.Rider}"));
         string players = string.Join(",", room.Players);
-        return $"{room.IsTroopLeader}|{room.Formed}|{pairs}|{players}";
+        return $"{room.IsTroopLeader}|{room.Formed}|{room.Planning}|{pairs}|{plan}|{players}";
     }
 }

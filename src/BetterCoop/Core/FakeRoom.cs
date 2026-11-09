@@ -42,6 +42,8 @@ internal sealed class FakeRoom : ICoopRoom
 
     private List<int> unpaired = new();
 
+    private List<Pair> plan = new();
+
     private double untilShuffle;
 
     private int shuffleMinutes = 10;
@@ -78,6 +80,11 @@ internal sealed class FakeRoom : ICoopRoom
 
     public bool Formed { get; private set; }
 
+    /// <summary>A room not yet formed stands at the Airport.</summary>
+    public bool Planning => !Formed;
+
+    public IReadOnlyList<Pair> Plan => plan;
+
     public int Me => 1;
 
     public IReadOnlyList<int> Players => players;
@@ -111,12 +118,26 @@ internal sealed class FakeRoom : ICoopRoom
     public string NameOf(int actor) =>
         actor >= 1 && actor <= Names.Length ? Names[actor - 1] : $"Player {actor}";
 
-    /// <summary>Forms the Pairs as on arriving on the island.</summary>
+    /// <summary>Forms the Pairs as on arriving on the island, following the Pair Plan.</summary>
     public void Form()
     {
-        Apply(PairingRules.Form(Candidates(), random));
+        Apply(PairingRules.FormWithPlan(Candidates(), plan, random));
+        plan = new List<Pair>();
         Formed = true;
     }
+
+    public bool SetPlan(IReadOnlyList<Pair> wanted)
+    {
+        if (!IsTroopLeader || !Planning || !PairingRules.IsPlan(wanted, players))
+        {
+            return false;
+        }
+
+        plan = wanted.ToList();
+        return true;
+    }
+
+    public IReadOnlyList<Pair> DrawPlan() => PairingRules.Form(Candidates(), random).Pairs;
 
     /// <summary>The partner agrees at once, so the two trade roles straight away.</summary>
     public void ToggleSwap()

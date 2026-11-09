@@ -60,6 +60,46 @@ internal static class PairingRules
     public static PairingResult Form(IReadOnlyList<PairCandidate> candidates, Random random) =>
         Form(candidates, random, []);
 
+    /// <summary>
+    /// The Pair Formation with a Pair Plan: every planned Pair whose two
+    /// members are both among the candidates is kept as planned, over their
+    /// Role Preferences, and the other candidates are formed at random.
+    /// </summary>
+    public static PairingResult FormWithPlan(IReadOnlyList<PairCandidate> candidates, IReadOnlyList<Pair> plan, Random random)
+    {
+        var present = new HashSet<int>(candidates.Select(c => c.Actor));
+        var kept = new List<Pair>();
+        var placed = new HashSet<int>();
+        foreach (Pair planned in plan)
+        {
+            if (planned.Carrier != planned.Rider
+                && present.Contains(planned.Carrier)
+                && present.Contains(planned.Rider)
+                && !placed.Contains(planned.Carrier)
+                && !placed.Contains(planned.Rider))
+            {
+                kept.Add(planned);
+                placed.Add(planned.Carrier);
+                placed.Add(planned.Rider);
+            }
+        }
+
+        PairingResult rest = Form(candidates.Where(c => !placed.Contains(c.Actor)).ToList(), random);
+        return new PairingResult(kept.Concat(rest.Pairs).ToList(), rest.Unpaired, rest.PreferenceOverridden);
+    }
+
+    /// <summary>Whether a Pair Plan names only players in the room, each in one Pair at most.</summary>
+    public static bool IsPlan(IReadOnlyList<Pair> plan, IEnumerable<int> players)
+    {
+        var inRoom = new HashSet<int>(players);
+        var named = new HashSet<int>();
+        return plan.All(p => p.Carrier != p.Rider
+            && inRoom.Contains(p.Carrier)
+            && inRoom.Contains(p.Rider)
+            && named.Add(p.Carrier)
+            && named.Add(p.Rider));
+    }
+
     /// <summary>Forms Pairs, leaving out someone not in <paramref name="satOut"/> when the count is odd.</summary>
     private static PairingResult Form(IReadOnlyList<PairCandidate> candidates, Random random, IReadOnlyCollection<int> satOut)
     {
