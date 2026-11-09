@@ -364,6 +364,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
             asking = null;
         }
 
+        Settle();
         PaperToss.Crumple(panel, () =>
         {
             away = true;
@@ -379,6 +380,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     /// </summary>
     protected void HandIn(Action send)
     {
+        Settle();
         Texture? hand = null;
         try
         {
@@ -409,6 +411,19 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
                     Rise();
                 }
             });
+    }
+
+    /// <summary>
+    /// Brings a paper still rising to rest at once, so its picture taken at
+    /// the end of the frame is the whole paper and none of the game behind it.
+    /// </summary>
+    private void Settle()
+    {
+        if (motion == Motion.Rising)
+        {
+            motion = Motion.Resting;
+            Pose();
+        }
     }
 
     private void Leave()
