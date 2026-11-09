@@ -11,14 +11,15 @@ namespace BetterCoop.Features;
 /// <summary>
 /// Tells of Unmodded Players (ADR 0009): everyone with the Troop Leader's
 /// protocol hears once of each Unmodded Player in the room, and a client
-/// resting in the room hears once why. A player is judged only after they
-/// have been in the room a while, as their properties arrive after them.
+/// resting in the room hears once why. A player is judged only after their
+/// scout has been in the room a while: their properties arrive after them,
+/// and a player joining mid-Run sends nothing while the island loads.
 /// Everyone also hears once when more players who can pair are in the room
 /// than the mod pairs at once (<see cref="Seats"/>).
 /// </summary>
 internal sealed class UnmoddedPlayers : MonoBehaviourPunCallbacks
 {
-    /// <summary>How long a player is in the room before they are judged.</summary>
+    /// <summary>How long a player's scout is in the room before they are judged.</summary>
     private const float SettleSeconds = 5f;
 
     private readonly Dictionary<int, float> firstSeen = new();
@@ -112,6 +113,12 @@ internal sealed class UnmoddedPlayers : MonoBehaviourPunCallbacks
         foreach (PhotonPlayer player in PhotonNetwork.PlayerListOthers)
         {
             int actor = player.ActorNumber;
+            if (!PlayerHandler.TryGetCharacter(actor, out Character scout) || scout == null)
+            {
+                firstSeen.Remove(actor);
+                continue;
+            }
+
             if (!firstSeen.TryGetValue(actor, out float seen))
             {
                 firstSeen[actor] = now;
