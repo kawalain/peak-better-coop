@@ -180,6 +180,21 @@ public class FakeRoomTests
     }
 
     [Fact]
+    public void A_room_made_with_a_report_holds_it_at_the_Airport_until_the_Pairs_form()
+    {
+        var room = new FakeRoom(6, troopLeader: true, formed: false, reported: true);
+
+        RunReport report = Assert.IsType<RunReport>(room.Report);
+        Assert.Equal(6, report.Record.Segments().Count);
+        Assert.NotEmpty(report.Record.Badges());
+        Assert.Null(new FakeRoom(6, troopLeader: true, formed: false).Report);
+
+        room.Form();
+
+        Assert.Null(room.Report);
+    }
+
+    [Fact]
     public void A_room_at_the_Airport_or_alone_records_nothing()
     {
         Assert.Null(new FakeRoom(4, troopLeader: true, formed: false).Record);

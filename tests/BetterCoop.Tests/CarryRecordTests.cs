@@ -87,6 +87,20 @@ public class CarryRecordTests
     }
 
     [Fact]
+    public void Segments_come_in_order_with_the_longest_Pair_first()
+    {
+        var record = new CarryRecord();
+        record.Count([Sample("c", "d", 0)], 5, 1, "TROPICS");
+        record.Count([Sample("a", "b", 0), Sample("c", "d", 0)], 2, 0, "SHORE");
+        record.Count([Sample("c", "d", 0)], 4, 0, "SHORE");
+
+        var segments = record.Segments();
+
+        Assert.Equal(["SHORE", "TROPICS"], segments.Select(s => s.Title));
+        Assert.Equal(["c", "a"], segments[0].Pairs.Select(p => p.Carrier));
+    }
+
+    [Fact]
     public void Nobody_earns_a_badge_for_nothing()
     {
         Assert.Empty(new CarryRecord().Badges());

@@ -592,6 +592,90 @@ internal static class FormDrawing
         return Close(svg);
     }
 
+    /// <summary>
+    /// A Merit Badge as a round scout patch pencilled in a margin: a double
+    /// ring with running stitches between, and a picture of what it is for:
+    /// a scout carrying another, a cushion dozing, a crowned mountain, or a
+    /// heart.
+    /// </summary>
+    /// <param name="frame">Which of the doodle's hand-drawn frames: the lines wobble from one to the next.</param>
+    public static string Badge(float width, float height, MeritBadgeKind kind, int frame = 0)
+    {
+        var svg = Open(width, height);
+        var hand = new Random(23 + (int)kind * 31 + frame * 7919);
+        float s = Math.Min(width, height);
+        (float X, float Y) c = (width / 2f, height / 2f);
+        float h = s;
+        (float X, float Y) At(float x, float y) => (c.X + (x - 0.5f) * s, c.Y + (y - 0.5f) * s);
+
+        Pencil(svg, hand, Round(c, s * 0.46f, s * 0.46f, 0.0, 2.04, 36), Lead, h);
+        Pencil(svg, hand, Round(c, s * 0.38f, s * 0.38f, 0.0, 2.04, 30), Lead, h);
+        for (int i = 0; i < 20; i++)
+        {
+            double a = Math.PI * 2 * i / 20;
+            Pencil(svg, hand, [Polar(c, s * 0.42f, a), Polar(c, s * 0.42f, a + Math.PI * 2 / 20 * 0.5)], Lead, h);
+        }
+
+        string lead = Lead.Hex;
+        void Dot((float X, float Y) at, float r) =>
+            svg.Append(F($"<circle cx=\"{at.X}\" cy=\"{at.Y}\" r=\"{r}\" fill=\"{lead}\"/>"));
+
+        switch (kind)
+        {
+            case MeritBadgeKind.SteadyBack:
+            {
+                // A scout carrying another on their back.
+                Pencil(svg, hand, Round(At(0.54f, 0.38f), s * 0.06f, s * 0.06f, 0.0, 2.0, 12), Lead, h);
+                Pencil(svg, hand, [At(0.53f, 0.44f), At(0.51f, 0.60f)], Lead, h);
+                Pencil(svg, hand, [At(0.51f, 0.60f), At(0.46f, 0.72f)], Lead, h);
+                Pencil(svg, hand, [At(0.51f, 0.60f), At(0.57f, 0.72f)], Lead, h);
+                Pencil(svg, hand, [At(0.53f, 0.48f), At(0.62f, 0.54f)], Lead, h);
+                Pencil(svg, hand, Round(At(0.42f, 0.30f), s * 0.05f, s * 0.05f, 0.0, 2.0, 12), Lead, h);
+                Pencil(svg, hand, [At(0.43f, 0.35f), At(0.47f, 0.47f)], Lead, h);
+                Pencil(svg, hand, [At(0.43f, 0.38f), At(0.53f, 0.45f)], Lead, h);
+                Pencil(svg, hand, [At(0.47f, 0.47f), At(0.56f, 0.52f), At(0.55f, 0.58f)], Lead, h);
+                break;
+            }
+
+            case MeritBadgeKind.ComfyPassenger:
+            {
+                // A plump cushion, dozing.
+                Pencil(svg, hand, Curve(At(0.30f, 0.50f), At(0.50f, 0.42f), At(0.70f, 0.50f)), Lead, h);
+                Pencil(svg, hand, Curve(At(0.30f, 0.66f), At(0.50f, 0.74f), At(0.70f, 0.66f)), Lead, h);
+                Pencil(svg, hand, Curve(At(0.30f, 0.50f), At(0.26f, 0.58f), At(0.30f, 0.66f)), Lead, h);
+                Pencil(svg, hand, Curve(At(0.70f, 0.50f), At(0.74f, 0.58f), At(0.70f, 0.66f)), Lead, h);
+                Dot(At(0.50f, 0.58f), s * 0.012f);
+                Pencil(svg, hand, [At(0.56f, 0.30f), At(0.62f, 0.30f), At(0.56f, 0.36f), At(0.62f, 0.36f)], Lead, h);
+                Pencil(svg, hand, [At(0.64f, 0.22f), At(0.68f, 0.22f), At(0.64f, 0.26f), At(0.68f, 0.26f)], Lead, h);
+                break;
+            }
+
+            case MeritBadgeKind.ClimbingKing:
+            {
+                // A mountain wearing a crown.
+                Pencil(svg, hand, [At(0.27f, 0.70f), At(0.50f, 0.36f), At(0.73f, 0.70f)], Lead, h);
+                Pencil(svg, hand, [At(0.43f, 0.47f), At(0.47f, 0.50f), At(0.50f, 0.46f), At(0.54f, 0.50f), At(0.57f, 0.47f)], Lead, h);
+                Pencil(svg, hand, [At(0.42f, 0.32f), At(0.43f, 0.22f), At(0.47f, 0.28f), At(0.50f, 0.19f), At(0.53f, 0.28f), At(0.57f, 0.22f), At(0.58f, 0.32f), At(0.42f, 0.32f)], Lead, h);
+                Dot(At(0.50f, 0.18f), s * 0.014f);
+                break;
+            }
+
+            default:
+            {
+                // A heart, for the two who stuck together.
+                Pencil(svg, hand,
+                [
+                    At(0.50f, 0.70f), At(0.34f, 0.54f), At(0.31f, 0.44f), At(0.34f, 0.36f), At(0.41f, 0.33f),
+                    At(0.47f, 0.36f), At(0.50f, 0.42f), At(0.53f, 0.36f), At(0.59f, 0.33f), At(0.66f, 0.36f),
+                    At(0.69f, 0.44f), At(0.66f, 0.54f), At(0.50f, 0.70f),
+                ], Lead, h);
+                break;
+            }
+        }
+
+        return Close(svg);
+    }
+
     /// <summary>One pencil line along <paramref name="points"/>, gone over twice by a light hand that never draws quite straight.</summary>
     private static void Pencil(StringBuilder svg, Random hand, IReadOnlyList<(float X, float Y)> points, Ink colour, float size)
     {

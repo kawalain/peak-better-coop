@@ -47,6 +47,9 @@ internal interface ICoopRoom
     /// <summary>The Carry Record of the Run under way, or null before one is shared.</summary>
     CarryRecord? Record { get; }
 
+    /// <summary>The Run Report of the last Run, kept until the next departs, or null.</summary>
+    RunReport? Report { get; }
+
     /// <summary>Whether the player of a user id in the Carry Record is in the room now.</summary>
     bool Present(string id);
 
@@ -128,6 +131,6 @@ internal static class CoopRooms
         string pairs = string.Join(",", room.Pairs.Select(p => $"{p.Carrier}>{p.Rider}"));
         string plan = string.Join(",", room.Plan.Select(p => $"{p.Carrier}>{p.Rider}"));
         string players = string.Join(",", room.Players);
-        return $"{room.IsTroopLeader}|{room.Formed}|{room.Planning}|{pairs}|{plan}|{players}|{room.Record != null}";
+        return $"{room.IsTroopLeader}|{room.Formed}|{room.Planning}|{pairs}|{plan}|{players}|{room.Record != null}|{room.Report != null}";
     }
 }

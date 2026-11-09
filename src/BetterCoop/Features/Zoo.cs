@@ -28,6 +28,10 @@ internal sealed class ZooPage : PaperPage
 
     private RosterPage example = null!;
 
+    private RunReportPage reportExample = null!;
+
+    private bool reported = true;
+
     private static readonly int[] ManyChoices = [1, 2, 3, 5, 10, 15, 20, 30];
 
     private bool check = true;
@@ -56,6 +60,7 @@ internal sealed class ZooPage : PaperPage
     {
         ZooPage zoo = Create<ZooPage>(handler, controls, template, parent, () => "Zoo");
         zoo.example = Create<RosterPage>(handler, controls, template, zoo, () => $"{Strings.Roster} (Zoo)");
+        zoo.reportExample = Create<RunReportPage>(handler, controls, template, zoo, () => $"{Strings.MenuRunReport} (Zoo)");
         return zoo;
     }
 
@@ -155,6 +160,13 @@ internal sealed class ZooPage : PaperPage
                     faint: i % 4 == 0))
                 .ToList(),
             empty: () => T("줄이 없으면 이렇게 안내합니다.", "With no lines, the table says so."));
+        list.Badges(
+        [
+            new BadgeCard(MeritBadgeKind.SteadyBack, Strings.BadgeName(MeritBadgeKind.SteadyBack), "Alder", Strings.BadgeAmount(MeritBadgeKind.SteadyBack, 1934)),
+            new BadgeCard(MeritBadgeKind.ComfyPassenger, Strings.BadgeName(MeritBadgeKind.ComfyPassenger), Strings.Left("Quill"), Strings.BadgeAmount(MeritBadgeKind.ComfyPassenger, 1702)),
+            new BadgeCard(MeritBadgeKind.ClimbingKing, Strings.BadgeName(MeritBadgeKind.ClimbingKing), "Cedar", Strings.BadgeAmount(MeritBadgeKind.ClimbingKing, 812.4)),
+            new BadgeCard(MeritBadgeKind.BestBuddies, Strings.BadgeName(MeritBadgeKind.BestBuddies), "Birch & Dahlia", Strings.BadgeAmount(MeritBadgeKind.BestBuddies, 2410)),
+        ]);
         list.Signature(() => T("서명", "Signed"), () => "Alder");
         Makers.Add(list);
 
@@ -202,6 +214,11 @@ internal sealed class ZooPage : PaperPage
             about: () => T("가짜 방의 인원입니다. 첫 사람이 나입니다.", "Players in the made-up room; the first is you."));
         list.Check(() => T("내가 분대장", "You lead"), () => leader, on => leader = on);
         list.Check(() => T("짝 편성 끝남", "Pairs formed"), () => formed, on => formed = on);
+        list.Check(
+            () => T("지난 원정 보고서", "Last Run's report"),
+            () => reported,
+            on => reported = on,
+            () => T("공항(짝 편성 전)의 편성표에 지난 원정의 보고서가 있습니다. 결말은 열 때마다 바뀝니다.", "The Roster at the Airport (Pairs not formed) holds the last Run's report; its ending changes each time it opens."));
         list.Stamp(
             () => T("예제 열기", "Open the example"),
             () => T("열기", "Open"),
@@ -209,6 +226,14 @@ internal sealed class ZooPage : PaperPage
             about: () => T(
                 "실제 규칙으로 짝을 섞고 지정하는 가짜 방에서 편성표를 엽니다. 게임, 설정, 네트워크에는 닿지 않습니다.",
                 "Opens the Roster on a made-up room that shuffles and assigns Pairs by the real rules. It never touches the game, the config, or the network."));
+
+        list.Stamp(
+            () => T("보고서 예제 열기", "Open the report example"),
+            () => T("열기", "Open"),
+            OpenReport,
+            about: () => T(
+                "지금 인원으로 산 전체를 오른 가짜 원정의 보고서를 엽니다. 떠난 대원 한 명이 흐리게 적힙니다.",
+                "Opens the report of a made-up Run up the whole mountain with this many players; one scout who left is greyed."));
 
         list.Header(() => T("긴 목록", "Long list"));
         for (int i = 1; i <= 20; i++)
@@ -220,9 +245,17 @@ internal sealed class ZooPage : PaperPage
 
     private static string T(string korean, string english) => Strings.Korean ? korean : english;
 
+    private void OpenReport()
+    {
+        var room = new FakeRoom(players, leader, formed: false, seed, reported: true);
+        reportExample.Show(() => room.Report, room.Present);
+        seed++;
+        reportExample.Open();
+    }
+
     private void OpenExample()
     {
-        example.Show(new FakeRoom(players, leader, formed, seed), new ZooPortraits(seed));
+        example.Show(new FakeRoom(players, leader, formed, seed, reported), new ZooPortraits(seed));
         seed++;
         example.Open();
     }

@@ -61,6 +61,14 @@ internal sealed class PaperList
 
     private const float RingStroke = 2.8f;
 
+    /// <summary>The room each Merit Badge takes, patch and words.</summary>
+    private static readonly Vector2 BadgeCell = new(250f, 290f);
+
+    private const float BadgePatch = 150f;
+
+    /// <summary>How each badge in a row was stuck on, in degrees.</summary>
+    private static readonly float[] BadgeTilts = [-6f, 4f, -3f, 7f];
+
     /// <summary>How wide a table's columns after the first are.</summary>
     private const float TableColumnWidth = 170f;
 
@@ -508,6 +516,52 @@ internal sealed class PaperList
         Add(row);
     }
 
+    /// <summary>
+    /// Merit Badges pinned in rows of four: each a pencilled scout patch,
+    /// boiling, tilted as it was stuck on, with its name, who earned it, and
+    /// what won it under it.
+    /// </summary>
+    public void Badges(IReadOnlyList<BadgeCard> cards, Func<bool>? visible = null)
+    {
+        PaperRow row = NewRow("Badges", 0f, visible);
+        RectTransform holder = NewRect("Grid", row.Root.transform);
+        GridLayoutGroup grid = holder.gameObject.AddComponent<GridLayoutGroup>();
+        grid.cellSize = BadgeCell;
+        grid.spacing = new Vector2(12f, 18f);
+        grid.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
+        grid.constraintCount = 4;
+        grid.childAlignment = TextAnchor.UpperCenter;
+        for (int i = 0; i < cards.Count; i++)
+        {
+            BadgeCard card = cards[i];
+            RectTransform cell = NewRect(card.Kind.ToString(), holder);
+            VerticalLayoutGroup stack = cell.gameObject.AddComponent<VerticalLayoutGroup>();
+            stack.childAlignment = TextAnchor.UpperCenter;
+            stack.childControlWidth = stack.childControlHeight = true;
+            stack.childForceExpandWidth = stack.childForceExpandHeight = false;
+            stack.spacing = 2f;
+
+            RectTransform patch = Fixed(cell, "Patch", BadgePatch, BadgePatch);
+            RectTransform face = Fill(NewRect("Face", patch));
+            face.localRotation = Quaternion.Euler(0f, 0f, BadgeTilts[i % BadgeTilts.Length]);
+            MeritBadgeKind kind = card.Kind;
+            VectorView.Add(face, size => FormDrawing.Badge(size.x, size.y, kind, Boil.Frame), Color.clear, boil: true);
+
+            TMP_Text title = AddText(cell, "Title", PaperText.Label, TextAlignmentOptions.Center, flexible: true);
+            title.fontStyle = FontStyles.Bold;
+            PaperText.Set(title, card.Title);
+            TMP_Text winners = AddText(cell, "Winners", PaperText.Value, TextAlignmentOptions.Center, flexible: true);
+            Wrap(winners);
+            winners.color = Pen;
+            PaperText.Set(winners, card.Winners);
+            TMP_Text amount = AddText(cell, "Amount", PaperText.Note, TextAlignmentOptions.Center, flexible: true);
+            amount.color = Faded(PaperText.Ink, 0.7f);
+            PaperText.Set(amount, card.Amount);
+        }
+
+        Add(row);
+    }
+
     /// <summary>A table's cell: the first takes the spare width, every other a set width printed to the right.</summary>
     private TMP_Text Cell(RectTransform line, int column, float size)
     {
@@ -784,6 +838,26 @@ internal sealed class PaperList
         rows.Add(row);
         row.Refresh();
     }
+}
+
+/// <summary>A Merit Badge as the form shows it: which, its name, who earned it, and what won it.</summary>
+internal sealed class BadgeCard
+{
+    public BadgeCard(MeritBadgeKind kind, string title, string winners, string amount)
+    {
+        Kind = kind;
+        Title = title;
+        Winners = winners;
+        Amount = amount;
+    }
+
+    public MeritBadgeKind Kind { get; }
+
+    public string Title { get; }
+
+    public string Winners { get; }
+
+    public string Amount { get; }
 }
 
 /// <summary>One line of a table: its cells, and whether it shows greyed.</summary>

@@ -58,11 +58,17 @@ internal sealed class FakeRoom : ICoopRoom
 
     private CarryRecord? record;
 
+    private readonly bool reported;
+
+    private RunReport? report;
+
     /// <param name="count">Players in the room, the local player first.</param>
     /// <param name="troopLeader">Whether the local player leads.</param>
     /// <param name="formed">Whether the Run's Pair Formation has happened.</param>
-    public FakeRoom(int count, bool troopLeader, bool formed, int seed = 1)
+    /// <param name="reported">Whether a room not yet formed holds the Run Report of a made-up last Run.</param>
+    public FakeRoom(int count, bool troopLeader, bool formed, int seed = 1, bool reported = false)
     {
+        this.reported = reported;
         random = new Random(seed);
         this.seed = seed;
         players = Enumerable.Range(1, Math.Max(1, count)).ToList();
@@ -103,6 +109,14 @@ internal sealed class FakeRoom : ICoopRoom
 
     /// <summary>On the island, a made-up record of the Run so far: two segments, Pairs drawn anew for each.</summary>
     public CarryRecord? Record => Formed ? record ??= MakeRecord(2, pairs) : null;
+
+    /// <summary>
+    /// At the Airport, when made with one, the report of a made-up last Run
+    /// up the whole mountain; how it ended changes with the seed.
+    /// </summary>
+    public RunReport? Report => !Formed && reported
+        ? report ??= new RunReport((RunEnding)(seed % 3), 3000 + (seed * 731 % 4000), MakeRecord(Titles.Length, []))
+        : null;
 
     public bool Present(string id) =>
         id.StartsWith("zoo:", StringComparison.Ordinal) && int.TryParse(id.Substring(4), out int actor) && players.Contains(actor);
@@ -155,6 +169,7 @@ internal sealed class FakeRoom : ICoopRoom
         plan = new List<Pair>();
         Formed = true;
         record = null;
+        report = null;
     }
 
     public bool SetPlan(IReadOnlyList<Pair> wanted)

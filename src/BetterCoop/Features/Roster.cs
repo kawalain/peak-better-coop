@@ -144,6 +144,11 @@ internal sealed class RosterPage : PaperPage
     {
         bool leads = room.InRoom && room.IsTroopLeader;
         PlayerRows.Add(list, room);
+        if (room.Report != null)
+        {
+            ReportRows.Add(list, room, OpenReport);
+        }
+
         board = null;
         pairsHeading = null;
         if (room.Formed || room.Planning)
@@ -197,6 +202,16 @@ internal sealed class RosterPage : PaperPage
     }
 
     protected override void DropDraft() => draft?.Reset(Basis(), room.Players);
+
+    private RunReportPage? reportPage;
+
+    /// <summary>Opens the room's Run Report on its own page, which comes back here.</summary>
+    private void OpenReport()
+    {
+        reportPage ??= CreateChild<RunReportPage>(() => Strings.MenuRunReport);
+        reportPage.Show(() => room.Report, id => room.Present(id));
+        reportPage.Open();
+    }
 
     /// <summary>Whether this visit to the Airport has already offered the last Run's Pairs.</summary>
     private bool offeredLastRun;
@@ -434,6 +449,23 @@ internal static class PlayerRows
     }
 }
 
+/// <summary>The last Run's report, back at the Airport: how it ended, and a stamp to read it.</summary>
+internal static class ReportRows
+{
+    public static void Add(PaperList list, ICoopRoom room, Action open)
+    {
+        list.Header(() => Strings.MenuRunReport);
+        list.Stamp(
+            () => Strings.MenuReadReport,
+            () => Strings.StampRead,
+            open,
+            about: () => Strings.AboutRunReport,
+            value: () => room.Report is RunReport report
+                ? $"{Strings.EndingName(report.Ending)} · {Strings.Duration(report.Seconds)}"
+                : string.Empty);
+    }
+}
+
 /// <summary>The Carry Record as a table, the most time carrying first, scouts who left greyed.</summary>
 internal static class RecordRows
 {
@@ -607,6 +639,8 @@ internal sealed class LiveRoom : ICoopRoom
     public IReadOnlyList<Pair> LastRunPairs => PairPlans.LastRun();
 
     public CarryRecord? Record => CarryRecords.Shared;
+
+    public RunReport? Report => CarryRecords.Report;
 
     /// <summary>A player is known by user id, or by actor number when Photon gives none.</summary>
     public bool Present(string id) =>

@@ -114,6 +114,62 @@ internal static class Strings
 
     public static string HeadClimbed => Korean ? "오른 높이" : "Climbed";
 
+    public static string MenuRunReport => Korean ? "원정 보고서" : "Run Report";
+
+    public static string ReportFormTitle => Korean ? "BetterCoop 서식 제2호" : "BetterCoop Form No. 2";
+
+    public static string MenuReadReport => Korean ? "보고서 보기" : "Read the report";
+
+    public static string StampRead => Korean ? "열람" : "Read";
+
+    public static string AboutRunReport => Korean
+        ? "지난 원정의 결과와 공로 배지입니다. 다음 원정이 출발하면 사라집니다."
+        : "The last Run's result and Merit Badges, kept until the next Run departs.";
+
+    public static string ReportGone => Korean
+        ? "다음 원정이 출발해 보고서가 사라졌습니다."
+        : "The next Run has departed, and the report with it.";
+
+    public static string ReportResult => Korean ? "결과" : "Result";
+
+    public static string ReportEnding => Korean ? "원정 결과" : "Outcome";
+
+    public static string ReportRunTime => Korean ? "원정 시간" : "Run time";
+
+    public static string EndingName(RunEnding ending) => ending switch
+    {
+        RunEnding.Summit => Korean ? "정상 도착" : "Reached the Peak",
+        RunEnding.Lost => Korean ? "전원 조난" : "Everyone was lost",
+        _ => Korean ? "공항 귀환" : "Back at the Airport",
+    };
+
+    public static string MenuMeritBadges => Korean ? "공로 배지" : "Merit Badges";
+
+    public static string NoBadges => Korean ? "배지를 받은 대원이 없습니다." : "No one earned a badge.";
+
+    public static string BadgeName(MeritBadgeKind kind) => kind switch
+    {
+        MeritBadgeKind.SteadyBack => Korean ? "든든한 등" : "Steady Back",
+        MeritBadgeKind.ComfyPassenger => Korean ? "편안한 승객" : "Comfy Passenger",
+        MeritBadgeKind.ClimbingKing => Korean ? "등반왕" : "Climbing King",
+        _ => Korean ? "단짝" : "Best Buddies",
+    };
+
+    /// <summary>What won a Merit Badge, as it counts: time, or height.</summary>
+    public static string BadgeAmount(MeritBadgeKind kind, double amount) => kind switch
+    {
+        MeritBadgeKind.SteadyBack => $"{HeadCarried} {Duration(amount)}",
+        MeritBadgeKind.ComfyPassenger => $"{HeadRidden} {Duration(amount)}",
+        MeritBadgeKind.ClimbingKing => $"{HeadClimbed} {Metres(amount)}",
+        _ => $"{HeadTogether} {Duration(amount)}",
+    };
+
+    public static string ReportBySegment => Korean ? "구간별 짝" : "Pairs by segment";
+
+    public static string HeadPair => Korean ? "업은 사람 → 업힌 사람" : "Carrier → Rider";
+
+    public static string HeadTogether => Korean ? "함께한 시간" : "Together";
+
     /// <summary>A scout in a record who is no longer in the room.</summary>
     public static string Left(string name) => Korean ? $"{name} (떠남)" : $"{name} (left)";
 

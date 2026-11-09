@@ -49,6 +49,10 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
 
     private UIPage parent = null!;
 
+    private PauseMenuControlsPage controls = null!;
+
+    private Button buttonTemplate = null!;
+
     private Func<string> title = null!;
 
     private TMP_Text titleText = null!;
@@ -124,6 +128,8 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         T page = clone.AddComponent<T>();
         page.handler = handler;
         page.parent = parent;
+        page.controls = controls;
+        page.buttonTemplate = buttonTemplate;
         page.title = title;
         page.back = back;
         page.LayOut((RectTransform)clone.transform, buttonTemplate);
@@ -136,6 +142,11 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         Object.Destroy(holder);
         return page;
     }
+
+    /// <summary>A page that opens from this one and goes back to it, built as this one was.</summary>
+    protected T CreateChild<T>(Func<string> childTitle)
+        where T : PaperPage =>
+        Create<T>(handler, controls, buttonTemplate, this, childTitle);
 
     public (UIPage, PageTransistion) GetParentPage() => (parent, new SinkTransistion());
 

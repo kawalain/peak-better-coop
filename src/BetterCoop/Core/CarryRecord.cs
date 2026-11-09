@@ -111,6 +111,14 @@ internal sealed class CarryRecord
             .ThenBy(s => s.Name, StringComparer.Ordinal)
             .ToList();
 
+    /// <summary>The segments climbed, in order, each with its Pairs, the longest together first.</summary>
+    public IReadOnlyList<(int Segment, string Title, IReadOnlyList<Stretch> Pairs)> Segments() =>
+        stretches
+            .GroupBy(s => s.Segment)
+            .OrderBy(g => g.Key)
+            .Select(g => (g.Key, g.First().Title, (IReadOnlyList<Stretch>)g.OrderByDescending(s => s.Seconds).ToList()))
+            .ToList();
+
     /// <summary>The Merit Badges the record earns: each goes to the best in one thing, if anyone did it at all.</summary>
     public IReadOnlyList<MeritBadge> Badges()
     {
