@@ -201,6 +201,9 @@ def twin(profile: Path, game: Path, role: str, plugin: Path | None, control: boo
             skipped.add("cache")
         return skipped
 
+    # The mods are laid out afresh, so one taken out of the profile is not left in the Twin.
+    for mods in ("plugins", "patchers"):
+        shutil.rmtree(twin_dir / "BepInEx" / mods, ignore_errors=True)
     shutil.copytree(profile, twin_dir, ignore=leave_out, dirs_exist_ok=True)
     # A Twin is for testing: its log says everything the mod does.
     config = twin_dir / "BepInEx" / "config" / "in.kawala.bettercoop.cfg"
