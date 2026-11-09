@@ -166,14 +166,14 @@ internal static class PairShuffle
     }
 
     /// <summary>The Troop Leader asks for a Pair Shuffle, Role Swap, or Late Pairing.</summary>
-    internal static bool Request(OperationKind kind, int swapCarrier = -1, int swapRider = -1)
+    internal static bool Request(OperationKind kind, int swapCarrier = -1, int swapRider = -1, IReadOnlyList<Pair>? joining = null)
     {
         if (!PhotonNetwork.IsMasterClient || !PairRoster.Formed)
         {
             return false;
         }
 
-        Operation? op = Queue.Request(Current, kind, PhotonNetwork.Time, swapCarrier, swapRider);
+        Operation? op = Queue.Request(Current, kind, PhotonNetwork.Time, swapCarrier, swapRider, joining);
         if (op == null)
         {
             return false;
@@ -332,15 +332,18 @@ internal static class PairShuffle
         RoleSwap.HostTick();
     }
 
-    /// <summary>Announces a Late Pairing when two Unpaired Players can be paired.</summary>
+    /// <summary>
+    /// Announces a Late Pairing of every two Unpaired Players who can be
+    /// paired now, so a party that comes in together is paired together.
+    /// </summary>
     private static void RequestLatePairing()
     {
         if (RunRules.LatePairing
             && PairRoster.Formed
             && PairRoster.ReadLeading() is PairingResult current
-            && LatePairingRules.PickTwo(LateCandidates(current), FormerPairs.InRoom()) is (int first, int second))
+            && LatePairingRules.FormAll(LateCandidates(current), new System.Random(), FormerPairs.InRoom()) is { Count: > 0 } formed)
         {
-            Request(OperationKind.LatePairing, first, second);
+            Request(OperationKind.LatePairing, joining: formed.Select(f => f.Pair).ToList());
         }
     }
 
@@ -447,48 +450,59 @@ internal static class PairShuffle
     }
 
     /// <summary>
-    /// The two of a Late Pairing as a new Pair, when both are still outside
-    /// every Pair and one is awake. Nothing moves but the Shared Body, to the
-    /// higher member's place; the new Rider's statuses clear as at any pairing.
+    /// The Pairs a Late Pairing announced, each formed when both are still
+    /// outside every Pair and one is awake. Nothing moves but each Shared
+    /// Body, to the higher member's place; each new Rider's statuses clear as
+    /// at any pairing.
     /// </summary>
     private static PairingResult? LatePair(PairingResult before, Operation op, out HandoverPlan? plan)
     {
         plan = null;
         List<LateCandidate> candidates = LateCandidates(before);
-        LateCandidate? first = candidates.FirstOrDefault(c => c.Actor == op.SwapCarrier);
-        LateCandidate? second = candidates.FirstOrDefault(c => c.Actor == op.SwapRider);
         IReadOnlyList<Pair> former = FormerPairs.InRoom();
-        if (first == null
-            || second == null
-            || LatePairingRules.Form(first, second, new System.Random(), former) is not LatePairing pairing)
+        var formed = new List<LatePairing>();
+        foreach (Pair announced in op.Joining)
+        {
+            if (LatePairingRules.Confirm(announced, candidates) is not LatePairing pairing)
+            {
+                Plugin.Verbose($"Late Pairing #{op.Id}: {announced.Carrier} and {announced.Rider} can no longer pair.");
+                continue;
+            }
+
+            formed.Add(pairing);
+            candidates.RemoveAll(c => pairing.Pair.Contains(c.Actor));
+            if (former.Any(p => p.Contains(announced.Carrier) && p.Contains(announced.Rider))
+                && KnownPlayers.UserIdOf(announced.Carrier) is string carrierId
+                && KnownPlayers.UserIdOf(announced.Rider) is string riderId)
+            {
+                Plugin.Verbose($"Late Pairing reunites {announced.Carrier} and {announced.Rider}.");
+                FormerPairs.HostCopy().Remove(carrierId, riderId);
+            }
+        }
+
+        if (formed.Count == 0)
         {
             return null;
         }
 
-        if (former.Any(p => p.Contains(first.Actor) && p.Contains(second.Actor))
-            && KnownPlayers.UserIdOf(first.Actor) is string firstId
-            && KnownPlayers.UserIdOf(second.Actor) is string secondId)
-        {
-            Plugin.Verbose($"Late Pairing reunites {first.Actor} and {second.Actor}.");
-            FormerPairs.HostCopy().Remove(firstId, secondId);
-        }
-
-        Pair pair = pairing.Pair;
-        var pairs = before.Pairs.Append(pair).ToList();
+        var pairs = before.Pairs.Concat(formed.Select(f => f.Pair)).ToList();
         var unpaired = PhotonNetwork.PlayerList
             .Select(p => p.ActorNumber)
             .Where(a => !pairs.Any(p => p.Contains(a)))
             .ToList();
         var overridden = before.PreferenceOverridden
-            .Where(a => !pair.Contains(a))
-            .Concat(pairing.PreferenceOverridden)
+            .Where(a => !formed.Any(f => f.Pair.Contains(a)))
+            .Concat(formed.SelectMany(f => f.PreferenceOverridden))
             .ToList();
 
         var entries = new List<HandoverEntry>();
-        if (pairing.CarrierMovesToRider && CharacterOf(pair.Rider) is Character riderBody)
+        foreach (LatePairing pairing in formed)
         {
-            Vector3 place = riderBody.Center;
-            entries.Add(new HandoverEntry(pair.Carrier, pair.Rider, [place.x, place.y, place.z], [], 0f, 0f));
+            if (pairing.CarrierMovesToRider && CharacterOf(pairing.Pair.Rider) is Character riderBody)
+            {
+                Vector3 place = riderBody.Center;
+                entries.Add(new HandoverEntry(pairing.Pair.Carrier, pairing.Pair.Rider, [place.x, place.y, place.z], [], 0f, 0f));
+            }
         }
 
         plan = new HandoverPlan(op.Id, movesPlaces: true, entries);

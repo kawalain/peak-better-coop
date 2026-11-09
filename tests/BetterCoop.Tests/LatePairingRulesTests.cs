@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BetterCoop.Core;
 using Xunit;
 
@@ -13,21 +14,67 @@ public class LatePairingRulesTests
     private static LateCandidate Down(int actor, RolePreference preference = RolePreference.Random, float height = 0f) =>
         new(actor, preference, awake: false, height);
 
+    private static List<(int Carrier, int Rider)> All(IReadOnlyList<LateCandidate> candidates, IReadOnlyList<Pair>? former = null) =>
+        LatePairingRules.FormAll(candidates, new Random(0), former).Select(f => (f.Pair.Carrier, f.Pair.Rider)).ToList();
+
     [Fact]
     public void A_lone_unpaired_player_waits() =>
-        Assert.Null(LatePairingRules.PickTwo([Awake(1)]));
+        Assert.Empty(All([Awake(1)]));
 
     [Fact]
     public void Two_who_are_down_wait() =>
-        Assert.Null(LatePairingRules.PickTwo([Down(1), Down(2)]));
+        Assert.Empty(All([Down(1), Down(2)]));
 
     [Fact]
     public void Someone_down_goes_first_with_someone_awake() =>
-        Assert.Equal((3, 1), LatePairingRules.PickTwo([Awake(1), Awake(2), Down(3)]));
+        Assert.Equal((1, 3), All([Awake(1), Awake(2), Down(3)])[0]);
 
     [Fact]
-    public void Two_awake_players_are_picked_in_join_order() =>
-        Assert.Equal((2, 5), LatePairingRules.PickTwo([Awake(5), Awake(2), Awake(9)]));
+    public void Everyone_who_can_pair_is_paired_at_once()
+    {
+        // A party of thirty joins together: fifteen Pairs in one Late Pairing.
+        var candidates = Enumerable.Range(1, 30).Select(a => Awake(a)).ToList();
+
+        var formed = All(candidates);
+
+        Assert.Equal(15, formed.Count);
+        Assert.Equal(30, formed.SelectMany(p => new[] { p.Carrier, p.Rider }).Distinct().Count());
+    }
+
+    [Fact]
+    public void An_odd_one_out_waits_for_the_next()
+    {
+        var formed = All([Awake(1), Awake(2), Awake(3)]);
+
+        Assert.Single(formed);
+    }
+
+    [Fact]
+    public void Wishes_to_carry_meet_wishes_to_ride_first()
+    {
+        var formed = All([
+            Awake(1, RolePreference.Carrier),
+            Awake(2, RolePreference.Carrier),
+            Awake(3, RolePreference.Rider),
+            Awake(4, RolePreference.Rider),
+        ]);
+
+        Assert.Equal([(1, 3), (2, 4)], formed);
+        Assert.All(LatePairingRules.FormAll([
+            Awake(1, RolePreference.Carrier),
+            Awake(2, RolePreference.Carrier),
+            Awake(3, RolePreference.Rider),
+            Awake(4, RolePreference.Rider),
+        ], new Random(0)), f => Assert.Empty(f.PreferenceOverridden));
+    }
+
+    [Fact]
+    public void Each_who_is_down_rides_with_someone_awake_and_two_down_wait()
+    {
+        var formed = All([Down(1), Down(2), Down(3), Awake(4), Awake(5)]);
+
+        Assert.Equal([(4, 1), (5, 2)], formed);
+    }
 
     [Fact]
     public void Two_who_are_down_form_no_pair() =>
@@ -106,11 +153,35 @@ public class LatePairingRulesTests
 
     [Fact]
     public void Former_partners_pair_up_before_anyone_else() =>
-        Assert.Equal((4, 2), LatePairingRules.PickTwo([Awake(1), Awake(2), Down(3), Awake(4)], [new Pair(4, 2)]));
+        Assert.Equal((4, 2), All([Awake(1), Awake(2), Down(3), Awake(4)], [new Pair(4, 2)])[0]);
 
     [Fact]
     public void Former_partners_who_are_both_down_do_not_hold_up_others() =>
-        Assert.Equal((3, 1), LatePairingRules.PickTwo([Awake(1), Awake(2), Down(3), Down(4)], [new Pair(3, 4)]));
+        Assert.Equal((1, 3), All([Awake(1), Awake(2), Down(3), Down(4)], [new Pair(3, 4)])[0]);
+
+    [Fact]
+    public void An_announced_pair_keeps_its_roles_as_it_runs()
+    {
+        LatePairing confirmed = LatePairingRules.Confirm(new Pair(1, 2), [Awake(1, RolePreference.Rider), Awake(2, RolePreference.Carrier)])!;
+
+        Assert.Equal((1, 2), (confirmed.Pair.Carrier, confirmed.Pair.Rider));
+        Assert.Equal([1, 2], confirmed.PreferenceOverridden);
+    }
+
+    [Fact]
+    public void An_announced_carrier_gone_down_rides_instead()
+    {
+        LatePairing confirmed = LatePairingRules.Confirm(new Pair(1, 2), [Down(1), Awake(2)])!;
+
+        Assert.Equal((2, 1), (confirmed.Pair.Carrier, confirmed.Pair.Rider));
+    }
+
+    [Fact]
+    public void An_announced_pair_with_someone_gone_or_both_down_does_not_form()
+    {
+        Assert.Null(LatePairingRules.Confirm(new Pair(1, 2), [Awake(1)]));
+        Assert.Null(LatePairingRules.Confirm(new Pair(1, 2), [Down(1), Down(2)]));
+    }
 
     [Fact]
     public void Former_partners_take_their_former_roles_over_their_wishes()

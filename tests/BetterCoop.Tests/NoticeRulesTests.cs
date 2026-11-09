@@ -41,7 +41,7 @@ public class NoticeRulesTests
 
     [Fact]
     public void A_late_pairing_names_the_partner_but_not_who_carries() =>
-        Assert.Equal((5, (bool?)null), PairLetterPlan.Preview(OperationKind.LatePairing, 4, 4, 5, null));
+        Assert.Equal((5, (bool?)null), PairLetterPlan.Preview(OperationKind.LatePairing, 4, -1, -1, [new Pair(4, 5), new Pair(6, 7)]));
 
     [Fact]
     public void An_assignment_shows_the_Pair_it_gives_or_none()

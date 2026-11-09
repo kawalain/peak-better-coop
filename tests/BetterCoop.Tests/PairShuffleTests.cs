@@ -1,3 +1,4 @@
+using System.Linq;
 using BetterCoop.Core;
 using Xunit;
 
@@ -276,13 +277,24 @@ public class OperationTests
     }
 
     [Fact]
-    public void A_late_pairing_involves_only_its_two()
+    public void A_late_pairing_involves_only_those_it_pairs()
     {
-        var pairing = new Operation(1, OperationKind.LatePairing, 0, 5, 6, false);
+        var pairing = new Operation(1, OperationKind.LatePairing, 0, -1, -1, false, joining: [new Pair(5, 6), new Pair(8, 7)]);
 
         Assert.True(pairing.Involves(5));
-        Assert.True(pairing.Involves(6));
+        Assert.True(pairing.Involves(7));
         Assert.False(pairing.Involves(1));
+    }
+
+    [Fact]
+    public void A_late_pairing_survives_encoding_with_its_pairs()
+    {
+        var pairing = new Operation(2, OperationKind.LatePairing, 3, -1, -1, false, joining: [new Pair(5, 6), new Pair(8, 7)]);
+
+        Operation decoded = Operation.Decode(pairing.Finished().Encode())!;
+
+        Assert.Equal([(5, 6), (8, 7)], decoded.Joining.Select(p => (p.Carrier, p.Rider)));
+        Assert.True(decoded.Done);
     }
 
     [Fact]
@@ -313,7 +325,10 @@ public class OperationTests
         Operation decoded = Operation.Decode(op.Encode())!;
 
         Assert.Equal((4, OperationKind.RoleSwap, 12.5, 7, 8, false), (decoded.Id, decoded.Kind, decoded.At, decoded.SwapCarrier, decoded.SwapRider, decoded.Done));
-        Assert.Null(Operation.Decode(new object[] { 1, (byte)9, 0.0, -1, -1, false, false }));
+        Assert.Null(Operation.Decode(new object[] { 1, (byte)9, 0.0, -1, -1, false, false, new int[0] }));
+        // An operation in the earlier protocol, without the joining Pairs.
+        Assert.Null(Operation.Decode(new object[] { 1, (byte)1, 0.0, -1, -1, false, false }));
+        Assert.Null(Operation.Decode(new object[] { 1, (byte)4, 0.0, -1, -1, false, false, new int[WireLimits.MaxScouts + 2] }));
     }
 
     [Fact]

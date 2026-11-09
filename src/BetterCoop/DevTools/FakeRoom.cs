@@ -383,23 +383,22 @@ internal sealed class FakeRoom : ICoopRoom
         unpaired = result.Unpaired.ToList();
     }
 
-    /// <summary>Pairs up the Unpaired Players two by two, as Late Pairing would once they settle.</summary>
+    /// <summary>Pairs up the Unpaired Players all at once, as Late Pairing would once they settle.</summary>
     private void PairLeftovers()
     {
-        while (rules[RunRule.LatePairing])
+        if (!rules[RunRule.LatePairing])
         {
-            var candidates = unpaired
-                .Select(a => new LateCandidate(a, Wish(a), awake: true, height: 0f))
-                .ToList();
-            if (LatePairingRules.PickTwo(candidates) is not (int first, int second)
-                || LatePairingRules.Form(candidates.First(c => c.Actor == first), candidates.First(c => c.Actor == second), random) is not LatePairing formed)
-            {
-                return;
-            }
+            return;
+        }
 
+        var candidates = unpaired
+            .Select(a => new LateCandidate(a, Wish(a), awake: true, height: 0f))
+            .ToList();
+        foreach (LatePairing formed in LatePairingRules.FormAll(candidates, random))
+        {
             pairs.Add(formed.Pair);
-            unpaired.Remove(first);
-            unpaired.Remove(second);
+            unpaired.Remove(formed.Pair.Carrier);
+            unpaired.Remove(formed.Pair.Rider);
         }
     }
 

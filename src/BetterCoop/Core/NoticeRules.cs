@@ -1,3 +1,4 @@
+using System.Linq;
 using System;
 using System.Collections.Generic;
 
@@ -98,12 +99,13 @@ internal static class PairLetterPlan
     /// <summary>
     /// The partner <paramref name="me"/> will have and whether they carry,
     /// as far as known before <paramref name="kind"/> runs: a Role Swap turns
-    /// the Pair round, a Late Pairing names both but not who carries, a Pair
-    /// Assignment says it all, and a Pair Shuffle is a surprise. A null
+    /// the Pair round, a Late Pairing names the partner but not who carries,
+    /// a Pair Assignment says it all, and a Pair Shuffle is a surprise. A null
     /// partner with a false role means the Assignment leaves them unpaired.
+    /// <paramref name="pairs"/> are the Assignment's, or the Late Pairing's.
     /// </summary>
     public static (int? Partner, bool? Carries) Preview(
-        OperationKind kind, int me, int swapCarrier, int swapRider, IReadOnlyList<Pair>? assignment)
+        OperationKind kind, int me, int swapCarrier, int swapRider, IReadOnlyList<Pair>? pairs)
     {
         switch (kind)
         {
@@ -111,12 +113,11 @@ internal static class PairLetterPlan
                 return (swapRider, false);
             case OperationKind.RoleSwap when me == swapRider:
                 return (swapCarrier, true);
-            case OperationKind.LatePairing when me == swapCarrier:
-                return (swapRider, null);
-            case OperationKind.LatePairing when me == swapRider:
-                return (swapCarrier, null);
-            case OperationKind.PairAssignment when assignment != null:
-                foreach (Pair pair in assignment)
+            case OperationKind.LatePairing:
+                Pair? joining = pairs?.FirstOrDefault(p => p.Contains(me));
+                return (joining?.PartnerOf(me), null);
+            case OperationKind.PairAssignment when pairs != null:
+                foreach (Pair pair in pairs)
                 {
                     if (pair.Contains(me))
                     {

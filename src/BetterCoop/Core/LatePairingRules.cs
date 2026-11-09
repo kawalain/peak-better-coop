@@ -46,42 +46,111 @@ internal sealed class LatePairing
 }
 
 /// <summary>
-/// Late Pairing: two Unpaired Players form a Pair in the middle of a Run,
-/// and every other Pair stays as it is.
+/// Late Pairing: Unpaired Players form Pairs in the middle of a Run, every
+/// two that can pair at once, and every other Pair stays as it is.
 /// </summary>
 internal static class LatePairingRules
 {
     /// <summary>
-    /// The two Unpaired Players to pair next, or null when no two can be:
-    /// former partners first (one of them reconnected), then someone who is
-    /// down with someone awake, so nobody waits dead longer than needed;
-    /// two who are down wait for one to wake.
+    /// Every Pair a Late Pairing forms now from <paramref name="candidates"/>:
+    /// former partners first (one of them reconnected), then each who is down
+    /// with someone awake, so nobody waits dead longer than needed, then the
+    /// rest by Role Preference, those wishing to carry with those wishing to
+    /// ride first. Two who are down wait for one to wake, and an odd one out
+    /// waits for the next.
     /// </summary>
-    public static (int First, int Second)? PickTwo(IReadOnlyList<LateCandidate> candidates, IReadOnlyList<Pair>? former = null)
+    public static IReadOnlyList<LatePairing> FormAll(IReadOnlyList<LateCandidate> candidates, Random random, IReadOnlyList<Pair>? former = null)
     {
+        var left = candidates.GroupBy(c => c.Actor).Select(g => g.First()).OrderBy(c => c.Actor).ToList();
+        var formed = new List<LatePairing>();
+
+        bool Take(LateCandidate first, LateCandidate second)
+        {
+            if (Form(first, second, random, former) is not LatePairing pairing)
+            {
+                return false;
+            }
+
+            formed.Add(pairing);
+            left.Remove(first);
+            left.Remove(second);
+            return true;
+        }
+
         foreach (Pair pair in former ?? [])
         {
-            LateCandidate? carrier = candidates.FirstOrDefault(c => c.Actor == pair.Carrier);
-            LateCandidate? rider = candidates.FirstOrDefault(c => c.Actor == pair.Rider);
+            LateCandidate? carrier = left.FirstOrDefault(c => c.Actor == pair.Carrier);
+            LateCandidate? rider = left.FirstOrDefault(c => c.Actor == pair.Rider);
             if (carrier != null && rider != null && (carrier.Awake || rider.Awake))
             {
-                return (pair.Carrier, pair.Rider);
+                Take(carrier, rider);
             }
         }
 
-        var awake = candidates.Where(c => c.Awake).OrderBy(c => c.Actor).ToList();
-        var down = candidates.Where(c => !c.Awake).OrderBy(c => c.Actor).ToList();
-        if (awake.Count == 0)
+        foreach (LateCandidate down in left.Where(c => !c.Awake).ToList())
+        {
+            if (left.FirstOrDefault(c => c.Awake) is LateCandidate awake)
+            {
+                Take(down, awake);
+            }
+        }
+
+        List<LateCandidate> Wishing(RolePreference preference) => left.Where(c => c.Awake && c.Preference == preference).ToList();
+
+        void Match(List<LateCandidate> ones, List<LateCandidate> others)
+        {
+            while (ones.Count > 0 && others.Count > 0)
+            {
+                LateCandidate one = ones[0];
+                LateCandidate other = others[0];
+                if (one == other)
+                {
+                    // The same list: take the next one as the other.
+                    if (ones.Count < 2)
+                    {
+                        return;
+                    }
+
+                    other = ones[1];
+                }
+
+                if (!Take(one, other))
+                {
+                    return;
+                }
+
+                ones.Remove(one);
+                ones.Remove(other);
+                others.Remove(one);
+                others.Remove(other);
+            }
+        }
+
+        Match(Wishing(RolePreference.Carrier), Wishing(RolePreference.Rider));
+        Match(Wishing(RolePreference.Carrier), Wishing(RolePreference.Random));
+        Match(Wishing(RolePreference.Random), Wishing(RolePreference.Rider));
+        var anyone = left.Where(c => c.Awake).ToList();
+        Match(anyone, anyone);
+        return formed;
+    }
+
+    /// <summary>
+    /// A Pair a Late Pairing announced, checked again as it runs: both must
+    /// still be Unpaired Players and one awake. The announced roles hold,
+    /// unless the Carrier has gone down while the Rider is awake. Null when
+    /// it can no longer form.
+    /// </summary>
+    public static LatePairing? Confirm(Pair announced, IReadOnlyList<LateCandidate> candidates)
+    {
+        LateCandidate? carrier = candidates.FirstOrDefault(c => c.Actor == announced.Carrier);
+        LateCandidate? rider = candidates.FirstOrDefault(c => c.Actor == announced.Rider);
+        if (carrier == null || rider == null || announced.Carrier == announced.Rider)
         {
             return null;
         }
 
-        if (down.Count > 0)
-        {
-            return (down[0].Actor, awake[0].Actor);
-        }
-
-        return awake.Count >= 2 ? (awake[0].Actor, awake[1].Actor) : null;
+        // The announced roles as the former roles: Form keeps them unless the Carrier is down.
+        return Form(carrier, rider, new Random(0), [new Pair(announced.Carrier, announced.Rider)]);
     }
 
     /// <summary>

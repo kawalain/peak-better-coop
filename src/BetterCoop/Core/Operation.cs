@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace BetterCoop.Core;
 
@@ -27,7 +29,7 @@ internal sealed class Operation
     /// <summary>How long before the operation hands are emptied and pickups refused.</summary>
     public const double LockLeadSeconds = 0.5;
 
-    public Operation(int id, OperationKind kind, double at, int swapCarrier, int swapRider, bool done, bool calledOff = false)
+    public Operation(int id, OperationKind kind, double at, int swapCarrier, int swapRider, bool done, bool calledOff = false, IReadOnlyList<Pair>? joining = null)
     {
         Id = id;
         Kind = kind;
@@ -36,6 +38,7 @@ internal sealed class Operation
         SwapRider = swapRider;
         Done = done;
         CalledOff = calledOff;
+        Joining = joining ?? [];
     }
 
     public int Id { get; }
@@ -45,11 +48,14 @@ internal sealed class Operation
     /// <summary>Server time the operation runs at.</summary>
     public double At { get; }
 
-    /// <summary>The Carrier of the Pair a Role Swap turns round, or one of the two a Late Pairing pairs, else -1.</summary>
+    /// <summary>The Carrier of the Pair a Role Swap turns round, else -1.</summary>
     public int SwapCarrier { get; }
 
-    /// <summary>The Rider of the Pair a Role Swap turns round, or the other of the two a Late Pairing pairs, else -1.</summary>
+    /// <summary>The Rider of the Pair a Role Swap turns round, else -1.</summary>
     public int SwapRider { get; }
+
+    /// <summary>The Pairs a Late Pairing means to form, as announced; it checks each again as it runs.</summary>
+    public IReadOnlyList<Pair> Joining { get; }
 
     public bool Done { get; }
 
@@ -59,12 +65,13 @@ internal sealed class Operation
     public bool IsShuffle => Kind is OperationKind.CampfireShuffle or OperationKind.TimedShuffle or OperationKind.OrderedShuffle;
 
     /// <summary>Whether the operation concerns this player: everyone for a Pair Shuffle or a Pair Assignment.</summary>
-    public bool Involves(int actor) => IsShuffle || Kind == OperationKind.PairAssignment || actor == SwapCarrier || actor == SwapRider;
+    public bool Involves(int actor) =>
+        IsShuffle || Kind == OperationKind.PairAssignment || actor == SwapCarrier || actor == SwapRider || Joining.Any(p => p.Contains(actor));
 
     /// <summary>Whether hands stay empty now: from just before the run until it is done.</summary>
     public bool Locks(double now) => !Done && ServerClock.Since(now, At) >= -LockLeadSeconds;
 
-    public Operation Finished() => new(Id, Kind, At, SwapCarrier, SwapRider, true);
+    public Operation Finished() => new(Id, Kind, At, SwapCarrier, SwapRider, true, joining: Joining);
 
     /// <summary>
     /// The Run Rule that starts operations of <paramref name="kind"/>: turned
@@ -81,7 +88,7 @@ internal sealed class Operation
     };
 
     /// <summary>This operation called off before it ran.</summary>
-    public Operation Cancelled() => new(Id, Kind, At, SwapCarrier, SwapRider, true, calledOff: true);
+    public Operation Cancelled() => new(Id, Kind, At, SwapCarrier, SwapRider, true, calledOff: true, joining: Joining);
 
     /// <summary>
     /// The Troop Leader calling off the Pair Shuffle that is coming: the one
@@ -98,11 +105,15 @@ internal sealed class Operation
         return timedComing ? new Operation((current?.Id ?? 0) + 1, OperationKind.TimedShuffle, now, -1, -1, true, calledOff: true) : null;
     }
 
-    public object[] Encode() => [Id, (byte)Kind, At, SwapCarrier, SwapRider, Done, CalledOff];
+    public object[] Encode() =>
+    [
+        Id, (byte)Kind, At, SwapCarrier, SwapRider, Done, CalledOff,
+        Joining.Take(WireLimits.MaxScouts / 2).SelectMany(p => new[] { p.Carrier, p.Rider }).ToArray(),
+    ];
 
     public static Operation? Decode(object? value)
     {
-        if (value is not object[] { Length: 7 } parts
+        if (value is not object[] { Length: 8 } parts
             || parts[0] is not int id
             || parts[1] is not byte kind
             || parts[2] is not double at
@@ -110,13 +121,21 @@ internal sealed class Operation
             || parts[4] is not int swapRider
             || parts[5] is not bool done
             || parts[6] is not bool calledOff
+            || parts[7] is not int[] flat
+            || flat.Length > WireLimits.MaxScouts
             || !ServerClock.IsTime(at)
             || !Enum.IsDefined(typeof(OperationKind), kind))
         {
             return null;
         }
 
-        return new Operation(id, (OperationKind)kind, at, swapCarrier, swapRider, done, calledOff);
+        var joining = new List<Pair>();
+        for (int i = 0; i + 1 < flat.Length; i += 2)
+        {
+            joining.Add(new Pair(flat[i], flat[i + 1]));
+        }
+
+        return new Operation(id, (OperationKind)kind, at, swapCarrier, swapRider, done, calledOff, PairingRules.Distinct(joining));
     }
 
     /// <summary>The whole seconds left to announce in the countdown, or 0 outside it.</summary>
@@ -138,7 +157,7 @@ internal sealed class OperationQueue
     private OperationKind waiting;
 
     /// <summary>The operation to announce now, or null when it waits or is refused.</summary>
-    public Operation? Request(Operation? current, OperationKind kind, double now, int swapCarrier = -1, int swapRider = -1)
+    public Operation? Request(Operation? current, OperationKind kind, double now, int swapCarrier = -1, int swapRider = -1, IReadOnlyList<Pair>? joining = null)
     {
         if (current is { Done: false })
         {
@@ -151,7 +170,7 @@ internal sealed class OperationQueue
             return null;
         }
 
-        return new Operation((current?.Id ?? 0) + 1, kind, now + Operation.CountdownSeconds, swapCarrier, swapRider, false);
+        return new Operation((current?.Id ?? 0) + 1, kind, now + Operation.CountdownSeconds, swapCarrier, swapRider, false, joining: joining);
     }
 
     /// <summary>The Pair Shuffle that waited for <paramref name="finished"/>, if any.</summary>

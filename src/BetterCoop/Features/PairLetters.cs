@@ -54,10 +54,13 @@ internal static class PairLetters
 
             followedId = op.Id;
             closing = false;
-            IReadOnlyList<Pair>? assignment = op.Kind == OperationKind.PairAssignment
-                ? Arrangement.Decode(RoomProtocol.Get(RoomKeys.Assignment), op.Id)
-                : null;
-            preview = PairLetterPlan.Preview(op.Kind, me, op.SwapCarrier, op.SwapRider, assignment);
+            IReadOnlyList<Pair>? pairs = op.Kind switch
+            {
+                OperationKind.PairAssignment => Arrangement.Decode(RoomProtocol.Get(RoomKeys.Assignment), op.Id),
+                OperationKind.LatePairing => op.Joining,
+                _ => null,
+            };
+            preview = PairLetterPlan.Preview(op.Kind, me, op.SwapCarrier, op.SwapRider, pairs);
             Pair? had = PairRoster.Pairs.FirstOrDefault(p => p.Contains(me));
             before = (had?.PartnerOf(me), had == null ? null : had.Carrier == me);
             letter.Open(Strings.LetterHeading(op.Kind), Portraits, NameOf, me);
