@@ -155,6 +155,8 @@ internal static class CarryRecords
                 || body.isBot
                 || body.data.dead
                 || body.data.carriedPlayer is not Character carried
+                // A scout who left while carried leaves the game's reference behind, destroyed.
+                || carried == null
                 || (PairRoster.TryGetPartner(body, out Character partner) && partner == carried))
             {
                 continue;

@@ -46,6 +46,7 @@ internal static class RescueCarry
         PairRoster.RoleOf(carrier) == PairRole.Carrier
         && PairRoster.TryGetPartner(carrier, out Character rider)
         && rider.data.carriedPlayer is Character rescued
+        && rescued != null
         && rescued != carrier
             ? rescued
             : null;
