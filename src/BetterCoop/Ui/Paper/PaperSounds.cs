@@ -25,6 +25,9 @@ internal static class PaperSounds
 
         /// <summary>A page taken from the hand: a passport tab's paper.</summary>
         HandIn,
+
+        /// <summary>A typewriter's key striking: the passport's keys.</summary>
+        Key,
     }
 
     private static readonly Dictionary<Kind, (string Effect, float Volume)> Borrowed = new()
@@ -33,6 +36,7 @@ internal static class PaperSounds
         [Kind.Stamp] = ("SFXI Impact Book 2", 0.45f),
         [Kind.Crumple] = ("SFXI UI Handbook Flip 1", 0.55f),
         [Kind.HandIn] = ("SFXI Passport Tab 2", 0.6f),
+        [Kind.Key] = ("SFXI Passport Gridbutton 5", 0.3f),
     };
 
     /// <summary>How long a sound not found waits before it is looked for again: the search walks every loaded asset.</summary>

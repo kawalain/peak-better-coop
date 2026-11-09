@@ -96,11 +96,13 @@ internal sealed class ZooPage : PaperPage
         list.Note(() => T(
             "작은 글씨의 안내문입니다. 한 줄을 넘으면 다음 줄로 넘어가며, 항목은 그만큼 높아집니다.",
             "A note in small print. Longer than a line, it wraps and its entry grows to fit."));
-        list.Field(() => T("항목", "Field"), () => T("펜으로 쓴 답", "Answer in pen"));
+        list.Field(() => T("항목", "Field"), () => T("타자로 친 값", "Typed value"));
         list.Field(
             () => T("설명이 붙은 항목", "Field with small print"),
             () => T("값", "Value"),
-            about: () => T("라벨 아래에 작은 글씨로 설명이 붙습니다.", "Small print sits under the label."));
+            about: () => T(
+                "라벨 아래에 작은 글씨로 설명이 붙습니다. 값은 타자기로 치며, 서식이 처음 올라올 때와 값이 바뀔 때 한 글자씩 칩니다.",
+                "Small print sits under the label. Values are typed: a letter at a time when the form first comes up and whenever they change."));
         list.Check(
             () => T("체크 박스", "Check box"),
             () => check,

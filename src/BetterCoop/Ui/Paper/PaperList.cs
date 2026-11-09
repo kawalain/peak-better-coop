@@ -27,6 +27,14 @@ internal sealed class PaperList
 
     private const float RuleHeight = 5f;
 
+    /// <summary>When, as the form first opens, its typed values start being typed in, a little later for each row down.</summary>
+    private const float TypeInDelay = 0.25f;
+
+    private const float TypeInStep = 0.05f;
+
+    /// <summary>The latest a row's typing starts, however far down the form it lies.</summary>
+    private const float TypeInLongest = 0.9f;
+
     /// <summary>The size of the trail sign before a heading.</summary>
     private const float SignSize = 40f;
 
@@ -87,6 +95,9 @@ internal sealed class PaperList
     private readonly TMP_Text template;
 
     private int section;
+
+    /// <summary>How many times the form has been filled; the first time, its typed values are typed in as it opens.</summary>
+    private int fills;
 
     public PaperList(RectTransform content, Button buttonTemplate)
     {
@@ -194,12 +205,11 @@ internal sealed class PaperList
         Add(row);
     }
 
-    /// <summary>A printed label leading by dots to an answer written in pen.</summary>
+    /// <summary>A printed label leading by dots to a value typed in by the office, as on a typed form.</summary>
     public void Field(Func<string> label, Func<string> value, Func<string>? about = null, Func<bool>? visible = null)
     {
         (PaperRow row, RectTransform line) = FieldRow(label, about, visible, leader: true);
-        TMP_Text answer = AddText(line, "Answer", PaperText.Label, TextAlignmentOptions.BottomRight, flexible: false);
-        answer.color = Pen;
+        TMP_Text answer = Typed(line, "Answer", PaperText.Label);
         row.Refreshers.Add(() => PaperText.Set(answer, value()));
         Add(row);
     }
@@ -315,8 +325,7 @@ internal sealed class PaperList
         (PaperRow row, RectTransform line) = FieldRow(label, about, visible, leader: true);
         if (value != null)
         {
-            TMP_Text answer = AddText(line, "Answer", PaperText.Label, TextAlignmentOptions.BottomRight, flexible: false);
-            answer.color = Pen;
+            TMP_Text answer = Typed(line, "Answer", PaperText.Label);
             row.Refreshers.Add(() => PaperText.Set(answer, value()));
         }
 
@@ -648,6 +657,7 @@ internal sealed class PaperList
         rows.Clear();
         backs.Clear();
         section = 0;
+        fills++;
     }
 
     public void Refresh()
@@ -670,6 +680,19 @@ internal sealed class PaperList
     }
 
     internal static Color Faded(Color color, float alpha) => new(color.r, color.g, color.b, color.a * alpha);
+
+    /// <summary>
+    /// A value typed onto the form in ribbon black (see <see cref="Typewritten"/>):
+    /// the first time the form is filled, typed in row after row as it opens.
+    /// </summary>
+    private TMP_Text Typed(Transform parent, string name, float size, TextAlignmentOptions alignment = TextAlignmentOptions.BottomRight, bool flexible = false)
+    {
+        TMP_Text text = AddText(parent, name, size, alignment, flexible);
+        text.color = PaperText.Ink;
+        bool opening = fills <= 1;
+        Typewritten.Add(text, typeIn: opening, delay: TypeInDelay + Mathf.Min(rows.Count * TypeInStep, TypeInLongest));
+        return text;
+    }
 
     internal TMP_Text AddText(Transform parent, string name, float size, TextAlignmentOptions alignment, bool flexible)
     {
