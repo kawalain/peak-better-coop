@@ -13,6 +13,9 @@ internal enum RunRule
     CarryWeight,
     RiderPicksFromBackpack,
     AllowOddPlayerCount,
+    FollowRolePreferences,
+    AllowSwapRequests,
+    LatePairing,
 }
 
 /// <summary>

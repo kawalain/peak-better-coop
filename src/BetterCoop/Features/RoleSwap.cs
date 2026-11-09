@@ -33,12 +33,13 @@ internal static class RoleSwap
 
     internal static bool Pending => pending != null;
 
-    /// <summary>Whether the local player may ask now: alive, paired, on the island, and no operation under way.</summary>
+    /// <summary>Whether the local player may ask now: the Run Rules allow it, alive, paired, on the island, and no operation under way.</summary>
     internal static bool CanRequest(out Character partner)
     {
         partner = null!;
         Character local = Character.localCharacter;
-        return local != null
+        return RunRules.AllowSwapRequests
+            && local != null
             && !local.data.dead
             && GameHandler.IsOnIsland
             && !PairShuffle.Busy
@@ -51,6 +52,12 @@ internal static class RoleSwap
         if (pending != null)
         {
             Withdraw(Strings.SwapCancelled);
+            return;
+        }
+
+        if (!RunRules.AllowSwapRequests)
+        {
+            CoopNotice.Info(Strings.SwapNotAllowed);
             return;
         }
 
@@ -99,7 +106,11 @@ internal static class RoleSwap
         }
 
         Character local = Character.localCharacter;
-        if (PairShuffle.Current is { Done: false, IsShuffle: true })
+        if (!RunRules.AllowSwapRequests)
+        {
+            Withdraw(Strings.SwapNotAllowed);
+        }
+        else if (PairShuffle.Current is { Done: false, IsShuffle: true })
         {
             Withdraw(Strings.SwapCancelledByShuffle);
         }
@@ -120,7 +131,7 @@ internal static class RoleSwap
     /// <summary>On the Troop Leader: a Pair whose partners both ask in time swaps places.</summary>
     internal static void HostTick()
     {
-        if (PairShuffle.Busy)
+        if (PairShuffle.Busy || !RunRules.AllowSwapRequests)
         {
             return;
         }

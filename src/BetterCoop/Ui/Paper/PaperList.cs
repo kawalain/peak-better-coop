@@ -111,6 +111,19 @@ internal sealed class PaperList
         Add(row);
     }
 
+    /// <summary>A small heading inside a section, grouping the rows under it.</summary>
+    public void Subheading(Func<string> text, Func<bool>? visible = null)
+    {
+        PaperRow row = NewRow("Subheading", 0f, visible, TextAnchor.LowerLeft);
+        row.Root.GetComponent<VerticalLayoutGroup>().padding = new RectOffset(12, 12, 18, 0);
+        TMP_Text title = AddText(row.Root.transform, "Title", PaperText.Note, TextAlignmentOptions.BottomLeft, flexible: true);
+        title.fontStyle = FontStyles.Bold | FontStyles.SmallCaps;
+        title.characterSpacing = 3f;
+        title.color = Faded(PaperText.Blue, 0.85f);
+        row.Refreshers.Add(() => PaperText.Set(title, text()));
+        Add(row);
+    }
+
     /// <summary>A paragraph in small print.</summary>
     public void Note(Func<string> text, Func<bool>? visible = null)
     {
@@ -156,18 +169,37 @@ internal sealed class PaperList
     /// A question whose answer is chosen from a few: every answer is printed
     /// and the chosen one is ringed in pen. Many answers show as one, with
     /// arrows to step through them. Either way a right click or left steps
-    /// back, and the right arrow forward.
+    /// back, and the right arrow forward. While <paramref name="locked"/>
+    /// gives a reason, the answers show faint and a press only says why.
     /// </summary>
     public void Choice<T>(
         Func<string> label,
         Func<T> get,
-        Action<T> set,
+        Action<T> change,
         Func<IReadOnlyList<T>> choices,
         Func<T, string> name,
         Func<string>? about = null,
-        Func<bool>? visible = null)
+        Func<bool>? visible = null,
+        Func<string?>? locked = null)
     {
         (PaperRow row, RectTransform line) = FieldRow(label, about, visible, leader: true);
+        void set(T value)
+        {
+            if (locked?.Invoke() is string reason)
+            {
+                CoopNotice.Info(reason);
+                return;
+            }
+
+            change(value);
+        }
+
+        if (locked != null)
+        {
+            CanvasGroup faint = line.gameObject.AddComponent<CanvasGroup>();
+            row.Refreshers.Add(() => faint.alpha = locked() != null ? 0.45f : 1f);
+        }
+
         void StepBy(int by) => set(Steps.Next(choices(), get(), by));
         IReadOnlyList<T> first = choices();
         if (first.Count is > 0 and <= 4)

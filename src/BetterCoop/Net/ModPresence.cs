@@ -22,6 +22,10 @@ internal sealed class ModPresence : MonoBehaviourPunCallbacks
             ? (RolePreference)role
             : RolePreference.Random;
 
+    /// <summary>The role a player is paired by: their Role Preference, unless the Run Rules draw roles at random.</summary>
+    public static RolePreference PairingRoleOf(PhotonPlayer player) =>
+        RunRules.FollowRolePreferences ? RoleOf(player) : RolePreference.Random;
+
     private void Start()
     {
         CoopConfig.RolePreference.SettingChanged += (_, _) => Publish();

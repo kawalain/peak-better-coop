@@ -247,7 +247,8 @@ internal static class PairShuffle
     /// <summary>Announces a Late Pairing when two Unpaired Players can be paired.</summary>
     private static void RequestLatePairing()
     {
-        if (PairRoster.Formed
+        if (RunRules.LatePairing
+            && PairRoster.Formed
             && PairRoster.Read() is PairingResult current
             && LatePairingRules.PickTwo(LateCandidates(current), FormerPairs.InRoom()) is (int first, int second))
         {
@@ -274,7 +275,7 @@ internal static class PairShuffle
             }
 
             bool awake = !character.data.dead && !character.data.passedOut && !character.data.fullyPassedOut;
-            candidates.Add(new LateCandidate(player.ActorNumber, ModPresence.RoleOf(player), awake, character.Center.y));
+            candidates.Add(new LateCandidate(player.ActorNumber, ModPresence.PairingRoleOf(player), awake, character.Center.y));
         }
 
         return candidates;
@@ -346,7 +347,7 @@ internal static class PairShuffle
                 && ModPresence.VersionOf(p) == MyPluginInfo.PLUGIN_VERSION
                 && IsAlive(p.ActorNumber)
                 && !kept.Any(k => k.Contains(p.ActorNumber)))
-            .Select(p => new PairCandidate(p.ActorNumber, ModPresence.RoleOf(p)))
+            .Select(p => new PairCandidate(p.ActorNumber, ModPresence.PairingRoleOf(p)))
             .ToList();
         PairingResult formed = PairingRules.Reshuffle(candidates, new System.Random(), before.Pairs, before.Unpaired);
         var pairs = kept.Concat(formed.Pairs).ToList();

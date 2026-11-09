@@ -214,6 +214,44 @@ internal static class Strings
 
     public static string RuleAllowOddPlayerCount => Korean ? "홀수 인원 출발 허용" : "Allow Odd Player Count";
 
+    public static string RuleFollowRolePreferences => Korean ? "대원 희망 역할 들어주기" : "Honour role wishes";
+
+    public static string RuleAllowSwapRequests => Korean ? "대원끼리 자리 바꾸기" : "Scouts may swap places";
+
+    public static string RuleLatePairing => Korean ? "짝 없는 대원 이어주기" : "Pair up the partnerless";
+
+    public static string RulesPairs => Korean ? "짝" : "Pairs";
+
+    public static string RulesShuffles => Korean ? "짝 섞기" : "Shuffles";
+
+    public static string RulesHandover => Korean ? "몸 인계" : "Body Handover";
+
+    public static string RulesCarrying => Korean ? "업기" : "Carrying";
+
+    public static string AboutFollowRolePreferences => Korean
+        ? "짝을 정할 때 대원이 원하는 역할을 되도록 들어줍니다. 끄면 역할을 제비뽑기로 정합니다."
+        : "Scouts get the role they wish for where it fits; off, roles are drawn by lot.";
+
+    public static string AboutAllowSwapRequests => Korean
+        ? "짝 둘이 함께 요청하면 업는 사람과 업힌 사람을 바꿀 수 있습니다."
+        : "The two of a Pair may trade Carrier and Rider when both ask.";
+
+    public static string AboutLatePairing => Korean
+        ? "짝 없는 대원이 둘 생기면 바로 짝을 지어 줍니다. 끄면 다음 짝 섞기까지 혼자 오릅니다."
+        : "Two scouts without a partner are paired at once; off, they climb alone until the next shuffle.";
+
+    public static string AboutRolePreferenceIgnored => Korean
+        ? "분대장이 역할을 제비뽑기로 정하기로 했습니다."
+        : "The Troop Leader draws roles by lot for now.";
+
+    public static string AboutSwapNotAllowed => Korean
+        ? "분대장이 자리 바꾸기를 막아 두었습니다."
+        : "The Troop Leader has not allowed swapping places.";
+
+    public static string SwapNotAllowed => Korean
+        ? "코옵: 분대장이 자리 바꾸기를 막아 두었습니다."
+        : "Coop: the Troop Leader has not allowed swapping places.";
+
     public static string AboutRolePreference => Korean
         ? "짝 편성과 짝 섞기에서 원하는 역할입니다. 다음 번부터 적용됩니다."
         : "The role you would like when Pairs are formed or shuffled; applies from the next time.";

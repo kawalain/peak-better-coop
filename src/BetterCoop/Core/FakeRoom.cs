@@ -31,6 +31,9 @@ internal sealed class FakeRoom : ICoopRoom
         [RunRule.CarryWeight] = true,
         [RunRule.RiderPicksFromBackpack] = true,
         [RunRule.AllowOddPlayerCount] = false,
+        [RunRule.FollowRolePreferences] = true,
+        [RunRule.AllowSwapRequests] = true,
+        [RunRule.LatePairing] = true,
     };
 
     private readonly List<int> players;
@@ -89,7 +92,7 @@ internal sealed class FakeRoom : ICoopRoom
 
     public bool SwapPending => false;
 
-    public bool CanAskSwap => this.PairOf(Me) != null;
+    public bool CanAskSwap => rules[RunRule.AllowSwapRequests] && this.PairOf(Me) != null;
 
     public bool Busy => false;
 
@@ -118,7 +121,7 @@ internal sealed class FakeRoom : ICoopRoom
     /// <summary>The partner agrees at once, so the two trade roles straight away.</summary>
     public void ToggleSwap()
     {
-        if (this.PairOf(Me) is Pair pair)
+        if (CanAskSwap && this.PairOf(Me) is Pair pair)
         {
             SwapRoles(pair);
         }
@@ -202,10 +205,10 @@ internal sealed class FakeRoom : ICoopRoom
     /// <summary>Pairs up the Unpaired Players two by two, as Late Pairing would once they settle.</summary>
     private void PairLeftovers()
     {
-        while (true)
+        while (rules[RunRule.LatePairing])
         {
             var candidates = unpaired
-                .Select(a => new LateCandidate(a, preferences[a], awake: true, height: 0f))
+                .Select(a => new LateCandidate(a, Wish(a), awake: true, height: 0f))
                 .ToList();
             if (LatePairingRules.PickTwo(candidates) is not (int first, int second)
                 || LatePairingRules.Form(candidates.First(c => c.Actor == first), candidates.First(c => c.Actor == second), random) is not LatePairing formed)
@@ -224,5 +227,9 @@ internal sealed class FakeRoom : ICoopRoom
         PairingRules.Arrange(new PairingResult(pairs, unpaired, []), wanted, players, players.Contains, _ => true, _ => true);
 
     private List<PairCandidate> Candidates() =>
-        players.Select(a => new PairCandidate(a, preferences[a])).ToList();
+        players.Select(a => new PairCandidate(a, Wish(a))).ToList();
+
+    /// <summary>A player's Role Preference, unless the Run Rules draw roles by lot.</summary>
+    private RolePreference Wish(int actor) =>
+        rules[RunRule.FollowRolePreferences] ? preferences[actor] : RolePreference.Random;
 }

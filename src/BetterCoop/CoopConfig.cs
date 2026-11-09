@@ -24,6 +24,12 @@ internal static class CoopConfig
 
     public static ConfigEntry<bool> HandOverItems { get; private set; } = null!;
 
+    public static ConfigEntry<bool> FollowRolePreferences { get; private set; } = null!;
+
+    public static ConfigEntry<bool> AllowSwapRequests { get; private set; } = null!;
+
+    public static ConfigEntry<bool> LatePairing { get; private set; } = null!;
+
     public static ConfigEntry<bool> VerboseLog { get; private set; } = null!;
 
     public static ConfigEntry<bool> SoloPair { get; private set; } = null!;
@@ -43,6 +49,24 @@ internal static class CoopConfig
             "Role Preference",
             Core.RolePreference.Random,
             "Your wish when Pairs are formed: Carrier (keyboard), Rider (mouse), or Random for either. Conflicts are settled at random.");
+
+        FollowRolePreferences = config.Bind(
+            "Pair",
+            "Honour Role Wishes",
+            true,
+            "When Pairs are formed, shuffled, or paired late, give players the role they wish for where it fits. Off: roles are drawn at random. A Pair Plan or Pair Assignment always comes first. The host's value applies.");
+
+        AllowSwapRequests = config.Bind(
+            "Pair",
+            "Scouts May Swap Places",
+            true,
+            "Let the two of a Pair trade Carrier and Rider when both ask for it. The Troop Leader can always set roles on the Roster. The host's value applies.");
+
+        LatePairing = config.Bind(
+            "Pair",
+            "Pair Up The Partnerless",
+            true,
+            "During a Run, pair two players without a partner as soon as there are two. Off: they climb alone until the next Pair Shuffle or Pair Assignment. The host's value applies.");
 
         RiderPicksFromBackpack = config.Bind(
             "Pair",

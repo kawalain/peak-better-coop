@@ -381,7 +381,7 @@ internal sealed class PairingDirector : MonoBehaviourPunCallbacks
     {
         var candidates = spawned
             .Where(p => ModPresence.VersionOf(p) == MyPluginInfo.PLUGIN_VERSION)
-            .Select(p => new PairCandidate(p.ActorNumber, ModPresence.RoleOf(p)))
+            .Select(p => new PairCandidate(p.ActorNumber, ModPresence.PairingRoleOf(p)))
             .ToList();
         PairingResult formed = PairingRules.Form(candidates, new System.Random());
 

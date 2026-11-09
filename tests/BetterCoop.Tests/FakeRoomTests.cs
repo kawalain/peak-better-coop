@@ -49,6 +49,48 @@ public class FakeRoomTests
     }
 
     [Fact]
+    public void Without_Late_Pairing_those_an_assignment_leaves_out_stay_unpaired()
+    {
+        var room = new FakeRoom(8, troopLeader: true, formed: true);
+        room.SetRule(RunRule.LatePairing, false);
+        Pair first = room.Pairs[0];
+        Pair second = room.Pairs[1];
+
+        Assert.True(room.Arrange(room.Pairs.Skip(2).Append(new Pair(first.Carrier, second.Carrier)).ToList()));
+
+        Assert.Equal(3, room.Pairs.Count);
+        Assert.Equal(2, room.Unpaired().Count());
+        Assert.True(EveryoneOnce(room));
+    }
+
+    [Fact]
+    public void Swapping_places_waits_on_the_rule()
+    {
+        var room = new FakeRoom(4, troopLeader: false, formed: true);
+        Pair mine = room.PairOf(room.Me)!;
+        room.SetRule(RunRule.AllowSwapRequests, false);
+
+        Assert.False(room.CanAskSwap);
+        room.ToggleSwap();
+        Assert.Equal(mine.Carrier, room.PairOf(room.Me)!.Carrier);
+
+        room.SetRule(RunRule.AllowSwapRequests, true);
+        Assert.True(room.CanAskSwap);
+        room.ToggleSwap();
+        Assert.Equal(mine.Rider, room.PairOf(room.Me)!.Carrier);
+    }
+
+    [Fact]
+    public void Every_rule_starts_out_leaving_players_free()
+    {
+        var room = new FakeRoom(4, troopLeader: true, formed: false);
+
+        Assert.True(room.Rule(RunRule.FollowRolePreferences));
+        Assert.True(room.Rule(RunRule.AllowSwapRequests));
+        Assert.True(room.Rule(RunRule.LatePairing));
+    }
+
+    [Fact]
     public void An_assignment_pairs_the_two_and_their_former_partners_pair_up()
     {
         var room = new FakeRoom(8, troopLeader: true, formed: true);

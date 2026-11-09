@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using BetterCoop.Core;
+using BetterCoop.Net;
 using BetterCoop.Ui;
 using BetterCoop.Ui.Paper;
 using Photon.Pun;
@@ -265,13 +266,15 @@ internal static class PlayerRows
     public static void Add(PaperList list, ICoopRoom room)
     {
         list.Header(() => Strings.MenuYou);
+        Func<bool> wishesHeard = () => room.Rule(RunRule.FollowRolePreferences);
         list.Choice(
             () => Strings.MenuRolePreference,
             () => room.Preference,
             value => room.Preference = value,
             () => Preferences,
             Strings.RoleName,
-            about: () => Strings.AboutRolePreference);
+            about: () => wishesHeard() ? Strings.AboutRolePreference : Strings.AboutRolePreferenceIgnored,
+            locked: () => wishesHeard() ? null : Strings.AboutRolePreferenceIgnored);
         Func<bool> paired = () => room.PairOf(room.Me) != null;
         list.Field(() => Strings.MenuPartner, () => PartnerName(room), visible: paired);
         list.Field(() => Strings.MenuYourRole, () => Strings.RoleOf(room.PairOf(room.Me)?.Carrier == room.Me), visible: paired);
@@ -280,7 +283,7 @@ internal static class PlayerRows
             () => room.SwapPending ? Strings.StampCancel : Strings.StampAsk,
             room.ToggleSwap,
             available: () => room.SwapPending || room.CanAskSwap,
-            about: () => Strings.AboutSwapPlaces,
+            about: () => room.Rule(RunRule.AllowSwapRequests) ? Strings.AboutSwapPlaces : Strings.AboutSwapNotAllowed,
             visible: paired);
         list.Field(
             () => Strings.MenuPartner,
@@ -341,6 +344,12 @@ internal static class TroopLeaderRows
             visible: () => room.Formed);
 
         list.Header(() => Strings.MenuRunRules);
+        list.Subheading(() => Strings.RulesPairs);
+        Rule(list, room, RunRule.FollowRolePreferences, () => Strings.RuleFollowRolePreferences, () => Strings.AboutFollowRolePreferences);
+        Rule(list, room, RunRule.AllowSwapRequests, () => Strings.RuleAllowSwapRequests, () => Strings.AboutAllowSwapRequests);
+        Rule(list, room, RunRule.LatePairing, () => Strings.RuleLatePairing, () => Strings.AboutLatePairing);
+        Rule(list, room, RunRule.AllowOddPlayerCount, () => Strings.RuleAllowOddPlayerCount, () => Strings.AboutAllowOddPlayerCount);
+        list.Subheading(() => Strings.RulesShuffles);
         Rule(list, room, RunRule.CampfireShuffle, () => Strings.RuleCampfireShuffle, () => Strings.AboutCampfireShuffle);
         Rule(list, room, RunRule.TimedShuffle, () => Strings.RuleTimedShuffle, () => Strings.AboutTimedShuffle);
         list.Choice(
@@ -350,11 +359,12 @@ internal static class TroopLeaderRows
             () => Intervals,
             Strings.Minutes,
             about: () => Strings.AboutTimedShuffleInterval);
+        list.Subheading(() => Strings.RulesHandover);
         Rule(list, room, RunRule.HandOverPlace, () => Strings.RuleHandOverPlace, () => Strings.AboutHandOverPlace);
         Rule(list, room, RunRule.HandOverItems, () => Strings.RuleHandOverItems, () => Strings.AboutHandOverItems);
+        list.Subheading(() => Strings.RulesCarrying);
         Rule(list, room, RunRule.CarryWeight, () => Strings.RuleCarryWeight, () => Strings.AboutCarryWeight);
         Rule(list, room, RunRule.RiderPicksFromBackpack, () => Strings.RuleRiderPicksFromBackpack, () => Strings.AboutRiderPicksFromBackpack);
-        Rule(list, room, RunRule.AllowOddPlayerCount, () => Strings.RuleAllowOddPlayerCount, () => Strings.AboutAllowOddPlayerCount);
     }
 
     /// <summary>Says why a Pair change the Troop Leader ordered did not start.</summary>
@@ -374,7 +384,7 @@ internal static class TroopLeaderRows
 /// <summary>
 /// The game's own room as the Roster sees it. A Run Rule is the Troop
 /// Leader's own setting, saved and published to the room as any change in
-/// the config editor is.
+/// the config editor is; every other player reads the room's.
 /// </summary>
 internal sealed class LiveRoom : ICoopRoom
 {
@@ -427,23 +437,11 @@ internal sealed class LiveRoom : ICoopRoom
 
     public bool Arrange(IReadOnlyList<Pair> pairs) => PairShuffle.RequestAssignment(pairs);
 
-    public bool Rule(RunRule rule) => Entry(rule).Value;
+    public bool Rule(RunRule rule) => IsTroopLeader ? RunRules.Entry(rule).Value : RunRules.Is(rule);
 
-    public void SetRule(RunRule rule, bool on) => Entry(rule).Value = on;
+    public void SetRule(RunRule rule, bool on) => RunRules.Entry(rule).Value = on;
 
     public void Tick(float seconds)
     {
     }
-
-    private static BepInEx.Configuration.ConfigEntry<bool> Entry(RunRule rule) => rule switch
-    {
-        RunRule.CampfireShuffle => CoopConfig.CampfireShuffle,
-        RunRule.TimedShuffle => CoopConfig.TimedShuffle,
-        RunRule.HandOverPlace => CoopConfig.HandOverPlace,
-        RunRule.HandOverItems => CoopConfig.HandOverItems,
-        RunRule.CarryWeight => CoopConfig.CarryWeight,
-        RunRule.RiderPicksFromBackpack => CoopConfig.RiderPicksFromBackpack,
-        RunRule.AllowOddPlayerCount => CoopConfig.AllowOddPlayerCount,
-        _ => throw new ArgumentOutOfRangeException(nameof(rule), rule, null),
-    };
 }
