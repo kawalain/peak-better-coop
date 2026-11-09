@@ -14,7 +14,9 @@ Run it with `uv run tools/peak_mcp.py`; `.mcp.json` registers it for Claude Code
 """
 
 import json
+import os
 import socket
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -27,12 +29,39 @@ TIMEOUT = 30.0
 mcp = MCPServer("peak")
 
 
+def alive(pid: int) -> bool:
+    """Whether a process with this id is running, without touching it."""
+    if sys.platform == "win32":
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return False
+        code = ctypes.c_ulong()
+        ok = kernel32.GetExitCodeProcess(handle, ctypes.byref(code))
+        kernel32.CloseHandle(handle)
+        return bool(ok) and code.value == 259  # STILL_ACTIVE
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
 def instances() -> list[dict[str, Any]]:
     found = []
     for file in sorted(REGISTRY.glob("*.json")):
         try:
             card = json.loads(file.read_text(encoding="utf-8-sig"))
         except (OSError, ValueError):
+            continue
+        if not alive(int(card["pid"])):
+            # A copy that was closed by force leaves its file behind; trying its
+            # port would cost a second each on Windows.
+            file.unlink(missing_ok=True)
             continue
         try:
             with socket.create_connection(("127.0.0.1", int(card["port"])), timeout=1.0):
