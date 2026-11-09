@@ -57,6 +57,7 @@ internal static partial class ControlCommands
         ["press"] = new("{id, right?}: presses a control listed by 'controls', as a left (or right) click.", Press),
         ["console"] = new("{name?, args?}: runs one of the game's own console commands, but none that change what the account keeps; without a name, lists them.", Console),
         ["warp"] = new("{x, y, z} or {to: actor}: moves this copy's scout there, as the game's own warp.", Warp),
+        ["interact"] = new("{actor}: acts on that player's scout as the interact key does when aimed at it, such as picking them up; answers with what the game offered.", Interact),
         ["menu"] = new("{action: pause|back}: opens the pause menu, or goes back as the pause key does.", Menu),
         ["scroll"] = new("{to}: scrolls the open paper form to the first text containing 'to'.", Scroll),
         ["depart"] = new("At the Airport: boards for the Run as the boarding pass does, through the mod's own checks.", _ => Depart()),
@@ -585,6 +586,23 @@ internal static partial class ControlCommands
         pass.kiosk = kiosk;
         pass.StartGame();
         return "boarding";
+    }
+
+    private static JToken Interact(JObject args)
+    {
+        Character me = Character.localCharacter ?? throw new InvalidOperationException("no scout of this copy");
+        int actor = (int?)args["actor"] ?? throw new ArgumentException("needs actor");
+        Character other = Character.AllCharacters.FirstOrDefault(c => c != null && c.photonView?.Owner?.ActorNumber == actor)
+            ?? throw new ArgumentException($"no scout of actor {actor}");
+        CharacterInteractible target = other.refs.interactible;
+        if (!target.IsInteractible(me))
+        {
+            return "nothing to do";
+        }
+
+        string offered = target.GetInteractionText();
+        target.Interact(me);
+        return offered;
     }
 
     private static JToken Warp(JObject args)

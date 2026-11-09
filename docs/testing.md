@@ -29,6 +29,7 @@ then each guest with `--only` in the order wanted. The commands used below:
 | `order {what, ...}` | a Roster order, under the Roster's rules |
 | `depart` | boards for the Run from the Airport |
 | `warp {to}` | moves this copy's scout, as the game's warp |
+| `interact {actor}` | acts on that scout as the interact key does when aimed at them, e.g. a Rescue Carry |
 | `console {name}` | the game's console, e.g. `Character.Die`; none that change what the account keeps |
 | `photo {actor}` | takes a passport photo again and saves it as a PNG |
 | `drill {what: forge, key, actor?}` | writes a made-up mod value as a player who may not |
