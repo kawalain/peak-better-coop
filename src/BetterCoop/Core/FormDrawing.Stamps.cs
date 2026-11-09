@@ -184,6 +184,15 @@ internal static partial class FormDrawing
                 break;
         }
 
+        if (shape == StampShape.MuteOval)
+        {
+            FrayEllipse(svg, cx, cy, width / 2f - 2f, height / 2f - 2f, on, seed);
+        }
+        else
+        {
+            FrayCircle(svg, cx, cy, r, on, seed);
+        }
+
         Wear(svg, width, height, seed, inked ? 60 : 80);
         return Close(svg);
     }
@@ -199,6 +208,7 @@ internal static partial class FormDrawing
         Pressure(svg, 0f, 0f, width, height, (x, y) => x > corner * 0.6f && x < width - corner * 0.6f && y > 4f && y < height - 4f, ink, seed);
         float gap = outer * 2.2f;
         svg.Append(F($"<rect x=\"{gap}\" y=\"{gap}\" width=\"{width - 2f * gap}\" height=\"{height - 2f * gap}\" rx=\"{Math.Max(1f, r - gap / 2f)}\" fill=\"none\" stroke=\"{Paper.Hex}\" stroke-width=\"{outer * 0.45f}\"/>"));
+        FrayBox(svg, width, height, corner, ink.Hex, seed);
         Wear(svg, width, height, seed, (int)((width + height) / 4f));
         return Close(svg);
     }
@@ -360,6 +370,95 @@ internal static partial class FormDrawing
         }
 
         svg.Append(F($"<path d=\"{path}Z\" fill=\"{colour}\"/>"));
+    }
+
+    /// <summary>
+    /// A stamp's rim as rubber really prints it: never a clean line, but
+    /// spread in small bumps where the rubber pressed hard and bitten where
+    /// it barely met the paper. <paramref name="at"/> gives the point a
+    /// fraction 0 to 1 of the way round the edge, <paramref name="length"/>
+    /// long, and the way out from it.
+    /// </summary>
+    internal static void Fray(StringBuilder svg, float length, Func<float, (float X, float Y, float OutX, float OutY)> at, string ink, int seed)
+    {
+        var hand = new Random(seed * 17 + 3);
+        string paper = Paper.Hex;
+        int steps = Math.Max(12, (int)(length / 2.4f));
+        for (int i = 0; i < steps; i++)
+        {
+            (float x, float y, float outX, float outY) = at((i + Next(hand, 0f, 0.8f)) / steps);
+            float pressed = InkDrying.Noise(x / 6f, y / 6f, seed + 211);
+            if (pressed > 0.6f)
+            {
+                float out_ = Next(hand, 0.2f, 0.9f);
+                Blot(svg, hand, x + outX * out_, y + outY * out_, Next(hand, 1.1f, 2f) + (pressed - 0.6f) * 3f, ink);
+            }
+            else if (pressed < 0.32f)
+            {
+                float into = Next(hand, 0f, 0.7f);
+                Blot(svg, hand, x - outX * into, y - outY * into, Next(hand, 1f, 1.9f) + (0.32f - pressed) * 4f, paper);
+            }
+        }
+    }
+
+    /// <summary>Frays the rim of a round stamp whose outer edge is <paramref name="r"/> from its middle.</summary>
+    internal static void FrayCircle(StringBuilder svg, float cx, float cy, float r, string ink, int seed) =>
+        Fray(svg, 2f * (float)Math.PI * r, t =>
+        {
+            double angle = t * 2 * Math.PI;
+            float c = (float)Math.Cos(angle);
+            float s = (float)Math.Sin(angle);
+            return (cx + c * r, cy + s * r, c, s);
+        }, ink, seed);
+
+    private static void FrayEllipse(StringBuilder svg, float cx, float cy, float rx, float ry, string ink, int seed) =>
+        Fray(svg, (float)Math.PI * (rx + ry), t =>
+        {
+            double angle = t * 2 * Math.PI;
+            float c = (float)Math.Cos(angle);
+            float s = (float)Math.Sin(angle);
+            float nx = c / rx;
+            float ny = s / ry;
+            float n = (float)Math.Sqrt(nx * nx + ny * ny);
+            return (cx + c * rx, cy + s * ry, nx / n, ny / n);
+        }, ink, seed);
+
+    /// <summary>Frays the rim of a box stamp filling its <paramref name="width"/> and <paramref name="height"/>, its corners rounded by <paramref name="corner"/>.</summary>
+    internal static void FrayBox(StringBuilder svg, float width, float height, float corner, string ink, int seed)
+    {
+        corner = Math.Min(corner, Math.Min(width, height) / 2f);
+        float across = width - 2f * corner;
+        float down = height - 2f * corner;
+        float arc = (float)Math.PI * corner / 2f;
+        float length = 2f * (across + down) + 4f * arc;
+        Fray(svg, length, t =>
+        {
+            float along = t * length;
+            (float x, float y, float ox, float oy) Arc(float cx, float cy, float start, float by)
+            {
+                double angle = start + by / Math.Max(1e-3f, corner);
+                float c = (float)Math.Cos(angle);
+                float s = (float)Math.Sin(angle);
+                return (cx + c * corner, cy + s * corner, c, s);
+            }
+
+            float half = (float)Math.PI / 2f;
+            if (along < across) return (corner + along, 0f, 0f, -1f);
+            along -= across;
+            if (along < arc) return Arc(width - corner, corner, -half, along);
+            along -= arc;
+            if (along < down) return (width, corner + along, 1f, 0f);
+            along -= down;
+            if (along < arc) return Arc(width - corner, height - corner, 0f, along);
+            along -= arc;
+            if (along < across) return (width - corner - along, height, 0f, 1f);
+            along -= across;
+            if (along < arc) return Arc(corner, height - corner, half, along);
+            along -= arc;
+            if (along < down) return (0f, height - corner - along, -1f, 0f);
+            along -= down;
+            return Arc(corner, corner, (float)Math.PI, along);
+        }, ink, seed);
     }
 
     private static float Sq(float value) => value * value;

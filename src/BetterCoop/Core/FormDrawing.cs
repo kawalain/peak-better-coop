@@ -88,6 +88,7 @@ internal static partial class FormDrawing
             svg.Append(F($"<rect x=\"{sx - speck / 2f}\" y=\"{sy - speck / 2f}\" width=\"{speck}\" height=\"{speck * 0.8f}\" fill=\"{paper}\"/>"));
         }
 
+        FrayBox(svg, width, height, r + outer / 2f, red, seed);
         return Close(svg);
     }
 
@@ -115,6 +116,8 @@ internal static partial class FormDrawing
             svg.Append(F($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{r}\" fill=\"none\" stroke=\"{ink}\" stroke-width=\"2.6\"/>"));
             svg.Append(F($"<circle cx=\"{cx}\" cy=\"{cy}\" r=\"{r - 5f}\" fill=\"none\" stroke=\"{ink}\" stroke-width=\"1.2\"/>"));
         }
+
+        FrayCircle(svg, cx, cy, r + 1.3f, ink, seed);
 
         // The cancelling lines: five waves in step, from the ring's edge to the right.
         const int lines = 5;

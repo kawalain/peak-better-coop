@@ -102,8 +102,22 @@ public class FormDrawingTests
         XElement postmark = XElement.Parse(FormDrawing.Postmark(220f, 104f, 104f));
 
         Assert.Equal(2, postmark.Descendants(Svg + "circle").Count());
-        Assert.Equal(5, postmark.Descendants(Svg + "path").Count());
-        Assert.All(postmark.Descendants(Svg + "path"), p => Assert.Equal(FormDrawing.PostmarkInk.Hex, p.Attribute("stroke")!.Value));
+        var lines = postmark.Descendants(Svg + "path").Where(p => p.Attribute("stroke") != null).ToList();
+        Assert.Equal(5, lines.Count);
+        Assert.All(lines, p => Assert.Equal(FormDrawing.PostmarkInk.Hex, p.Attribute("stroke")!.Value));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void A_stamp_rim_is_frayed_with_ink_pressed_out_and_paper_bitten_in(bool inked)
+    {
+        XElement seal = XElement.Parse(FormDrawing.Seal(StampShape.DateRing, 104f, 104f, FormDrawing.StampBlue, inked));
+        var blots = seal.Descendants(Svg + "path").Where(p => p.Attribute("stroke") == null).Select(p => p.Attribute("fill")!.Value).ToList();
+
+        Assert.Contains(FormDrawing.StampBlue.Hex, blots);
+        Assert.Contains(PaperDrawing.Paper.Hex, blots);
+        Assert.Equal(FormDrawing.Seal(StampShape.DateRing, 104f, 104f, FormDrawing.StampBlue, inked), FormDrawing.Seal(StampShape.DateRing, 104f, 104f, FormDrawing.StampBlue, inked));
     }
 
     [Fact]
