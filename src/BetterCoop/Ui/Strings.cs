@@ -437,11 +437,11 @@ internal static class Strings
 
     public static string RuleAllowOddPlayerCount => Korean ? "홀수 인원 출발 허용" : "Allow Odd Player Count";
 
-    public static string RuleFollowRolePreferences => Korean ? "대원 희망 역할 들어주기" : "Honour role wishes";
+    public static string RuleFollowRolePreferences => Korean ? "원하는 역할 따르기" : "Honour Role Preferences";
 
-    public static string RuleAllowSwapRequests => Korean ? "대원끼리 자리 바꾸기" : "Scouts may swap places";
+    public static string RuleAllowSwapRequests => Korean ? "대원끼리 자리 바꾸기" : "Allow Role Swaps";
 
-    public static string RuleLatePairing => Korean ? "짝 없는 대원 이어주기" : "Pair up the partnerless";
+    public static string RuleLatePairing => Korean ? "짝 이어주기" : "Late Pairing";
 
     public static string RulesPairs => Korean ? "짝" : "Pairs";
 

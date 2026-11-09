@@ -68,9 +68,9 @@ Run ended with.
 | Setting | Default | |
 | --- | --- | --- |
 | Role Preference | Random | Carrier, Rider, or Random for either. |
-| Honour Role Wishes | On | Off: roles are drawn by lot. |
-| Scouts May Swap Places | On | Off: only the Troop Leader sets roles. |
-| Pair Up The Partnerless | On | Off: players without a partner climb alone until the next shuffle. |
+| Honour Role Preferences | On | Off: roles are drawn by lot. |
+| Allow Role Swaps | On | Off: only the Troop Leader sets roles. |
+| Late Pairing | On | Off: players without a partner climb alone until the next shuffle. |
 | Rider Picks From Backpack | On | Off: the Carrier picks from the backpack wheel. |
 | Allow Odd Player Count | Off | The extra player plays without a Pair. |
 | Campfire Shuffle | On | New Pairs at each campfire. |

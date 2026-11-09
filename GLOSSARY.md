@@ -94,6 +94,7 @@ _Avoid_: pre-pairing, lobby pairs, 예약 짝
 A player's stated wish to be Carrier, Rider, or either (상관없음; stored as Random) in a Pair
 Formation, a Pair Shuffle, or a Late Pairing, followed unless the Run Rules
 say otherwise. A Pair Plan and a Pair Assignment always come before it.
+_Avoid_: role wish, 희망 역할
 
 **Pair Shuffle** (짝 섞기):
 Forming the Pairs anew in the middle of a Run so that every Pair changes:

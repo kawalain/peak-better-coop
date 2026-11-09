@@ -61,9 +61,9 @@ ESC 메뉴의 **편성표**나 모드 매니저의 설정 편집기에서
 | 설정 | 기본값 | |
 | --- | --- | --- |
 | Role Preference | Random | 업는 사람, 업힌 사람, 상관없음(Random). |
-| Honour Role Wishes | 켬 | 끄면 역할을 제비뽑기로 정합니다. |
-| Scouts May Swap Places | 켬 | 끄면 분대장만 역할을 정합니다. |
-| Pair Up The Partnerless | 켬 | 끄면 짝 없는 사람은 다음 짝 섞기까지 혼자 오릅니다. |
+| Honour Role Preferences | 켬 | 끄면 역할을 제비뽑기로 정합니다. |
+| Allow Role Swaps | 켬 | 끄면 분대장만 역할을 정합니다. |
+| Late Pairing | 켬 | 끄면 짝 없는 사람은 다음 짝 섞기까지 혼자 오릅니다. |
 | Rider Picks From Backpack | 켬 | 끄면 업는 사람이 가방 휠에서 고릅니다. |
 | Allow Odd Player Count | 끔 | 남는 한 사람은 짝 없이 원정합니다. |
 | Campfire Shuffle | 켬 | 모닥불마다 짝을 새로 섞습니다. |
