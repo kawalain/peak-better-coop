@@ -61,6 +61,7 @@ internal static partial class ControlCommands
         ["scroll"] = new("{to}: scrolls the open paper form to the first text containing 'to'.", Scroll),
         ["depart"] = new("At the Airport: boards for the Run as the boarding pass does, through the mod's own checks.", _ => Depart()),
         ["order"] = new("{what, ...}: a Roster order, under the Roster's rules; without what, lists them.", Order),
+        ["perf"] = new("{seconds?}: for that long (default 5), times every Update of the mod's own components and every patch it adds to the game; answers with the mod's milliseconds and bytes per frame and the costliest methods.", ControlPerf.Measure),
         ["photo"] = new("{actor}: takes that player's passport photo again, here and now, and saves it as a PNG; answers with its path.", Photo),
         ["drill"] = new("{what, ...}: forge {key, actor?, value?} writes a made-up value to a mod key of the room, or of player 'actor', as a player who may not write it would (Pairs, without a value, swaps every Pair's roles), and the other copies should drop it; letter {case} plays the Zoo's Pair letter case (0 to 5); end {ending: summit|lost}, in a Twin only, ends the real Run for the whole room.", Drill),
     };
