@@ -521,8 +521,9 @@ internal sealed class PaperList
     /// boiling, tilted as it was stuck on, with its name, who earned it, and
     /// what won it under it.
     /// </summary>
-    public void Badges(IReadOnlyList<BadgeCard> cards, Func<bool>? visible = null)
+    public void Badges(Func<IReadOnlyList<BadgeCard>> read, Func<bool>? visible = null)
     {
+        IReadOnlyList<BadgeCard> cards = read();
         PaperRow row = NewRow("Badges", 0f, visible);
         RectTransform holder = NewRect("Grid", row.Root.transform);
         GridLayoutGroup grid = holder.gameObject.AddComponent<GridLayoutGroup>();
@@ -549,14 +550,20 @@ internal sealed class PaperList
 
             TMP_Text title = AddText(cell, "Title", PaperText.Label, TextAlignmentOptions.Center, flexible: true);
             title.fontStyle = FontStyles.Bold;
-            PaperText.Set(title, card.Title);
             TMP_Text winners = AddText(cell, "Winners", PaperText.Value, TextAlignmentOptions.Center, flexible: true);
             Wrap(winners);
             winners.color = Pen;
-            PaperText.Set(winners, card.Winners);
             TMP_Text amount = AddText(cell, "Amount", PaperText.Note, TextAlignmentOptions.Center, flexible: true);
             amount.color = Faded(PaperText.Ink, 0.7f);
-            PaperText.Set(amount, card.Amount);
+            int index = i;
+            row.Refreshers.Add(() =>
+            {
+                IReadOnlyList<BadgeCard> now = read();
+                BadgeCard shown = index < now.Count ? now[index] : card;
+                PaperText.Set(title, shown.Title);
+                PaperText.Set(winners, shown.Winners);
+                PaperText.Set(amount, shown.Amount);
+            });
         }
 
         Add(row);

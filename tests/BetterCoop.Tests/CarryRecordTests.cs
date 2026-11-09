@@ -101,6 +101,28 @@ public class CarryRecordTests
     }
 
     [Fact]
+    public void A_Run_under_way_reads_live_from_its_record_and_a_written_report_wins()
+    {
+        var record = new CarryRecord();
+        RunReport? live = null;
+
+        RunReport now = RunReport.Now(null, record, ref live)!;
+
+        Assert.Equal(RunEnding.Underway, now.Ending);
+        Assert.Same(now, RunReport.Now(null, record, ref live));
+        Assert.NotSame(now, RunReport.Now(null, new CarryRecord(), ref live));
+        var written = new RunReport(RunEnding.Summit, 10, record);
+        Assert.Same(written, RunReport.Now(written, record, ref live));
+        Assert.Null(RunReport.Now(null, null, ref live));
+    }
+
+    [Fact]
+    public void A_report_still_under_way_is_never_taken_from_the_room()
+    {
+        Assert.Null(RunReport.Decode(new RunReport(RunEnding.Underway, 5, new CarryRecord()).Encode()));
+    }
+
+    [Fact]
     public void Nobody_earns_a_badge_for_nothing()
     {
         Assert.Empty(new CarryRecord().Badges());

@@ -344,6 +344,9 @@ internal enum RunEnding : byte
 
     /// <summary>Everyone was lost.</summary>
     Lost = 2,
+
+    /// <summary>Still under way: a report read live from the record so far; never sent.</summary>
+    Underway = 3,
 }
 
 /// <summary>
@@ -369,10 +372,36 @@ internal sealed class RunReport
 
     public object[] Encode() => [(byte)Ending, Seconds, Record.Encode()];
 
+    /// <summary>
+    /// The report to read now: the last Run's, once written; while a Run is
+    /// under way, one read live from its record so far, the same object for
+    /// the same record.
+    /// </summary>
+    public static RunReport? Now(RunReport? written, CarryRecord? sofar, ref RunReport? live)
+    {
+        if (written != null)
+        {
+            return written;
+        }
+
+        if (sofar == null)
+        {
+            return null;
+        }
+
+        if (live == null || !ReferenceEquals(live.Record, sofar))
+        {
+            live = new RunReport(RunEnding.Underway, 0, sofar);
+        }
+
+        return live;
+    }
+
     public static RunReport? Decode(object? value) =>
         value is object[] { Length: 3 } parts
             && parts[0] is byte ending
             && Enum.IsDefined(typeof(RunEnding), ending)
+            && ending != (byte)RunEnding.Underway
             && parts[1] is double seconds
             && ServerClock.IsTime(seconds)
             && CarryRecord.Decode(parts[2]) is CarryRecord record

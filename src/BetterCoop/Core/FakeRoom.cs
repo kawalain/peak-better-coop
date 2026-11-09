@@ -118,6 +118,9 @@ internal sealed class FakeRoom : ICoopRoom
         ? report ??= new RunReport((RunEnding)(seed % 3), 3000 + (seed * 731 % 4000), MakeRecord(Titles.Length, []))
         : null;
 
+    /// <summary>A made-up Run some way up the mountain, its clock running while the room is formed.</summary>
+    public double RunSeconds { get; private set; } = 1800;
+
     public bool Present(string id) =>
         id.StartsWith("zoo:", StringComparison.Ordinal) && int.TryParse(id.Substring(4), out int actor) && players.Contains(actor);
 
@@ -273,6 +276,11 @@ internal sealed class FakeRoom : ICoopRoom
 
     public void Tick(float seconds)
     {
+        if (Formed)
+        {
+            RunSeconds += seconds;
+        }
+
         if (SecondsToTimedShuffle == null)
         {
             return;

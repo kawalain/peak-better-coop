@@ -160,7 +160,7 @@ internal sealed class ZooPage : PaperPage
                     faint: i % 4 == 0))
                 .ToList(),
             empty: () => T("줄이 없으면 이렇게 안내합니다.", "With no lines, the table says so."));
-        list.Badges(
+        list.Badges(() =>
         [
             new BadgeCard(MeritBadgeKind.SteadyBack, Strings.BadgeName(MeritBadgeKind.SteadyBack), "Alder", Strings.BadgeAmount(MeritBadgeKind.SteadyBack, 1934)),
             new BadgeCard(MeritBadgeKind.ComfyPassenger, Strings.BadgeName(MeritBadgeKind.ComfyPassenger), Strings.Left("Quill"), Strings.BadgeAmount(MeritBadgeKind.ComfyPassenger, 1702)),
@@ -232,8 +232,8 @@ internal sealed class ZooPage : PaperPage
             () => T("열기", "Open"),
             OpenReport,
             about: () => T(
-                "지금 인원으로 산 전체를 오른 가짜 원정의 보고서를 엽니다. 떠난 대원 한 명이 흐리게 적힙니다.",
-                "Opens the report of a made-up Run up the whole mountain with this many players; one scout who left is greyed."));
+                "지금 인원으로 가짜 원정의 보고서를 엽니다. 짝 편성이 끝났으면 진행 중인 원정의 실시간 보고서를, 아니면 산 전체를 오른 지난 원정의 보고서를 엽니다. 떠난 대원 한 명이 흐리게 적힙니다.",
+                "Opens the report of a made-up Run with this many players: live for a Run under way when the Pairs are formed, else the last Run's up the whole mountain. One scout who left is greyed."));
 
         list.Header(() => T("긴 목록", "Long list"));
         for (int i = 1; i <= 20; i++)
@@ -247,8 +247,7 @@ internal sealed class ZooPage : PaperPage
 
     private void OpenReport()
     {
-        var room = new FakeRoom(players, leader, formed: false, seed, reported: true);
-        reportExample.Show(() => room.Report, room.Present);
+        reportExample.Show(new FakeRoom(players, leader, formed, seed, reported: true));
         seed++;
         reportExample.Open();
     }

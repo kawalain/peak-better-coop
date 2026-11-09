@@ -144,7 +144,7 @@ internal sealed class RosterPage : PaperPage
     {
         bool leads = room.InRoom && room.IsTroopLeader;
         PlayerRows.Add(list, room);
-        if (room.Report != null)
+        if (room.HasReport())
         {
             ReportRows.Add(list, room, OpenReport);
         }
@@ -209,7 +209,7 @@ internal sealed class RosterPage : PaperPage
     private void OpenReport()
     {
         reportPage ??= CreateChild<RunReportPage>(() => Strings.MenuRunReport);
-        reportPage.Show(() => room.Report, id => room.Present(id));
+        reportPage.Show(room);
         reportPage.Open();
     }
 
@@ -462,7 +462,7 @@ internal static class ReportRows
             about: () => Strings.AboutRunReport,
             value: () => room.Report is RunReport report
                 ? $"{Strings.EndingName(report.Ending)} · {Strings.Duration(report.Seconds)}"
-                : string.Empty);
+                : $"{Strings.EndingName(RunEnding.Underway)} · {Strings.Duration(room.RunSeconds)}");
     }
 }
 
@@ -641,6 +641,8 @@ internal sealed class LiveRoom : ICoopRoom
     public CarryRecord? Record => CarryRecords.Shared;
 
     public RunReport? Report => CarryRecords.Report;
+
+    public double RunSeconds => RunManager.Instance != null ? RunManager.Instance.TimeSinceRunStarted : 0;
 
     /// <summary>A player is known by user id, or by actor number when Photon gives none.</summary>
     public bool Present(string id) =>

@@ -28,11 +28,12 @@ and come back together.
   swap places and set the role you would like. Its Carry Record tallies how
   long each scout carried and rode this Run, and how high they climbed
   carrying.
-- Back at the Airport, a telegram brings the **Run Report**: how the Run
-  ended and how long it took, who carried whom in each segment, everyone's
-  Carry Record, and pencilled Merit Badges for the steadiest back, the
-  comfiest passenger, the best climber, and the best buddies. It stays on
-  the Roster until the next Run departs.
+- The **Run Report** on the Roster follows the Run as it goes, and back at
+  the Airport a telegram says it is complete: how the Run ended and how long
+  it took, who carried whom in each segment, everyone's Carry Record, and
+  pencilled Merit Badges for the steadiest back, the comfiest passenger, the
+  best climber, and the best buddies. It stays until the next Run departs,
+  and mods that shorten or skip the end screen leave it whole.
 - News comes in on paper from the left: a telegram, a scout's memo, a
   baggage tag for your things, or a red-stamped caution. When your own Pair
   or role is about to change, a little airmail letter pops out with your

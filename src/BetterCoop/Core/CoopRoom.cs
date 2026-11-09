@@ -50,6 +50,9 @@ internal interface ICoopRoom
     /// <summary>The Run Report of the last Run, kept until the next departs, or null.</summary>
     RunReport? Report { get; }
 
+    /// <summary>How long the Run under way has gone on, in seconds.</summary>
+    double RunSeconds { get; }
+
     /// <summary>Whether the player of a user id in the Carry Record is in the room now.</summary>
     bool Present(string id);
 
@@ -117,6 +120,9 @@ internal static class CoopRooms
 {
     public static Pair? PairOf(this ICoopRoom room, int actor) => room.Pairs.FirstOrDefault(p => p.Contains(actor));
 
+    /// <summary>Whether the Run Report can be read now: the last Run's, or the one under way.</summary>
+    public static bool HasReport(this ICoopRoom room) => room.Report != null || (room.Formed && room.Record != null);
+
     public static IEnumerable<int> Unpaired(this ICoopRoom room) =>
         room.Players.Where(a => !room.Pairs.Any(p => p.Contains(a)));
 
@@ -131,6 +137,6 @@ internal static class CoopRooms
         string pairs = string.Join(",", room.Pairs.Select(p => $"{p.Carrier}>{p.Rider}"));
         string plan = string.Join(",", room.Plan.Select(p => $"{p.Carrier}>{p.Rider}"));
         string players = string.Join(",", room.Players);
-        return $"{room.IsTroopLeader}|{room.Formed}|{room.Planning}|{pairs}|{plan}|{players}|{room.Record != null}|{room.Report != null}";
+        return $"{room.IsTroopLeader}|{room.Formed}|{room.Planning}|{pairs}|{plan}|{players}|{room.Record != null}|{room.HasReport()}";
     }
 }

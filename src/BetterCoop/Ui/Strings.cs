@@ -123,8 +123,12 @@ internal static class Strings
     public static string StampRead => Korean ? "열람" : "Read";
 
     public static string AboutRunReport => Korean
-        ? "지난 원정의 결과와 공로 배지입니다. 다음 원정이 출발하면 사라집니다."
-        : "The last Run's result and Merit Badges, kept until the next Run departs.";
+        ? "원정 중에는 지금까지의 기록이, 원정이 끝나면 결과와 공로 배지가 실립니다. 다음 원정이 출발하면 새로 씁니다."
+        : "During a Run it shows the record so far; once the Run ends, its result and Merit Badges. The next Run starts a new one.";
+
+    public static string ReportUnderway => Korean
+        ? "아직 원정 중입니다. 분대장이 짝이 바뀔 때와 15초마다 기록을 새로 적습니다."
+        : "The Run is still under way. The Troop Leader writes the record anew every 15 seconds and whenever the Pairs change.";
 
     public static string ReportGone => Korean
         ? "다음 원정이 출발해 보고서가 사라졌습니다."
@@ -140,6 +144,7 @@ internal static class Strings
     {
         RunEnding.Summit => Korean ? "정상 도착" : "Reached the Peak",
         RunEnding.Lost => Korean ? "전원 조난" : "Everyone was lost",
+        RunEnding.Underway => Korean ? "원정 중" : "Under way",
         _ => Korean ? "공항 귀환" : "Back at the Airport",
     };
 
