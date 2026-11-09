@@ -171,6 +171,8 @@ internal static class PhotoStudio
         Texture2D? hand = null;
         Transform? raised = null;
         Quaternion raisedTurn = Quaternion.identity;
+        Transform? bent = null;
+        Quaternion bentTurn = Quaternion.identity;
         try
         {
             model.gameObject.SetActive(true);
@@ -204,33 +206,26 @@ internal static class PhotoStudio
             Vector3 front = Vector3.ProjectOnPlane(lensPlace - model.transform.position, model.transform.up);
             front = front.sqrMagnitude > 1e-6f ? front.normalized : model.transform.forward;
 
-            // The arm swung out from the body, the way that takes the hand farther off,
+            // The arm held straight out to its side and a little down, whatever pose the model stood in,
             // so nothing but the arm is in the picture.
+            Vector3 across = Vector3.Cross(model.transform.up, front).normalized;
+            float shoulderSide = Vector3.Dot(upper.position - model.transform.position, across);
+            Vector3 side = across * (shoulderSide < 0f ? -1f : 1f);
+            Vector3 reach = ((side * Mathf.Cos(25f * Mathf.Deg2Rad)) - (model.transform.up * Mathf.Sin(25f * Mathf.Deg2Rad))).normalized;
             raised = upper;
             raisedTurn = upper.localRotation;
-            Quaternion hanging = upper.rotation;
-            Quaternion outward = hanging;
-            float farthest = -1f;
-            foreach (float swing in new[] { -70f, 70f })
-            {
-                upper.rotation = Quaternion.AngleAxis(swing, front) * hanging;
-                float away = Vector3.ProjectOnPlane(palm.position - model.transform.position, model.transform.up).magnitude;
-                if (away > farthest)
-                {
-                    farthest = away;
-                    outward = upper.rotation;
-                }
-            }
+            bent = elbow;
+            bentTurn = elbow.localRotation;
+            upper.rotation = Quaternion.FromToRotation(elbow.position - upper.position, reach) * upper.rotation;
+            elbow.rotation = Quaternion.FromToRotation(palm.position - elbow.position, reach) * elbow.rotation;
 
-            upper.rotation = outward;
-
-            // Seen from the front, turned so the forearm stands upright with the hand at the foot.
-            Vector3 up = Vector3.ProjectOnPlane(elbow.position - palm.position, front).normalized;
+            // Seen from the front, turned so the arm stands upright with the hand at the foot.
+            Vector3 up = -reach;
             Texture2D? taken = null;
             for (float room = 1f; room <= 2.3f && taken == null; room *= 1.5f)
             {
                 float below = forearm * 1.5f * room;
-                float above = forearm * 0.8f;
+                float above = forearm * 0.4f;
                 float tall = below + forearm + above;
                 float wide = forearm * 2.2f * room;
                 Vector3 middle = palm.position - (up * below) + (up * (tall / 2f));
@@ -305,6 +300,11 @@ internal static class PhotoStudio
             if (shot != null)
             {
                 RenderTexture.ReleaseTemporary(shot);
+            }
+
+            if (bent != null)
+            {
+                bent.localRotation = bentTurn;
             }
 
             if (raised != null)
