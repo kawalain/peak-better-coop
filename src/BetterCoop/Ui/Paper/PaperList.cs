@@ -1023,6 +1023,7 @@ internal sealed class StampMark
     private void Act()
     {
         struckAt = Time.unscaledTime;
+        PaperSounds.Play(PaperSounds.Kind.Stamp);
         press();
     }
 

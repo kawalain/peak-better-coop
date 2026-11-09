@@ -209,6 +209,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     /// <summary>Plays the rise again from below.</summary>
     public void Rise()
     {
+        PaperSounds.Play(PaperSounds.Kind.Rise);
         away = false;
         motion = Motion.Rising;
         motionSeconds = 0f;

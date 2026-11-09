@@ -222,6 +222,7 @@ internal sealed class PaperWad : MaskableGraphic
     {
         shot = picture;
         raycastTarget = false;
+        PaperSounds.Play(PaperSounds.Kind.Crumple);
         // The picture comes after the graphic woke with none.
         SetMaterialDirty();
         Vector2 size = rectTransform.rect.size;
@@ -448,7 +449,14 @@ internal sealed class PaperHandIn : MonoBehaviour
 
     private void Update()
     {
+        bool reaching = age < ReachSeconds;
         age += Time.unscaledDeltaTime;
+        if (reaching && age >= ReachSeconds)
+        {
+            // The fingers close on the page.
+            PaperSounds.Play(PaperSounds.Kind.HandIn);
+        }
+
         Pose();
         if (age > ReachSeconds + HoldSeconds + LiftSeconds)
         {
