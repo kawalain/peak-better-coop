@@ -62,12 +62,17 @@ internal static class SharedLife
         }
     }
 
-    /// <summary>The Rider dies when the Carrier dies, at once rather than at the next check.</summary>
+    /// <summary>
+    /// The Rider dies when the Carrier dies, at once rather than at the next
+    /// check. Every death the game lets through, sent or local, ends here; a
+    /// kill the game refused does not.
+    /// </summary>
     [HarmonyPostfix]
-    [HarmonyPatch(typeof(Character), nameof(Character.RPCA_Die))]
+    [HarmonyPatch(typeof(Character), nameof(Character.GoDeadMode))]
     private static void RiderDiesWithCarrier(Character __instance)
     {
-        if (PairRoster.RoleOf(__instance) == PairRole.Carrier
+        if (__instance.data.dead
+            && PairRoster.RoleOf(__instance) == PairRole.Carrier
             && PairRoster.TryGetPartner(__instance, out Character rider)
             && rider.IsLocal
             && !rider.data.dead)
