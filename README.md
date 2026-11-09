@@ -18,11 +18,11 @@ and not one who eats every mushroom.
 
 - The **Roster** in the ESC menu shows who carries whom, and the Run Report
   hands out Merit Badges to the steadiest back and the comfiest passenger.
-- Only the Troop Leader (host) needs the mod. Anyone without it climbs on
-  their own two feet.
+- Only the Troop Leader (host) needs the mod. Anyone without it makes the
+  climb alone, and a little lonely.
 - BetterCoop gets along with other mods, though its rules win while you are
-  in a Pair. It steps aside for Co-op Mod, and sits out game updates it does
-  not fit yet.
+  in a Pair. It steps aside for Co-op Mod, which does the same job, and for a
+  game update it has not caught up with.
 
 | Roster at the Airport | Roster during a Run | Run Report |
 | --- | --- | --- |
@@ -34,8 +34,8 @@ The Troop Leader sets the Run Rules on the Roster, where each one is
 explained: Honour Role Preferences, Allow Role Swaps, Late Pairing, Allow Odd
 Player Count, Campfire Shuffle, Timed Shuffle, Hand Over Place and Items,
 Rescue Carry, Carry Weight, and Rider Picks From Backpack. Each player sets
-their own Role Preference there. If your Pair falls apart for reasons other
-than your partner, turn on **Verbose Log** in your mod manager's config and
+their own Role Preference there. If the climb keeps going wrong and it is not
+your partner's fault, turn on **Verbose Log** in your mod manager's config and
 send `BepInEx/LogOutput.log` with your bug report.
 
 ![The Run Rules on the Roster, each with what it does](https://raw.githubusercontent.com/kawalain/peak-better-coop/main/docs/images/en-rules.webp)
