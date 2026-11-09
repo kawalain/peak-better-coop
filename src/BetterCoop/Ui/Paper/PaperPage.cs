@@ -28,6 +28,9 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
 
     private const float TitleHeight = 96f;
 
+    /// <summary>The head's height from the printed rule inside the paper's edge down to the perforation.</summary>
+    private const float HeadHeight = TitleHeight - PaperDrawing.RuleInset;
+
     private const float FooterHeight = 104f;
 
     /// <summary>Room between a perforation and the list, so rows never touch it.</summary>
@@ -526,13 +529,14 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         paper.GetComponent<RawImage>().raycastTarget = true;
 
         TMP_Text template = buttonTemplate.GetComponentInChildren<TMP_Text>(true);
+        // The head, as the eye sees it: from the printed rule inside the edge down to the perforation.
         RectTransform titleRect = NewRect("Title", panel);
         titleRect.anchorMin = new Vector2(0f, 1f);
         titleRect.anchorMax = new Vector2(1f, 1f);
         titleRect.pivot = new Vector2(0.5f, 1f);
-        titleRect.sizeDelta = new Vector2(0f, TitleHeight);
-        titleRect.anchoredPosition = Vector2.zero;
-        titleText = PaperText.Make(titleRect.gameObject, template, PaperText.Title, TextAlignmentOptions.Center);
+        titleRect.sizeDelta = new Vector2(0f, HeadHeight);
+        titleRect.anchoredPosition = new Vector2(0f, -PaperDrawing.RuleInset);
+        titleText = PaperText.Make(titleRect.gameObject, template, PaperText.Title, TextAlignmentOptions.Midline);
         titleText.fontStyle = FontStyles.Bold;
         titleText.color = PaperText.Blue;
 
@@ -540,7 +544,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
         formText = Corner(titleRect, template, TextAlignmentOptions.MidlineLeft);
         noteText = Corner(titleRect, template, TextAlignmentOptions.MidlineRight);
         serialText = Corner(titleRect, template, TextAlignmentOptions.TopRight);
-        serialText.rectTransform.offsetMax = new Vector2(-Padding, -((TitleHeight / 2f) + 1f));
+        serialText.rectTransform.offsetMax = new Vector2(-Padding, -((HeadHeight / 2f) + 1f));
         serialText.color = PaperList.StampRed;
         serialText.fontStyle = FontStyles.Bold;
         serialText.characterSpacing = 4f;
@@ -626,7 +630,7 @@ internal abstract class PaperPage : UIPage, IHaveParentPage, INavigationPage
     private void PlaceNote(bool withSerial)
     {
         RectTransform rect = noteText.rectTransform;
-        float bottom = withSerial ? (TitleHeight / 2f) + 1f : 0f;
+        float bottom = withSerial ? (HeadHeight / 2f) + 1f : 0f;
         if (!Mathf.Approximately(rect.offsetMin.y, bottom))
         {
             rect.offsetMin = new Vector2(Padding, bottom);

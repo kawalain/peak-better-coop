@@ -185,12 +185,12 @@ internal sealed class PaperQuestion : MonoBehaviour
         float inner = Width - 2f * Side;
 
         // Every line is placed by hand from its own measured height, so the slip grows to its words.
-        TMP_Text heading = Text(slip, template, "Heading", PaperText.Note, TextAlignmentOptions.Left);
+        TMP_Text heading = Text(slip, template, "Heading", PaperText.Note, TextAlignmentOptions.MidlineLeft);
         heading.text = Strings.SlipQuery;
         heading.fontStyle = FontStyles.Bold | FontStyles.SmallCaps;
         heading.characterSpacing = 4f;
         heading.color = PaperText.Blue;
-        TMP_Text number = Text(slip, template, "Number", PaperText.Note, TextAlignmentOptions.Right);
+        TMP_Text number = Text(slip, template, "Number", PaperText.Note, TextAlignmentOptions.MidlineRight);
         number.text = Strings.FormTitle;
         number.color = PaperList.Faded(PaperText.Ink, 0.55f);
 
@@ -219,8 +219,10 @@ internal sealed class PaperQuestion : MonoBehaviour
         float noteHeight = small.GetPreferredValues(note, inner, 0f).y;
         const float answersHeight = 84f;
         float y = Band + 26f;
-        Place(heading.rectTransform, Side - 8f, 20f, inner + 16f, Band - 28f);
-        Place(number.rectTransform, Side - 8f, 20f, inner + 16f, Band - 28f);
+        const float headHeight = Band - 28f;
+        float headTop = PaperDrawing.HeadMiddle(Band) - (headHeight / 2f);
+        Place(heading.rectTransform, Side - 8f, headTop, inner + 16f, headHeight);
+        Place(number.rectTransform, Side - 8f, headTop, inner + 16f, headHeight);
         Place(asked.rectTransform, Side, y, inner, askedHeight);
         y += askedHeight + 10f;
         Place(small.rectTransform, Side, y, inner, noteHeight);

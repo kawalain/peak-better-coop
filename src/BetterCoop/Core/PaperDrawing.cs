@@ -165,6 +165,13 @@ internal static class PaperDrawing
         return svg.ToString();
     }
 
+    /// <summary>
+    /// The middle of a head above a perforation <paramref name="tear"/> below
+    /// the paper's top, as the eye finds it: between the printed rule inside
+    /// the edge and the perforation, not between the edge and the perforation.
+    /// </summary>
+    public static float HeadMiddle(float tear) => (RuleInset + tear) / 2f;
+
     /// <summary>The colour of every dashed line on the paper.</summary>
     public static Ink DashInk => Paper.Mix(PassportBlue, 0.7f);
 

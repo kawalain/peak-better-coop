@@ -242,17 +242,20 @@ internal sealed class NoticeSlip : MonoBehaviour
 
         float left = Side + style.Indent;
         float inner = Width - left - Side;
-        TMP_Text heading = Line(rect, template, "Heading", PaperText.Note, TextAlignmentOptions.Left);
+        // The heading and the time sit in the middle of the head, by the glyphs' own height.
+        const float headHeight = Band - 20f;
+        float headTop = PaperDrawing.HeadMiddle(Band) - (headHeight / 2f);
+        TMP_Text heading = Line(rect, template, "Heading", PaperText.Note, TextAlignmentOptions.MidlineLeft);
         heading.text = Strings.NoticeHeading(kind);
         heading.fontStyle = FontStyles.Bold | FontStyles.SmallCaps;
         heading.characterSpacing = 4f;
         heading.color = style.Heading;
-        Place(heading.rectTransform, left, 12f, inner, Band - 20f);
-        TMP_Text clock = Line(rect, template, "Time", PaperText.Note * 0.85f, TextAlignmentOptions.Right);
+        Place(heading.rectTransform, left, headTop, inner, headHeight);
+        TMP_Text clock = Line(rect, template, "Time", PaperText.Note * 0.85f, TextAlignmentOptions.MidlineRight);
         clock.text = DateTime.Now.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture);
         clock.color = PaperList.Faded(PaperText.Ink, 0.55f);
         clock.characterSpacing = 2f;
-        Place(clock.rectTransform, left, 12f, inner - style.CornerRoom, Band - 20f);
+        Place(clock.rectTransform, left, headTop, inner - style.CornerRoom, headHeight);
 
         TMP_Text words = Line(rect, template, "Words", PaperText.Value, TextAlignmentOptions.TopLeft);
         words.textWrappingMode = TextWrappingModes.Normal;

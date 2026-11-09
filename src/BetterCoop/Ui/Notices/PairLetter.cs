@@ -149,17 +149,22 @@ internal sealed class PairLetter : MonoBehaviour
             Color.clear);
 
         float words = Width - 2f * Side - 150f;
-        heading = NoticeSlip.Line(rect, template, "Heading", PaperText.Value, TextAlignmentOptions.Left);
+        // Heading and recipient, a pair in the middle of the head.
+        const float headingHeight = 32f;
+        const float recipientHeight = 26f;
+        const float between = 2f;
+        float headTop = PaperDrawing.HeadMiddle(Band) - ((headingHeight + between + recipientHeight) / 2f);
+        heading = NoticeSlip.Line(rect, template, "Heading", PaperText.Value, TextAlignmentOptions.MidlineLeft);
         heading.fontStyle = FontStyles.Bold | FontStyles.SmallCaps;
         heading.characterSpacing = 2f;
         heading.color = PaperText.Blue;
         PaperText.Fit(heading, 15f);
-        NoticeSlip.Place(heading.rectTransform, Side, 20f, words, 32f);
-        recipient = NoticeSlip.Line(rect, template, "To", PaperText.Note, TextAlignmentOptions.Left);
+        NoticeSlip.Place(heading.rectTransform, Side, headTop, words, headingHeight);
+        recipient = NoticeSlip.Line(rect, template, "To", PaperText.Note, TextAlignmentOptions.MidlineLeft);
         recipient.fontStyle = FontStyles.Italic;
         recipient.color = PaperList.Pen;
         PaperText.Fit(recipient, 13f);
-        NoticeSlip.Place(recipient.rectTransform, Side, 54f, words, 26f);
+        NoticeSlip.Place(recipient.rectTransform, Side, headTop + headingHeight + between, words, recipientHeight);
 
         // The postmark in the corner counts down, as the letter's cancelling stamp.
         RectTransform mark = PaperList.NewRect("Postmark", rect);

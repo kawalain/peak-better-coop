@@ -134,6 +134,13 @@ public class PaperDrawingTests
         Assert.Empty(XElement.Parse(PaperDrawing.DashedRule(5f, 4f)).Descendants(Svg + "rect"));
 
     [Fact]
+    public void A_head_is_centred_between_the_printed_rule_and_its_perforation()
+    {
+        Assert.Equal((PaperDrawing.RuleInset + 96f) / 2f, PaperDrawing.HeadMiddle(96f));
+        Assert.True(PaperDrawing.HeadMiddle(46f) > 46f / 2f);
+    }
+
+    [Fact]
     public void Plain_paper_lets_nothing_show_through()
     {
         var translucent = Draw().Descendants()
