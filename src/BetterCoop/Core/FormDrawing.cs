@@ -605,7 +605,7 @@ internal static partial class FormDrawing
     /// A Merit Badge as a round scout patch pencilled in a margin: a double
     /// ring with running stitches between, and a picture of what it is for:
     /// a scout carrying a friend on their back, a scout asleep in a
-    /// nightcap, a crowned mountain, a life ring, or a heart.
+    /// nightcap, a life ring, or a heart.
     /// </summary>
     /// <param name="frame">Which of the doodle's hand-drawn frames: the lines wobble from one to the next.</param>
     public static string Badge(float width, float height, MeritBadgeKind kind, int frame = 0)
@@ -682,16 +682,6 @@ internal static partial class FormDrawing
                 // Zz drifting up.
                 Pencil(svg, hand, [At(0.66f, 0.46f), At(0.73f, 0.46f), At(0.66f, 0.53f), At(0.73f, 0.53f)], Lead, h);
                 Pencil(svg, hand, [At(0.74f, 0.36f), At(0.78f, 0.36f), At(0.74f, 0.40f), At(0.78f, 0.40f)], Lead, h);
-                break;
-            }
-
-            case MeritBadgeKind.ClimbingKing:
-            {
-                // A mountain wearing a crown.
-                Pencil(svg, hand, [At(0.27f, 0.70f), At(0.50f, 0.36f), At(0.73f, 0.70f)], Lead, h);
-                Pencil(svg, hand, [At(0.43f, 0.47f), At(0.47f, 0.50f), At(0.50f, 0.46f), At(0.54f, 0.50f), At(0.57f, 0.47f)], Lead, h);
-                Pencil(svg, hand, [At(0.42f, 0.32f), At(0.43f, 0.22f), At(0.47f, 0.28f), At(0.50f, 0.19f), At(0.53f, 0.28f), At(0.57f, 0.22f), At(0.58f, 0.32f), At(0.42f, 0.32f)], Lead, h);
-                Dot(At(0.50f, 0.18f), s * 0.014f);
                 break;
             }
 

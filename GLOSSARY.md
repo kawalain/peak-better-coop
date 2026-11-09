@@ -38,8 +38,8 @@ _Avoid_: end screen, summary, results
 
 **Merit Badge** (공로 배지):
 A playful title on the Run Report for the best Carry Record in one thing: the
-most time carrying, the most time carried, the most height climbed carrying,
-the most time rescuing, and the two who stayed a Pair the longest.
+most time carrying, the most time carried, the most time rescuing, and the two
+who stayed a Pair the longest.
 _Avoid_: achievement, award, trophy
 
 ### Teams

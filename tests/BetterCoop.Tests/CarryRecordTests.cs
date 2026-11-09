@@ -97,7 +97,7 @@ public class CarryRecordTests
 
         Assert.Equal(["c"], badges[MeritBadgeKind.SteadyBack].Ids);
         Assert.Equal(["d"], badges[MeritBadgeKind.ComfyPassenger].Ids);
-        Assert.Equal(["c"], badges[MeritBadgeKind.ClimbingKing].Ids);
+        Assert.Equal([MeritBadgeKind.SteadyBack, MeritBadgeKind.ComfyPassenger, MeritBadgeKind.BestBuddies], record.Badges().Select(b => b.Kind));
         Assert.Equal(25, badges[MeritBadgeKind.BestBuddies].Amount);
         Assert.False(badges.ContainsKey(MeritBadgeKind.RescueRanger));
     }
@@ -110,6 +110,7 @@ public class CarryRecordTests
         record.Count([], [("e", "E")], 9, 0, "SHORE");
 
         MeritBadge badge = record.Badges().Single(b => b.Kind == MeritBadgeKind.RescueRanger);
+        Assert.Equal(MeritBadgeKind.RescueRanger, record.Badges()[2].Kind);
 
         Assert.Equal(["e"], badge.Ids);
         Assert.Equal(9, badge.Amount);

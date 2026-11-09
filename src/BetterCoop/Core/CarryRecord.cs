@@ -146,7 +146,6 @@ internal sealed class CarryRecord
 
         Best(MeritBadgeKind.SteadyBack, s => s.Carried, 1);
         Best(MeritBadgeKind.ComfyPassenger, s => s.Ridden, 1);
-        Best(MeritBadgeKind.ClimbingKing, s => s.Climbed, 1);
         Best(MeritBadgeKind.RescueRanger, s => s.Rescuing, 1);
 
         var together = stretches
@@ -336,8 +335,7 @@ internal enum MeritBadgeKind : byte
     /// <summary>편안한 승객: the most time carried.</summary>
     ComfyPassenger = 2,
 
-    /// <summary>등반왕: the most height climbed carrying.</summary>
-    ClimbingKing = 3,
+    // 3 was 등반왕 (the most height climbed carrying), dropped as nearly everyone earns it.
 
     /// <summary>단짝: the two who stayed a Pair the longest.</summary>
     BestBuddies = 4,

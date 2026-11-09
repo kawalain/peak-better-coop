@@ -158,17 +158,15 @@ internal static class Strings
     {
         MeritBadgeKind.SteadyBack => Korean ? "든든한 등" : "Steady Back",
         MeritBadgeKind.ComfyPassenger => Korean ? "편안한 승객" : "Comfy Passenger",
-        MeritBadgeKind.ClimbingKing => Korean ? "등반왕" : "Climbing King",
         MeritBadgeKind.RescueRanger => Korean ? "구조대장" : "Rescue Ranger",
         _ => Korean ? "단짝" : "Best Buddies",
     };
 
-    /// <summary>What won a Merit Badge, as it counts: time, or height.</summary>
+    /// <summary>What won a Merit Badge, as it counts: time.</summary>
     public static string BadgeAmount(MeritBadgeKind kind, double amount) => kind switch
     {
         MeritBadgeKind.SteadyBack => $"{HeadCarried} {Duration(amount)}",
         MeritBadgeKind.ComfyPassenger => $"{HeadRidden} {Duration(amount)}",
-        MeritBadgeKind.ClimbingKing => $"{HeadClimbed} {Metres(amount)}",
         MeritBadgeKind.RescueRanger => $"{HeadRescuing} {Duration(amount)}",
         _ => $"{HeadTogether} {Duration(amount)}",
     };
