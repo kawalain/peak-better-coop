@@ -19,7 +19,7 @@ namespace BetterCoop.Features;
 /// Carrier, whose client plays them into the Shared Body.
 /// </summary>
 /// <remarks>
-/// Solo Pair (a debug mode) runs both halves on one client: the player's
+/// Solo Pair (development builds only, see DevHooks) runs both halves on one client: the player's
 /// mouse goes through the Rider's path, is encoded, held back for a set
 /// latency instead of crossing the network, and replayed on the Carrier's path.
 /// </remarks>
@@ -65,15 +65,10 @@ internal static class ControlSplit
     // Solo Pair: the Rider's look kept apart from the body, and the stand-in network.
     private static readonly DelayQueue<byte[]> SoloWire = new();
     private static Vector2 soloLook;
-    private static bool soloAnnounced;
 
     private static int partnerActor = -1;
     private static Character? linkedLocal;
     private static Character? linkedPartner;
-
-    /// <summary>Whether Solo Pair applies: switched on and alone in a room.</summary>
-    internal static bool SoloPairWanted =>
-        CoopConfig.SoloPair.Value && PhotonNetwork.InRoom && PhotonNetwork.CurrentRoom.PlayerCount == 1;
 
     /// <summary>
     /// Whether the local player has the Carrier's side of a Shared Body: a
@@ -90,13 +85,7 @@ internal static class ControlSplit
     {
         Character local = Character.localCharacter;
         partner = null!;
-        bool soloWanted = SoloPairWanted;
-        if (soloWanted != soloAnnounced)
-        {
-            // Announce the setting or the room changing, not every death or scene load.
-            soloAnnounced = soloWanted;
-            CoopNotice.Info(soloWanted ? Strings.SoloPairOn(CoopConfig.SoloPairLatency.Value) : Strings.SoloPairOff);
-        }
+        bool soloWanted = DevHooks.SoloPair;
 
         if (local == null || local.data.dead)
         {
@@ -120,7 +109,7 @@ internal static class ControlSplit
         if (soloWanted)
         {
             partner = local;
-            if (Enter(SoloPartner, local, local, "Solo Pair"))
+            if (Enter(SoloPartner, local, local, "itself (loopback)"))
             {
                 soloLook = local.data.lookValues;
             }
@@ -261,7 +250,7 @@ internal static class ControlSplit
 
     private static void DeliverSoloWire()
     {
-        float delay = CoopConfig.SoloPairLatency.Value / 1000f;
+        float delay = DevHooks.SoloPairDelay;
         while (SoloWire.TryDequeue(Time.unscaledTime, delay, out byte[] payload))
         {
             Accept(payload);

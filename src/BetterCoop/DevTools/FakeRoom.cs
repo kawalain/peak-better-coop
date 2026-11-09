@@ -2,13 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace BetterCoop.Core;
+using BetterCoop.Core;
+
+namespace BetterCoop.DevTools;
 
 /// <summary>
 /// A made-up room for trying the Roster without other players: it holds
 /// its players, Pairs, and Run Rules in memory and changes its Pairs with
 /// the same rules a real room uses, at once rather than over the network.
-/// Nothing it does reaches the game, the config, or the room.
+/// Nothing it does reaches the game, the config, or the room. Development
+/// builds only, for the Zoo; the tests reach it too.
 /// </summary>
 internal sealed class FakeRoom : ICoopRoom
 {

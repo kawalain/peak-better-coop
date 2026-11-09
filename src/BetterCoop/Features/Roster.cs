@@ -45,10 +45,7 @@ internal static class Roster
             Strings.Roster,
             () => (page ??= PaperPage.Create<RosterPage>(handler, controls, template, __instance, () => Strings.Roster)).Open(),
             after: __instance.m_resumeButton);
-#if DEBUG
-        ZooPage? zoo = null;
-        AddButton(__instance, "Zoo", () => (zoo ??= ZooPage.Build(handler, controls, template, __instance)).Open(), after: roster);
-#endif
+        DevHooks.PauseMenu(__instance, handler, controls, roster, (label, open, after) => AddButton(__instance, label, open, after));
     }
 
     /// <summary>Adds a button to the pause menu, after <paramref name="after"/>.</summary>

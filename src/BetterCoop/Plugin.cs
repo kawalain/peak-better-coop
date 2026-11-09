@@ -79,9 +79,7 @@ public sealed class Plugin : BaseUnityPlugin
         runtime.AddComponent<PairShuffleLink>();
         runtime.AddComponent<Ui.Paper.PhotoDarkroom>();
         runtime.AddComponent<Ui.Notices.NoticeBoard>();
-#if DEBUG
-        Ui.Paper.PhotoDarkroom.More = Features.ZooPortraits.WarmOne;
-#endif
+        DevHooks.Started(this, runtime);
 
         Log.LogInfo($"{MyPluginInfo.PLUGIN_NAME} {MyPluginInfo.PLUGIN_VERSION} loaded.");
     }

@@ -563,14 +563,6 @@ internal static class Strings
         ? "코옵: 분대장이 모든 짝을 다시 업히고 업힌 사람을 깨웠습니다."
         : "Coop: the Troop Leader re-carried every Pair and woke every Rider.";
 
-    public static string SoloPairOn(int latencyMs) => Korean
-        ? $"코옵: 1인 짝 테스트를 켰습니다. (마우스 지연 {latencyMs}ms)"
-        : $"Coop: Solo Pair is on (mouse delayed {latencyMs} ms).";
-
-    public static string SoloPairOff => Korean
-        ? "코옵: 1인 짝 테스트를 껐습니다."
-        : "Coop: Solo Pair is off.";
-
     public static string OddPlayerCount(int count) => Korean
         ? $"코옵: 출발하려면 인원이 짝수여야 합니다. (현재 {count}명)"
         : $"Coop: an even number of players is needed to depart. ({count} in the room)";

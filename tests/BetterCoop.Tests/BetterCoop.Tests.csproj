@@ -20,4 +20,12 @@
     <ProjectReference Include="..\..\src\BetterCoop\BetterCoop.csproj" />
   </ItemGroup>
 
+  <!--
+    FakeRoom is a development tool: only a Debug plugin has it. Any other
+    configuration compiles it here, so the tests reach it either way.
+  -->
+  <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+    <Compile Include="..\..\src\BetterCoop\DevTools\FakeRoom.cs" Link="DevTools\FakeRoom.cs" />
+  </ItemGroup>
+
 </Project>

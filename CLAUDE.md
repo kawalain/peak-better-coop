@@ -51,19 +51,31 @@ python -I tools/dev_profile.py launch <gale_data>/peak/profiles/<profile> <PeakG
 
 `launch` copies the doorstop proxy into the game folder, the only change made
 there. Without Gale, `dev_profile.py install` lays out an equivalent folder
-profile from Thunderstore. To test the Control Split alone, turn on `[Debug]
-Solo Pair`: alone in a room, your mouse takes the Rider's path (encoded,
-delayed by the set latency, replayed) before it reaches your body, and a solo
-Run may depart. With `[Debug] Verbose Log` on (off by default), diagnostics
-land in the profile's `BepInEx/LogOutput.log`; players turn it on and send
-theirs from their own Gale profile.
+profile from Thunderstore. With `[Debug] Verbose Log` on (off by default),
+diagnostics land in the profile's `BepInEx/LogOutput.log`; players turn it on
+and send theirs from their own Gale profile. Verbose Log is the only debug
+setting a test build or a release has.
 
-Debug builds (`#if DEBUG`, never in a test build or on Thunderstore) add a
-Zoo button to the pause menu. The Zoo shows every paper component in
-`Ui/Paper/` in its states. It also opens the Roster on a `FakeRoom` of any
-size, led by you or not, which changes its Pairs by the real rules without
-touching the config, the room, or the network. Add a new paper component to
-the Zoo along with it.
+## Development tools
+
+Development (Debug) builds add tools for trying the mod alone; a test build or
+a release has none of them. All of them live in `src/BetterCoop/DevTools/`,
+which only a Debug build compiles, and the plugin reaches them only through
+the partial-method hooks in `DevHooks.cs`, whose calls the compiler drops
+without `DevTools/`. Keep it that way: no `#if DEBUG` elsewhere, and a new tool
+gets a hook rather than a reference from the plugin. Any other build fails if
+the DLL still names something from `DevTools/` (`CheckNoDevTools` in the
+project file).
+
+- `[Debug] Solo Pair`: alone in a room, your mouse takes the Rider's path
+  (encoded, delayed by the set latency, replayed) before it reaches your body,
+  and a solo Run may depart. The loopback itself stays in the Control Split,
+  run only while `DevHooks.SoloPair` is true.
+- The Zoo, a pause menu button, shows every paper component in `Ui/Paper/` in
+  its states. It also opens the Roster on a `FakeRoom` of any size, led by you
+  or not, which changes its Pairs by the real rules without touching the
+  config, the room, or the network. Add a new paper component to the Zoo along
+  with it.
 
 ## Test builds and versions
 
@@ -95,8 +107,8 @@ in commands, logs, or replies.
 ## Code layout
 
 `src/BetterCoop/Core/` holds game-independent rules (pairing, the Control Split's
-button replay and look smoothing, the Rider snapshot format) and is the only
-code the tests reach. `Features/` holds one Harmony feature per file, named
+button replay and look smoothing, the Rider snapshot format) and is, with
+`DevTools/FakeRoom.cs`, the only code the tests reach. `Features/` holds one Harmony feature per file, named
 after its glossary term; `Net/` holds Photon keys and presence; `Ui/` holds
 notices and their Korean/English text. Every feature looks up Pairs through
 `PairRoster` (ADR 0001), never through the game's carry state.

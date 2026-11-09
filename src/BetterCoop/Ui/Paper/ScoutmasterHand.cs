@@ -112,9 +112,7 @@ internal static class ScoutmasterHand
                     Key,
                     light);
                 Texture2D whole = ModelStage.Read(body, shot, Width, height);
-#if DEBUG
-                System.IO.File.WriteAllBytes(System.IO.Path.Combine(BepInEx.Paths.CachePath, "BetterCoop-hand-raw.png"), whole.EncodeToPNG());
-#endif
+                DevHooks.HandPictured(whole, "hand-raw");
                 float wristRow = height * below / tall;
                 Texture2D? trimmed = Crop(whole, wristRow, Width / wide * forearm, out bool cut, out float hand);
                 Object.Destroy(whole);
@@ -133,14 +131,10 @@ internal static class ScoutmasterHand
             {
                 Plugin.Log.LogWarning("The Scoutmaster's hand was not in its picture; his hand is drawn by hand instead.");
             }
-#if DEBUG
             else
             {
-                string file = System.IO.Path.Combine(BepInEx.Paths.CachePath, "BetterCoop-hand.png");
-                System.IO.File.WriteAllBytes(file, picture.EncodeToPNG());
-                Plugin.Verbose($"Saved the hand's picture to {file}.");
+                DevHooks.HandPictured(picture, "hand");
             }
-#endif
 
             return picture;
         }

@@ -30,7 +30,7 @@ internal static class PartyGate
         return PartyGateRules.Evaluate(
             members,
             MyPluginInfo.PLUGIN_VERSION,
-            RunRules.AllowOddPlayerCount || ControlSplit.SoloPairWanted);
+            RunRules.AllowOddPlayerCount || DevHooks.SoloPair);
     }
 
     private static bool AllowDeparture(string source)

@@ -1,8 +1,8 @@
-#if DEBUG
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using BetterCoop.Core;
+using BetterCoop.Features;
 using BetterCoop.Ui;
 using BetterCoop.Ui.Notices;
 using BetterCoop.Ui.Paper;
@@ -11,7 +11,7 @@ using UnityEngine.UI;
 using Zorro.Core;
 using Zorro.UI;
 
-namespace BetterCoop.Features;
+namespace BetterCoop.DevTools;
 
 /// <summary>
 /// The Zoo, in debug builds only: a pause menu page that shows every paper
@@ -403,4 +403,3 @@ internal sealed class ZooPortraits : IPortraits
         model.refs.mouthRenderer.material.SetTexture("_MainTex", options.mouths[look[4]].texture);
     }
 }
-#endif

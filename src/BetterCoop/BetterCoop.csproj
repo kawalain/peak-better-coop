@@ -36,6 +36,55 @@
     <InternalsVisibleTo Include="BetterCoop.Tests" />
   </ItemGroup>
 
+  <!--
+    Development tools (the Zoo, Solo Pair, the Twin, the Control Line) live in
+    DevTools/ and reach the plugin only through DevHooks.cs. Any build but
+    Debug leaves the folder out, so test builds and releases cannot contain them.
+  -->
+  <ItemGroup Condition="'$(Configuration)' != 'Debug'">
+    <Compile Remove="DevTools\**" />
+  </ItemGroup>
+
+  <!--
+    Belt and braces: a build without DevTools/ is refused if the plugin still
+    names anything from it (its namespace, or a hook's development body).
+  -->
+  <UsingTask TaskName="BetterCoopFindNames" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)\Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <File ParameterType="System.String" Required="true" />
+      <Names ParameterType="System.String" Required="true" />
+      <Found ParameterType="System.String" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Code Type="Fragment" Language="cs"><![CDATA[
+        byte[] bytes = System.IO.File.ReadAllBytes(File);
+        var found = new System.Collections.Generic.List<string>();
+        foreach (string name in Names.Split(';'))
+        {
+            foreach (byte[] needle in new[] { System.Text.Encoding.UTF8.GetBytes(name), System.Text.Encoding.Unicode.GetBytes(name) })
+            {
+                for (int i = 0; i + needle.Length <= bytes.Length; i++)
+                {
+                    int j = 0;
+                    while (j < needle.Length && bytes[i + j] == needle[j]) j++;
+                    if (j == needle.Length) { found.Add(name); goto next; }
+                }
+            }
+            next:;
+        }
+        Found = string.Join(", ", found);
+      ]]></Code>
+    </Task>
+  </UsingTask>
+
+  <Target Name="CheckNoDevTools" AfterTargets="Build" BeforeTargets="PackageTestBuild" Condition="'$(Configuration)' != 'Debug'">
+    <BetterCoopFindNames File="$(TargetPath)" Names="BetterCoop.DevTools;OnStarted;OnPauseMenu;SoloPairWanted;OnHandPictured;Solo Pair;ZooPage">
+      <Output TaskParameter="Found" PropertyName="DevToolsFound" />
+    </BetterCoopFindNames>
+    <Error Condition="'$(DevToolsFound)' != ''" Text="The $(Configuration) build still has development tools in it: $(DevToolsFound). Keep them in DevTools/ and reach them only through DevHooks." />
+    <Message Importance="high" Text="Checked $(TargetFileName): no development tools in it." />
+  </Target>
+
   <!-- Opt-in: copy the plugin into a mod-manager profile set in Directory.Build.user.props. -->
   <Target Name="DeployToProfile" AfterTargets="Build" Condition="'$(BetterCoopDeployDir)' != ''">
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BetterCoopDeployDir)" />
