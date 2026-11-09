@@ -250,8 +250,8 @@ internal sealed class ZooPage : PaperPage
 
         list.Header(() => T("알림", "Notices"));
         list.Note(() => T(
-            "알림은 종류마다 다른 종이에 실려 왼쪽에서 들어옵니다. 종이로 보일 수 없을 때만 게임의 접속 기록에 씁니다.",
-            "Each kind of notice comes in from the left on its own paper. Only when the paper cannot be shown does it go to the game's join log."));
+            "알림은 종류마다 다른 종이에 실려 왼쪽에서 들어옵니다. 전보는 텔레타이프가 한 글자씩 찍고, 메모와 꼬리표는 등사기 사본처럼 위에서부터 보라색으로 찍혀 나와 제 잉크로 마릅니다. 종이로 보일 수 없을 때만 게임의 접속 기록에 씁니다.",
+            "Each kind of notice comes in from the left on its own paper. A telegram comes off the teleprinter a letter at a time; a memo or tag comes off a ditto drum from the top down, violet at first and drying to its own ink. Only when the paper cannot be shown does it go to the game's join log."));
         list.Stamp(
             () => T("전보", "Telegram"),
             () => T("재생", "Play"),

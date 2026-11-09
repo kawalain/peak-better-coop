@@ -29,6 +29,9 @@ internal sealed class Typewritten : MonoBehaviour
 
     private bool first = true;
 
+    /// <summary>The longest its words take to type, however many there are.</summary>
+    public float Longest { get; set; } = Typewriter.LineSeconds;
+
     /// <summary>How long after its words first show they start being typed; negative shows them at once.</summary>
     public float FirstDelay { get; set; } = -1f;
 
@@ -51,7 +54,7 @@ internal sealed class Typewritten : MonoBehaviour
     {
         Follow();
         int letters = text.textInfo?.characterCount ?? typed.Length;
-        int typing = startedAt == float.NegativeInfinity ? int.MaxValue : Typewriter.Typed(Time.unscaledTime - startedAt, letters);
+        int typing = startedAt == float.NegativeInfinity ? int.MaxValue : Typewriter.Typed(Time.unscaledTime - startedAt, letters, Longest);
         if (typing != shown)
         {
             if (typing > shown && typing <= letters && Time.unscaledTime - lastClack >= ClackSeconds)

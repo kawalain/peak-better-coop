@@ -48,5 +48,8 @@ public class TypewriterTests
     {
         Assert.Equal(200, Typewriter.Typed(Typewriter.LineSeconds, 200));
         Assert.True(Typewriter.Typed(Typewriter.LineSeconds / 2f, 200) < 200);
+        // A teleprinter's longer message may take longer.
+        Assert.True(Typewriter.Typed(Typewriter.LineSeconds, 200, longest: 1.2f) < 200);
+        Assert.Equal(200, Typewriter.Typed(1.2f, 200, longest: 1.2f));
     }
 }

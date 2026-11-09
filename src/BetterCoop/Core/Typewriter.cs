@@ -48,16 +48,16 @@ internal static class Typewriter
     /// How many of <paramref name="length"/> letters are typed
     /// <paramref name="elapsed"/> seconds after typing began: one per
     /// <see cref="LetterSeconds"/>, faster for a line too long to type in
-    /// <see cref="LineSeconds"/>.
+    /// <paramref name="longest"/> seconds (by default <see cref="LineSeconds"/>).
     /// </summary>
-    public static int Typed(float elapsed, int length)
+    public static int Typed(float elapsed, int length, float longest = LineSeconds)
     {
         if (length <= 0 || elapsed < 0f)
         {
             return 0;
         }
 
-        float each = System.Math.Min(LetterSeconds, LineSeconds / length);
+        float each = System.Math.Min(LetterSeconds, longest / length);
         int typed = (int)(elapsed / each) + 1;
         return typed >= length ? length : typed;
     }

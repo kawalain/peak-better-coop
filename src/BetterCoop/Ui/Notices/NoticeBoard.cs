@@ -210,6 +210,9 @@ internal sealed class NoticeSlip : MonoBehaviour
 
     private const float OutSeconds = 0.3f;
 
+    /// <summary>The longest a telegram's words take to come off the teleprinter.</summary>
+    private const float TeleprinterSeconds = 1.2f;
+
     private RectTransform rect = null!;
 
     private CanvasGroup group = null!;
@@ -289,6 +292,17 @@ internal sealed class NoticeSlip : MonoBehaviour
             Color.clear);
         style.Decorate?.Invoke(rect, template, slip.Height);
         VectorView.DrawAll(rect);
+        switch (style.Printing)
+        {
+            case NoticePrinting.Teleprinter:
+                // The message comes off the teleprinter a letter at a time as the slip slides in.
+                Typewritten.Add(words, typeIn: true, delay: InSeconds * 0.5f).Longest = TeleprinterSeconds;
+                break;
+            case NoticePrinting.Ditto:
+                DittoCopy.Add(rect, [heading, clock, words], delay: InSeconds * 0.4f);
+                break;
+        }
+
         return slip;
     }
 
@@ -356,6 +370,9 @@ internal sealed class NoticeStyle
     /// <summary>Room kept clear in the heading's right corner, such as for a stamp.</summary>
     public float CornerRoom { get; private set; }
 
+    /// <summary>How the words come onto the paper.</summary>
+    public NoticePrinting Printing { get; private set; }
+
     /// <summary>Marks drawn over the paper once it is laid out: the slip, a template, and its height.</summary>
     public Action<RectTransform, TMP_Text, float>? Decorate { get; private set; }
 
@@ -365,6 +382,7 @@ internal sealed class NoticeStyle
         NoticeKind.Memo => new NoticeStyle(new Ink(0.985f, 0.975f, 0.940f), PaperText.Blue, PaperList.Pen, FontStyles.Italic)
         {
             Indent = 14f,
+            Printing = NoticePrinting.Ditto,
             Decorate = (slip, _, height) =>
             {
                 RectTransform margin = PaperList.NewRect("Margin", slip);
@@ -379,6 +397,7 @@ internal sealed class NoticeStyle
         NoticeKind.Tag => new NoticeStyle(new Ink(0.880f, 0.770f, 0.560f), PaperText.Ink, PaperText.Ink, FontStyles.Normal)
         {
             Indent = 34f,
+            Printing = NoticePrinting.Ditto,
             Decorate = (slip, _, height) =>
             {
                 RectTransform hole = PaperList.NewRect("Hole", slip);
@@ -405,7 +424,23 @@ internal sealed class NoticeStyle
             },
         },
 
-        // A telegram, typed in capitals on yellow paper.
-        _ => new NoticeStyle(new Ink(0.965f, 0.875f, 0.520f), PaperText.Ink, PaperText.Ink, FontStyles.UpperCase),
+        // A telegram, printed in capitals by the teleprinter on yellow paper.
+        _ => new NoticeStyle(new Ink(0.965f, 0.875f, 0.520f), PaperText.Ink, PaperText.Ink, FontStyles.UpperCase)
+        {
+            Printing = NoticePrinting.Teleprinter,
+        },
     };
+}
+
+/// <summary>How a notice's words come onto its paper.</summary>
+internal enum NoticePrinting
+{
+    /// <summary>Already on it.</summary>
+    Printed,
+
+    /// <summary>A letter at a time, off a teleprinter.</summary>
+    Teleprinter,
+
+    /// <summary>From the top down, off a spirit duplicator's drum.</summary>
+    Ditto,
 }
