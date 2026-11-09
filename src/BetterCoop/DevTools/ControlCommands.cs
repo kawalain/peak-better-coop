@@ -63,6 +63,7 @@ internal static partial class ControlCommands
         ["order"] = new("{what, ...}: a Roster order, under the Roster's rules; without what, lists them.", Order),
         ["perf"] = new("{seconds?}: for that long (default 5), times every Update of the mod's own components and every patch it adds to the game; answers with the mod's milliseconds and bytes per frame and the costliest methods.", ControlPerf.Measure),
         ["photo"] = new("{actor}: takes that player's passport photo again, here and now, and saves it as a PNG; answers with its path.", Photo),
+        ["sounds"] = new("{contains?, play?}: the game's loaded audio clips whose name contains 'contains', with their length and the sound effects that use them; play {clip name} plays one flat, as a menu sound.", Sounds),
         ["drill"] = new("{what, ...}: forge {key, actor?, value?} writes a made-up value to a mod key of the room, or of player 'actor', as a player who may not write it would (Pairs, without a value, swaps every Pair's roles), and the other copies should drop it; letter {case} plays the Zoo's Pair letter case (0 to 5); end {ending: summit|lost}, in a Twin only, ends the real Run for the whole room.", Drill),
     };
 
@@ -418,6 +419,45 @@ internal static partial class ControlCommands
             RenderTexture.active = active;
             UnityEngine.Object.Destroy(picture);
         }
+    }
+
+    private static JToken Sounds(JObject args)
+    {
+        string contains = (string?)args["contains"] ?? string.Empty;
+        string? play = (string?)args["play"];
+        AudioClip[] clips = Resources.FindObjectsOfTypeAll<AudioClip>();
+        if (play != null)
+        {
+            AudioClip clip = clips.FirstOrDefault(c => c.name == play) ?? throw new ArgumentException($"no loaded clip is named {play}");
+            var effect = ScriptableObject.CreateInstance<SFX_Instance>();
+            effect.clips = [clip];
+            effect.settings = new SFX_Settings { volume = 0.5f, spatialBlend = 0f, range = 1000f };
+            effect.Play();
+            return $"played {clip.name}, {clip.length:F2} s";
+        }
+
+        var usedBy = new Dictionary<AudioClip, List<string>>();
+        foreach (SFX_Instance effect in Resources.FindObjectsOfTypeAll<SFX_Instance>())
+        {
+            foreach (AudioClip clip in effect.clips ?? [])
+            {
+                if (clip != null)
+                {
+                    (usedBy.TryGetValue(clip, out List<string>? names) ? names : usedBy[clip] = new List<string>()).Add(effect.name);
+                }
+            }
+        }
+
+        return new JArray(clips
+            .Where(c => c.name.IndexOf(contains, StringComparison.OrdinalIgnoreCase) >= 0)
+            .OrderBy(c => c.name, StringComparer.Ordinal)
+            .Take(200)
+            .Select(c => new JObject
+            {
+                ["clip"] = c.name,
+                ["seconds"] = Math.Round(c.length, 2),
+                ["effects"] = new JArray(usedBy.TryGetValue(c, out List<string>? names) ? names.Distinct().ToArray() : []),
+            }));
     }
 
     private static JToken Drill(JObject args)
