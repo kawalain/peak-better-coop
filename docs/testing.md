@@ -84,7 +84,8 @@ what must happen.
 6. **Pair Assignment.** `order {what: assign, pairs: [[1,2]]}`. The letter
    says what changes for its reader; the Pairs become the assignment's.
 7. **Role Swap.** The guest `order {what: swap}`; the host's Roster shows the
-   agree stamp first in My Pair; the host `order {what: swap}`. The roles swap.
+   agree stamp in Your Pair, under the partner and role; the host
+   `order {what: swap}`. The roles swap.
    Asking twice withdraws; a request left 30 s expires; a shuffle cancels it.
    Each case shows its notice.
 8. **Recovery.** `order {what: recover}`. Every client shows the recovery tag;
